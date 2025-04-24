@@ -71,7 +71,7 @@ export default function App() {
         <Stack.Screen
           name="SignUp"
           component={SignUpScreen}
-          options={{ title: 'Sign Up' }}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

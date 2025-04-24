@@ -113,6 +113,7 @@ const SignUpScreen = () => {
             value={firstName}
             onChangeText={setFirstName}
             style={styles.textInput}
+            autoCapitalize="none"
           />
         </View>
         <View style={styles.inputWrapper}>
@@ -122,6 +123,7 @@ const SignUpScreen = () => {
             value={lastName}
             onChangeText={setLastName}
             style={styles.textInput}
+            autoCapitalize="none"
           />
         </View>
         <View style={styles.inputWrapper}>
