@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,41 +7,37 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-// App.tsx dosyandaki stack yapısına göre bu tip tanımı vardır:
 type RootStackParamList = {
   Login: undefined;
   Main: undefined;
   SignUp: undefined;
-  ProductDetail: {
-    product: { id: string; title: string; image: string; seller?: string; description?: string };
-  };
 };
 
-type LoginScreenNavigationProp = NativeStackNavigationProp<
+type SignUpScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'Login'
+  'SignUp'
 >;
 
-const LoginScreen = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
+const SignUpScreen = () => {
+  const navigation = useNavigation<SignUpScreenNavigationProp>();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
   };
 
-  const handleLogin = async () => {
+  const handleSignUp = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(email)) {
@@ -49,20 +45,24 @@ const LoginScreen = () => {
       return;
     }
 
+    if (password.length < 6) {
+      setErrorMessage('Şifre en az 6 karakter olmalıdır.');
+      return;
+    }
+
     setIsLoading(true);
     setErrorMessage('');
 
     try {
-      const userCredential = await signInWithEmailAndPassword(
+      const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
-      const user = userCredential.user;
-      Alert.alert('Giriş Başarılı', `Hoş geldin, ${user.email}`);
+      Alert.alert('Kayıt Başarılı', `Hoş geldin, ${userCredential.user.email}`);
       navigation.replace('Main');
     } catch (error: any) {
-      const message = error.message || 'Giriş yapılamadı.';
+      const message = error.message || 'Kayıt işlemi başarısız.';
       setErrorMessage(message);
     } finally {
       setIsLoading(false);
@@ -72,10 +72,10 @@ const LoginScreen = () => {
   return (
     <View style={styles.container}>
       <View>
-        <Text style={styles.title}>Login</Text>
+        <Text style={styles.title}>Sign Up</Text>
       </View>
       <View>
-        <Text style={styles.titleLogin}>Please login to continue.</Text>
+        <Text style={styles.titleLogin}>Create a new account.</Text>
       </View>
       <View style={styles.inputContainer}>
         <View style={styles.inputWrapper}>
@@ -105,7 +105,6 @@ const LoginScreen = () => {
             placeholder="Password"
             value={password}
             onChangeText={setPassword}
-            onSubmitEditing={handleLogin}
             secureTextEntry={!isPasswordVisible}
             style={styles.textInput}
           />
@@ -118,17 +117,17 @@ const LoginScreen = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.registerContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
             <Text style={styles.registerText}>
-            Don’t have an account?{' '}
-            <Text style={styles.registerLink}>Sign Up</Text>
+              Already have an account?{' '}
+              <Text style={styles.registerLink}>Login</Text>
             </Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={handleLogin}>
+        <TouchableOpacity onPress={handleSignUp}>
           <View style={styles.loginButton}>
             <Text style={styles.loginButtonText}>
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isLoading ? 'Creating...' : 'Sign Up'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -140,9 +139,8 @@ const LoginScreen = () => {
   );
 };
 
-export default LoginScreen;
+export default SignUpScreen;
 
-// 💅 Stil tanımlarına dokunmadım
 const styles = StyleSheet.create({
   container: {
     flex: 1,

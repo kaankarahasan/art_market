@@ -11,6 +11,7 @@ import { FavoritesProvider } from './contexts/FavoritesContext';
 import FollowersScreen from './screens/FollowersScreen';   // ← ekle
 import FollowingScreen from './screens/FollowingScreen';   // ← ekle
 import SoldScreen from './screens/SoldScreen';
+import SignUpScreen from './screens/SignUpScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   Followers: undefined;
   Following: undefined;
   Sold: undefined;
+  SignUp: undefined;
   ProductDetail: {
     product: {
       id: string;
@@ -65,6 +67,11 @@ export default function App() {
           name="Sold"
           component={SoldScreen}
           options={{ title: 'Sold Products' }}
+        />
+        <Stack.Screen
+          name="SignUp"
+          component={SignUpScreen}
+          options={{ title: 'Sign Up' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

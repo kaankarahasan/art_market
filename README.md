@@ -30,13 +30,6 @@ This project is a mobile marketplace application where artists can easily showca
 
 ---
 
-## 📂 Folder Structure (Overview)
-
-/screens → Application screens /components → Reusable components /navigators → Navigation systems /assets → Images and icons /types → TypeScript type definitions
-
-
----
-
 ## 🛠️ Installation
 
 ```bash
@@ -45,13 +38,17 @@ cd art_market
 npm install
 npm start
 
-📌 Notes
+---
+
+## 📌 Notes
 
 This project is currently in the development phase.
 The first version will only include the "Paintings and Drawings" category, with plans to add other art forms in the future.
 AI-powered features will be integrated over time.
 
-📫 Contact
+---
+
+## 📫 Contact
 
 Feel free to contact me for any suggestions, feedback, or contributions.
 
