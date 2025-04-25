@@ -142,7 +142,6 @@ const LoginScreen = () => {
 
 export default LoginScreen;
 
-// 💅 Stil tanımlarına dokunmadım
 const styles = StyleSheet.create({
   container: {
     flex: 1,

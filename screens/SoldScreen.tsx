@@ -1,9 +1,9 @@
 import React, { useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { SoldContext } from '../contexts/SoldContext'; // ✅ Context'i doğru şekilde import ediyoruz
+import { SoldContext } from '../contexts/SoldContext'; // Context'i doğru şekilde import ediyoruz
 
 const SoldScreen = () => {
-  const { setSoldCount } = useContext(SoldContext); // ✅ setSoldCount'ü context'ten alıyoruz
+  const { setSoldCount } = useContext(SoldContext); // setSoldCount'ü context'ten alıyoruz
 
   // Örnek satılan ürünler listesi
   const soldProducts = [
@@ -15,7 +15,7 @@ const SoldScreen = () => {
   ];
 
   useEffect(() => {
-    setSoldCount(soldProducts.length); // ✅ Satılan ürün sayısını context'e yaz
+    setSoldCount(soldProducts.length); // Satılan ürün sayısını context'e yaz
   }, [soldProducts.length]); // soldProducts.length'i dependency olarak ekliyoruz
 
   return (

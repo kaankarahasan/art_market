@@ -8,8 +8,8 @@ import BottomTabNavigator from './navigation/BottomTabNavigator';
 import AppNavigator from './navigators/MainTabNavigator';
 import MainTabNavigator from './navigators/MainTabNavigator';
 import { FavoritesProvider } from './contexts/FavoritesContext';
-import FollowersScreen from './screens/FollowersScreen';   // ← ekle
-import FollowingScreen from './screens/FollowingScreen';   // ← ekle
+import FollowersScreen from './screens/FollowersScreen';
+import FollowingScreen from './screens/FollowingScreen';
 import SoldScreen from './screens/SoldScreen';
 import SignUpScreen from './screens/SignUpScreen';
 
