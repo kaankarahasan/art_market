@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 
 type RootStackParamList = {
   Login: undefined;
+  CompleteProfile: undefined; // ✅ Buraya CompleteProfile ekranını ekliyoruz
 };
 
 type SignUpScreenProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
@@ -21,7 +22,7 @@ const SignUpScreen = () => {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       Alert.alert('Success', 'Account created successfully!');
-      navigation.navigate('Login');
+      navigation.navigate('CompleteProfile'); // ✅ Başarılı olunca CompleteProfile'a yönlendiriyoruz
     } catch (error: any) {
       Alert.alert('Error', error.message);
     }

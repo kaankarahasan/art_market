@@ -12,6 +12,8 @@ import FollowersScreen from './screens/FollowersScreen';
 import FollowingScreen from './screens/FollowingScreen';
 import SoldScreen from './screens/SoldScreen';
 import SignUpScreen from './screens/SignUpScreen';
+import CompleteProfileScreen from './screens/CompleteProfileScreen';
+import HomeScreen from './screens/HomeScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -20,6 +22,8 @@ export type RootStackParamList = {
   Following: undefined;
   Sold: undefined;
   SignUp: undefined;
+  CompleteProfile: undefined;
+  Home: undefined;
   ProductDetail: {
     product: {
       id: string;
@@ -71,6 +75,16 @@ export default function App() {
         <Stack.Screen
           name="SignUp"
           component={SignUpScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CompleteProfile"
+          component={CompleteProfileScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore'; // Firestore ekledik
+import { auth, db } from '../firebase'; // db'yi de import ettik
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,6 +22,7 @@ type RootStackParamList = {
   ProductDetail: {
     product: { id: string; title: string; image: string; seller?: string; description?: string };
   };
+  CompleteProfile: undefined; // CompleteProfile ekranını da tiplere ekledik
 };
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<
@@ -59,11 +61,24 @@ const LoginScreen = () => {
         password
       );
       const user = userCredential.user;
-      Alert.alert('Giriş Başarılı', `Hoş geldin, ${user.email}`);
-      navigation.replace('Main');
+
+      // Firestore'da kullanıcının profil bilgisi var mı kontrol ediyoruz
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        // Kullanıcının profili tamamlanmış → Main'e yönlendir
+        Alert.alert('Giriş Başarılı', `Hoş geldin, ${user.email}`);
+        navigation.replace('Main');
+      } else {
+        // Kullanıcının profili eksik → CompleteProfile ekranına yönlendir
+        navigation.replace('CompleteProfile');
+      }
     } catch (error: any) {
+      console.log(error);
       const message = error.message || 'Giriş yapılamadı.';
       setErrorMessage(message);
+      Alert.alert('Giriş Hatası', message);
     } finally {
       setIsLoading(false);
     }
@@ -120,8 +135,8 @@ const LoginScreen = () => {
         <View style={styles.registerContainer}>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
             <Text style={styles.registerText}>
-            Don’t have an account?{' '}
-            <Text style={styles.registerLink}>Sign Up</Text>
+              Don’t have an account?{' '}
+              <Text style={styles.registerLink}>Sign Up</Text>
             </Text>
           </TouchableOpacity>
         </View>
