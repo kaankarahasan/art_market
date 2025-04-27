@@ -1,4 +1,4 @@
-import React, { useState, useRef, useContext } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -54,11 +54,7 @@ const ProfileScreen = () => {
   const isFavorite = (productId: string) => favorites.some(fav => fav.id === productId);
 
   const handleFavorite = (item: typeof products[0]) => {
-    if (isFavorite(item.id)) {
-      removeFromFavorites(item.id);
-    } else {
-      addToFavorites(item);
-    }
+    isFavorite(item.id) ? removeFromFavorites(item.id) : addToFavorites(item);
   };
 
   const handleScrollToProducts = () => {
@@ -86,37 +82,50 @@ const ProfileScreen = () => {
 
   const ListHeader = () => (
     <>
-      <View style={styles.profileHeader}>
-        <TouchableOpacity onPress={() => { setModalVisible(true); setSelectedImage(profilePicture); }}>
-          <Image source={{ uri: profilePicture || '' }} style={styles.profileImage} />
-        </TouchableOpacity>
-        <View style={styles.userInfo}>
-          <Text style={styles.username}>{username}</Text>
-          <View style={styles.gridStatsContainer}>
-            <View style={styles.gridRow}>
-              <TouchableOpacity onPress={handleScrollToProducts} style={styles.gridItem}>
-                <Text style={styles.gridNumber}>{products.length}</Text>
-                <Text style={styles.gridLabel}>Products</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Sold')} style={styles.gridItem}>
-                <Text style={styles.gridNumber}>{soldCount}</Text>
-                <Text style={styles.gridLabel}>Sold</Text>
-              </TouchableOpacity>
+      <View style={styles.headerContainer}>
+        <View style={styles.profileHeader}>
+          <TouchableOpacity onPress={() => { setModalVisible(true); setSelectedImage(profilePicture); }}>
+            <Image source={{ uri: profilePicture }} style={styles.profileImage} />
+          </TouchableOpacity>
+          <View style={styles.userInfo}>
+            <Text style={styles.username}>{username}</Text>
+
+            <View style={styles.gridStatsContainer}>
+              <View style={styles.gridRow}>
+                <TouchableOpacity onPress={handleScrollToProducts} style={styles.gridItem}>
+                  <Text style={styles.gridNumber}>{products.length}</Text>
+                  <Text style={styles.gridLabel}>Products</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('Sold')} style={styles.gridItem}>
+                  <Text style={styles.gridNumber}>{soldCount}</Text>
+                  <Text style={styles.gridLabel}>Sold</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.gridRow}>
+                <TouchableOpacity onPress={() => navigation.navigate('Followers')} style={styles.gridItem}>
+                  <Text style={styles.gridNumber}>{followers}</Text>
+                  <Text style={styles.gridLabel}>Followers</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('Following')} style={styles.gridItem}>
+                  <Text style={styles.gridNumber}>{following}</Text>
+                  <Text style={styles.gridLabel}>Following</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.gridRow}>
-              <TouchableOpacity onPress={() => navigation.navigate('Followers')} style={styles.gridItem}>
-                <Text style={styles.gridNumber}>{followers}</Text>
-                <Text style={styles.gridLabel}>Followers</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Following')} style={styles.gridItem}>
-                <Text style={styles.gridNumber}>{following}</Text>
-                <Text style={styles.gridLabel}>Following</Text>
-              </TouchableOpacity>
-            </View>
+
+            <Text style={styles.bio}>{bio}</Text>
           </View>
-          <Text style={styles.bio}>{bio}</Text>
         </View>
+
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => navigation.navigate('Settings')}
+        >
+          <Ionicons name="settings-outline" size={24} color="black" />
+        </TouchableOpacity>
       </View>
+
       <View onLayout={e => setProductsPositionY(e.nativeEvent.layout.y)}>
         <Text style={styles.sectionTitle}>My Products</Text>
       </View>
@@ -132,7 +141,7 @@ const ProfileScreen = () => {
         keyExtractor={item => item.id}
         numColumns={numColumns}
         columnWrapperStyle={styles.row}
-        contentContainerStyle={{ padding: 15, paddingBottom: 50 }}
+        contentContainerStyle={styles.flatListContainer}
         ListHeaderComponent={ListHeader}
       />
 
@@ -157,15 +166,24 @@ const ProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
+  flatListContainer: {
     padding: 15,
+    paddingBottom: 50,
+  },
+  headerContainer: {
+    marginBottom: 20,
+    position: 'relative', // önemli!
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+  },
+  settingsButton: {
+    position: 'absolute', // önemli!
+    top: 0,
+    right: 0,
+    padding: 8,
+    zIndex: 1,
   },
   profileImage: {
     width: 80,
@@ -215,6 +233,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10,
+    marginTop: 20,
   },
   row: {
     justifyContent: 'space-evenly',
