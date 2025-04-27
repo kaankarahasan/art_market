@@ -6,7 +6,7 @@ import FavoritesScreen from '../screens/FavoritesScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
-import ProfileScreen from '@/screens/ProfileScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 
 const Tab = createBottomTabNavigator();
