@@ -2,6 +2,9 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore"; // Firestore import edildi
+import firebase from 'firebase/app';
+import 'firebase/auth';
+import 'firebase/firestore';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
