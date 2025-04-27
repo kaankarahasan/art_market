@@ -16,7 +16,7 @@ const SoldScreen = () => {
 
   useEffect(() => {
     setSoldCount(soldProducts.length); // Satılan ürün sayısını context'e yaz
-  }, [soldProducts.length]);
+  }, [soldProducts.length, setSoldCount]); // 'setSoldCount' bağımlılığı eklendi  
 
   return (
     <View style={styles.container}>
