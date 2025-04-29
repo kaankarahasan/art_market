@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { auth, db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 type RootStackParamList = {
-  Home: undefined;
+  MainTab: undefined; // Burada 'Home' değil, tab yapını temsil eden ekran adı olmalı
   CompleteProfile: undefined;
 };
 
@@ -15,12 +15,11 @@ type CompleteProfileScreenProp = NativeStackNavigationProp<RootStackParamList, '
 const CompleteProfileScreen = () => {
   const navigation = useNavigation<CompleteProfileScreenProp>();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
 
   const handleSaveProfile = async () => {
-    if (!firstName || !lastName || !username) {
+    if (!fullName || !username) {
       Alert.alert('Error', 'Please fill in all fields.');
       return;
     }
@@ -33,14 +32,20 @@ const CompleteProfileScreen = () => {
         await setDoc(userDocRef, {
           uid: user.uid,
           email: user.email,
-          firstName: firstName,
-          lastName: lastName,
+          fullName: fullName,
           username: username,
           createdAt: new Date(),
         });
 
         Alert.alert('Success', 'Profile completed successfully!');
-        navigation.navigate('Home');
+
+        // Bottom tab navigasyonuna geçişe göre tanımla (Main olarak tanımlı App.tsx içinde)
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Main' }],
+          })
+        );
       } else {
         Alert.alert('Error', 'User not found.');
       }
@@ -59,17 +64,9 @@ const CompleteProfileScreen = () => {
         <View style={styles.inputWrapper}>
           <TextInput
             style={styles.textInput}
-            placeholder="First Name"
-            onChangeText={setFirstName}
-            value={firstName}
-          />
-        </View>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Last Name"
-            onChangeText={setLastName}
-            value={lastName}
+            placeholder="Full Name"
+            onChangeText={setFullName}
+            value={fullName}
           />
         </View>
         <View style={styles.inputWrapper}>

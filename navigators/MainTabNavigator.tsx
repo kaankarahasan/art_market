@@ -39,6 +39,7 @@ export default function MainTabNavigator() {
         name="FavoritesTab"
         component={FavoritesScreen}
         options={{
+          headerShown: false,
           tabBarLabel: 'Favorites',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart-outline" size={size} color={color} />
@@ -49,6 +50,7 @@ export default function MainTabNavigator() {
         name="ProfileTab"
         component={ProfileScreen}
         options={{
+          headerShown: false,
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
