@@ -1,59 +1,132 @@
-import React, { useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { SoldContext } from '../contexts/SoldContext'; // Context'i doğru şekilde import ediyoruz
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Image,
+  Dimensions,
+  ActivityIndicator,
+} from 'react-native';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+
+const numColumns = 2;
+const itemMargin = 10;
+const screenWidth = Dimensions.get('window').width;
+const itemWidth = (screenWidth - itemMargin * (numColumns + 1)) / numColumns;
 
 const SoldScreen = () => {
-  const { setSoldCount } = useContext(SoldContext); // setSoldCount'ü context'ten alıyoruz
-
-  // Örnek satılan ürünler listesi
-  const soldProducts = [
-    { id: '1', title: 'Satılan Ürün 1' },
-    { id: '2', title: 'Satılan Ürün 2' },
-    { id: '3', title: 'Satılan Ürün 3' },
-    { id: '4', title: 'Satılan Ürün 4' },
-    { id: '5', title: 'Satılan Ürün 5' },
-  ];
+  const [soldProducts, setSoldProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setSoldCount(soldProducts.length); // Satılan ürün sayısını context'e yaz
-  }, [soldProducts.length, setSoldCount]); // 'setSoldCount' bağımlılığı eklendi  
+    const fetchSoldProducts = async () => {
+      try {
+        const auth = getAuth();
+        const firestore = getFirestore();
+        const user = auth.currentUser;
+
+        if (!user) return;
+
+        const userRef = doc(firestore, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+
+        const userData = userSnap.data();
+        const sold = Array.isArray(userData?.soldProducts) ? userData.soldProducts : [];
+
+        setSoldProducts(sold);
+      } catch (err) {
+        console.error('Satılan ürünler alınamadı:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSoldProducts();
+  }, []);
+
+  const renderItem = ({ item }: { item: any }) => (
+    <View style={styles.itemContainer}>
+      <Image
+        source={{ uri: item.imageUrl }}
+        style={styles.image}
+        resizeMode="cover"
+      />
+      <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+      {item.price && <Text style={styles.price}>{item.price} ₺</Text>}
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#666" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Satılan Ürünler</Text>
-      <FlatList
-        data={soldProducts}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.productBox}>
-            <Text style={styles.productText}>{item.title}</Text>
-          </View>
-        )}
-      />
+      {soldProducts.length === 0 ? (
+        <Text style={styles.emptyText}>Henüz satılan ürün yok.</Text>
+      ) : (
+        <FlatList
+          data={soldProducts}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => index.toString()}
+          numColumns={numColumns}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
     </View>
   );
 };
 
+export default SoldScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: '#fff',
+    paddingTop: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 30,
+    fontSize: 16,
+    color: '#888',
+  },
+  listContent: {
+    paddingHorizontal: itemMargin,
+  },
+  itemContainer: {
+    width: itemWidth,
+    margin: itemMargin,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    overflow: 'hidden',
+    alignItems: 'center',
+    padding: 10,
+  },
+  image: {
+    width: itemWidth - 20,
+    height: itemWidth - 20,
+    borderRadius: 6,
   },
   title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '600',
   },
-  productBox: {
-    padding: 12,
-    backgroundColor: '#eee',
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  productText: {
-    fontSize: 16,
+  price: {
+    marginTop: 4,
+    fontSize: 13,
+    color: '#666',
   },
 });
-
-export default SoldScreen;

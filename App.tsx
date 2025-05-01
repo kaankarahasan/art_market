@@ -11,6 +11,7 @@ import FollowingScreen from './screens/FollowingScreen';
 import SoldScreen from './screens/SoldScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import OtherProfileScreen from './screens/OtherProfileScreen';
 
 import MainTabNavigator from './navigators/MainTabNavigator';
 import { FavoritesProvider } from './contexts/FavoritesContext';
@@ -29,6 +30,7 @@ export type RootStackParamList = {
   Following: undefined;
   Sold: undefined;
   Settings: undefined;
+  OtherProfile: { userId: string };
   ProductDetail: {
     product: {
       id: string;
@@ -97,6 +99,11 @@ export default function App() {
             name="UserProfile"  // Bu satırı ekliyoruz
             component={UserProfileScreen}  // Bu ekranı daha sonra oluşturacağız
             options={{ title: 'User Profile' }}
+          />
+          <Stack.Screen
+            name="OtherProfile"
+            component={OtherProfileScreen}
+            options={{ title: 'Product Detail' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

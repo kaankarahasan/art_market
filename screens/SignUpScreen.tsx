@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase'; // Firestore da dahil edildi
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 
@@ -37,11 +37,15 @@ const SignUpScreen = () => {
         email: user.email,
         fullName: fullName,
         username: username,
-        createdAt: new Date(),
+        profilePicture: '',       // default boş fotoğraf
+        bio: '',                  // başlangıçta boş bio
+        followersCount: 0,
+        followingCount: 0,
+        createdAt: serverTimestamp(), // firebase timestamp
       });
 
       Alert.alert('Success', 'Account created and profile saved!');
-      navigation.navigate('Main'); // Kayıt tamamlandıktan sonra ana ekrana yönlendirme
+      navigation.navigate('Main');
     } catch (error: any) {
       Alert.alert('Error', error.message);
     }
