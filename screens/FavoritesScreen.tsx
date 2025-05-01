@@ -1,15 +1,16 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, Dimensions } from 'react-native'; // Dimensions burada import edilecek
+import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const numColumns = 2;
 const itemSize = Dimensions.get('window').width / numColumns - 20;
 
 const FavoritesScreen = () => {
   const { favorites, removeFromFavorites } = useFavorites();
+  const insets = useSafeAreaInsets();
 
-  // Her bir öğe için render fonksiyonu
   const renderItem = ({ item }: { item: typeof favorites[0] }) => (
     <View style={styles.card}>
       <Image source={{ uri: item.image }} style={styles.image} />
@@ -24,7 +25,7 @@ const FavoritesScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {favorites.length === 0 ? (
         <Text style={styles.emptyText}>No favorites yet!</Text>
       ) : (

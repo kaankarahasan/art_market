@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const dummyData = [
   { id: '1', title: 'Artwork 1', image: 'https://picsum.photos/id/1015/200/300' },
@@ -27,6 +28,7 @@ const itemSize = Dimensions.get('window').width / numColumns - 20;
 const HomeScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
+  const insets = useSafeAreaInsets();
 
   const renderItem = ({ item }: { item: typeof dummyData[0] }) => {
     const isFavorite = favorites.some((fav) => fav.id === item.id);
@@ -48,7 +50,7 @@ const HomeScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <FlatList
         data={dummyData}
         renderItem={renderItem}

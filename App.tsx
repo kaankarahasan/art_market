@@ -12,7 +12,6 @@ import FollowersScreen from './screens/FollowersScreen';
 import FollowingScreen from './screens/FollowingScreen';
 import SoldScreen from './screens/SoldScreen';
 import SignUpScreen from './screens/SignUpScreen';
-import CompleteProfileScreen from './screens/CompleteProfileScreen';
 import HomeScreen from './screens/HomeScreen';
 import SettingsScreen from './screens/SettingsScreen'; // Yeni ekledik
 
@@ -23,7 +22,6 @@ export type RootStackParamList = {
   Following: undefined;
   Sold: undefined;
   SignUp: undefined;
-  CompleteProfile: undefined;
   Home: undefined;
   Settings: undefined; // Buraya da ekledik
   ProductDetail: {
@@ -77,11 +75,6 @@ export default function App() {
           <Stack.Screen
             name="SignUp"
             component={SignUpScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="CompleteProfile"
-            component={CompleteProfileScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase'; // Firebase yapılandırmanı buraya göre ayarla
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase'; // Firestore da dahil edildi
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 
 type RootStackParamList = {
   Login: undefined;
-  CompleteProfile: undefined; // Buraya CompleteProfile ekranını ekliyoruz
+  Main: undefined;
 };
 
 type SignUpScreenProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
@@ -17,12 +18,30 @@ const SignUpScreen = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
 
   const handleSignUp = async () => {
+    if (!email || !password || !fullName || !username) {
+      Alert.alert('Error', 'Please fill in all fields.');
+      return;
+    }
+
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      Alert.alert('Success', 'Account created successfully!');
-      navigation.navigate('CompleteProfile'); // Başarılı olunca CompleteProfile'a yönlendiriyoruz
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        email: user.email,
+        fullName: fullName,
+        username: username,
+        createdAt: new Date(),
+      });
+
+      Alert.alert('Success', 'Account created and profile saved!');
+      navigation.navigate('Main'); // Kayıt tamamlandıktan sonra ana ekrana yönlendirme
     } catch (error: any) {
       Alert.alert('Error', error.message);
     }
@@ -34,6 +53,23 @@ const SignUpScreen = () => {
       <Text style={styles.titleLogin}>Create a new account.</Text>
 
       <View style={styles.inputContainer}>
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Full Name"
+            onChangeText={setFullName}
+            value={fullName}
+          />
+        </View>
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Username"
+            autoCapitalize="none"
+            onChangeText={setUsername}
+            value={username}
+          />
+        </View>
         <View style={styles.inputWrapper}>
           <TextInput
             style={styles.textInput}

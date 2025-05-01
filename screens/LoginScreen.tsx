@@ -8,13 +8,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore'; // Firestore ekledik
-import { auth, db } from '../firebase'; // db'yi de import ettik
+import { auth } from '../firebase'; // db kaldırıldı çünkü artık kullanıcı verisini kontrol etmiyoruz
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-// App.tsx dosyandaki stack yapısına göre bu tip tanımı vardır:
 type RootStackParamList = {
   Login: undefined;
   Main: undefined;
@@ -22,7 +20,6 @@ type RootStackParamList = {
   ProductDetail: {
     product: { id: string; title: string; image: string; seller?: string; description?: string };
   };
-  CompleteProfile: undefined; // CompleteProfile ekranını da tiplere ekledik
 };
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<
@@ -60,20 +57,10 @@ const LoginScreen = () => {
         email,
         password
       );
-      const user = userCredential.user;
 
-      // Firestore'da kullanıcının profil bilgisi var mı kontrol ediyoruz
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
+      Alert.alert('Giriş Başarılı', `Hoş geldin, ${userCredential.user.email}`);
+      navigation.replace('Main');
 
-      if (userDocSnap.exists()) {
-        // Kullanıcının profili tamamlanmış → Main'e yönlendir
-        Alert.alert('Giriş Başarılı', `Hoş geldin, ${user.email}`);
-        navigation.replace('Main');
-      } else {
-        // Kullanıcının profili eksik → CompleteProfile ekranına yönlendir
-        navigation.replace('CompleteProfile');
-      }
     } catch (error: any) {
       console.log(error);
       const message = error.message || 'Giriş yapılamadı.';
