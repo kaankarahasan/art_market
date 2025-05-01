@@ -1,44 +1,88 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, Dimensions, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Dimensions,
+  Image,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import { RootStackParamList } from '../App';  // Doğru import işlemi
 import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const dummyData = [
-  { id: '1', title: 'Artwork 1', image: 'https://picsum.photos/id/1015/200/300' },
-  { id: '2', title: 'Artwork 2', image: 'https://picsum.photos/id/1016/200/300' },
-  { id: '3', title: 'Artwork 3', image: 'https://picsum.photos/id/1018/200/300' },
-  { id: '4', title: 'Artwork 4', image: 'https://picsum.photos/id/1020/200/300' },
-  { id: '5', title: 'Artwork 5', image: 'https://picsum.photos/id/1021/200/300' },
-  { id: '6', title: 'Artwork 6', image: 'https://picsum.photos/id/1024/200/300' },
-  { id: '7', title: 'Artwork 7', image: 'https://picsum.photos/id/1025/200/300' },
-  { id: '8', title: 'Artwork 8', image: 'https://picsum.photos/id/1027/200/300' },
-  { id: '9', title: 'Artwork 9', image: 'https://picsum.photos/id/1033/200/300' },
-  { id: '10', title: 'Artwork 10', image: 'https://picsum.photos/id/1035/200/300' },
-  { id: '11', title: 'Artwork 11', image: 'https://picsum.photos/id/1037/200/300' },
-  { id: '12', title: 'Artwork 12', image: 'https://picsum.photos/id/1039/200/300' },
-];
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 const numColumns = 2;
 const itemSize = Dimensions.get('window').width / numColumns - 20;
 
 const HomeScreen = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers] = useState<any[]>([]);
+  const [artworks, setArtworks] = useState<any[]>([]);
+
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();  // Burada da doğru navigation tipi kullanılıyor
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const insets = useSafeAreaInsets();
 
-  const renderItem = ({ item }: { item: typeof dummyData[0] }) => {
+  useEffect(() => {
+    const fetchFirestoreData = async () => {
+      try {
+        const userSnapshot = await getDocs(collection(db, 'users'));
+        const userList = userSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setUsers(userList);
+
+        const artworkSnapshot = await getDocs(collection(db, 'artworks'));
+        const artworkList = artworkSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setArtworks(artworkList);
+      } catch (error) {
+        console.error('Firestore veri çekme hatası:', error);
+      }
+    };
+
+    fetchFirestoreData();
+  }, []);
+
+  const filteredData = [
+    ...artworks.filter(
+      (item) =>
+        item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.artistName?.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    ...users.filter(
+      (user) =>
+        user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+  ];
+
+  const renderItem = ({ item }: { item: any }) => {
     const isFavorite = favorites.some((fav) => fav.id === item.id);
 
     return (
       <View style={styles.card}>
-        <TouchableOpacity onPress={() => navigation.navigate('ProductDetail', { product: item })}>
-          <Image source={{ uri: item.image }} style={styles.image} />
-          <Text style={styles.title}>{item.title}</Text>
-        </TouchableOpacity>
+        {item.title ? (
+          <TouchableOpacity onPress={() => navigation.navigate('ProductDetail', { product: item })}>
+            <Image source={{ uri: item.image }} style={styles.image} />
+            <Text style={styles.title}>{item.title}</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { user: item })}>
+            <Image source={{ uri: item.avatarUrl }} style={styles.image} />
+            <Text style={styles.title}>{item.name}</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           onPress={() => (isFavorite ? removeFromFavorites(item.id) : addToFavorites(item))}
           style={styles.favoriteButton}
@@ -51,10 +95,16 @@ const HomeScreen = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <TextInput
+        style={styles.searchBox}
+        placeholder="Search for artworks or users..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
       <FlatList
-        data={dummyData}
+        data={filteredData}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         numColumns={numColumns}
         columnWrapperStyle={styles.row}
         contentContainerStyle={{ padding: 10 }}
@@ -95,5 +145,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 10,
     right: 10,
+  },
+  searchBox: {
+    height: 40,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 20,
+    marginHorizontal: 15,
+    paddingHorizontal: 10,
+    marginBottom: 15,
   },
 });

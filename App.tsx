@@ -2,28 +2,33 @@ import 'react-native-gesture-handler';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
 import LoginScreen from './screens/LoginScreen';
+import SignUpScreen from './screens/SignUpScreen';
 import ProductDetailScreen from './screens/ProductDetailScreen';
-import BottomTabNavigator from './navigation/BottomTabNavigator';
-import AppNavigator from './navigators/MainTabNavigator';
-import MainTabNavigator from './navigators/MainTabNavigator';
-import { FavoritesProvider } from './contexts/FavoritesContext';
 import FollowersScreen from './screens/FollowersScreen';
 import FollowingScreen from './screens/FollowingScreen';
 import SoldScreen from './screens/SoldScreen';
-import SignUpScreen from './screens/SignUpScreen';
-import HomeScreen from './screens/HomeScreen';
-import SettingsScreen from './screens/SettingsScreen'; // Yeni ekledik
+import SettingsScreen from './screens/SettingsScreen';
+import ProfileScreen from './screens/ProfileScreen';
 
+import MainTabNavigator from './navigators/MainTabNavigator';
+import { FavoritesProvider } from './contexts/FavoritesContext';
+
+// Firebase'i initialize etmek için içeri aktarıyoruz (tek seferlik tetiklenir)
+import './firebase';
+import UserProfileScreen from './UserProfileScreen';
+
+// Parametreler için tipleri tanımlıyoruz
 export type RootStackParamList = {
   Login: undefined;
+  SignUp: undefined;
   Main: undefined;
+  Profile: { userId?: string };
   Followers: undefined;
   Following: undefined;
   Sold: undefined;
-  SignUp: undefined;
-  Home: undefined;
-  Settings: undefined; // Buraya da ekledik
+  Settings: undefined;
   ProductDetail: {
     product: {
       id: string;
@@ -33,6 +38,7 @@ export type RootStackParamList = {
       description?: string;
     };
   };
+  UserProfile: { user: any };  // UserProfile ekranını ve parametrelerini ekliyoruz
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -48,14 +54,19 @@ export default function App() {
             options={{ headerShown: false }}
           />
           <Stack.Screen
+            name="SignUp"
+            component={SignUpScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
             name="Main"
             component={MainTabNavigator}
             options={{ headerShown: false }}
           />
           <Stack.Screen
-            name="ProductDetail"
-            component={ProductDetailScreen}
-            options={{ title: 'Product Detail' }}
+            name="Profile"
+            component={ProfileScreen}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Followers"
@@ -73,19 +84,19 @@ export default function App() {
             options={{ title: 'Sold Products' }}
           />
           <Stack.Screen
-            name="SignUp"
-            component={SignUpScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
             name="Settings"
             component={SettingsScreen}
-            options={{ title: 'Settings' }} // Başlığı "Settings" yapıyoruz
+            options={{ title: 'Settings' }}
+          />
+          <Stack.Screen
+            name="ProductDetail"
+            component={ProductDetailScreen}
+            options={{ title: 'Product Detail' }}
+          />
+          <Stack.Screen
+            name="UserProfile"  // Bu satırı ekliyoruz
+            component={UserProfileScreen}  // Bu ekranı daha sonra oluşturacağız
+            options={{ title: 'User Profile' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

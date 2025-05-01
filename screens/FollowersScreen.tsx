@@ -1,41 +1,76 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 
-const followersData = [
-  { id: '1', name: 'Alice' },
-  { id: '2', name: 'Bob' },
-  { id: '3', name: 'Charlie' },
-  { id: '4', name: 'David' },
-];
+type User = {
+  id: string;
+  name: string;
+};
 
 const FollowersScreen = () => {
+  const [followers, setFollowers] = useState<User[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchFollowersData();
+  }, []);
+
+  const fetchFollowersData = async () => {
+    try {
+      // API'den gelen verinin doğruluğunu test etmek için örnek bir veri kullanıyorum
+      const response = [
+        { id: '1', name: 'John Doe' },
+        { id: '2', name: 'Jane Smith' },
+        { id: '3', name: 'Alice Johnson' },
+      ];
+
+      console.log('Followers Data:', response);  // Gelen veriyi konsola yazdırıyoruz
+
+      // API'den gelen verinin doğru formatta olup olmadığını kontrol edelim
+      if (!Array.isArray(response)) {
+        throw new Error('Followers verisi dizi formatında değil');
+      }
+
+      setFollowers(response);
+      setLoading(false);
+    } catch (err) {
+      console.error('Takipçi verisi alınamadı:', err);
+      setError('Takipçi verisi alınamadı');
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Yükleniyor...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View>
+        <Text>{error}</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Followers</Text>
+    <View>
+      <Text>Takipçi Listesi:</Text>
       <FlatList
-        data={followersData}
-        renderItem={({ item }) => <Text style={styles.item}>{item.name}</Text>}
+        data={followers}
         keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View>
+            <Text>{item.name}</Text>
+          </View>
+        )}
       />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  item: {
-    fontSize: 18,
-    marginVertical: 10,
-  },
-});
 
 export default FollowersScreen;

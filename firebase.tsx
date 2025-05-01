@@ -1,30 +1,40 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore"; // Firestore import edildi
-import firebase from 'firebase/app';
-import 'firebase/auth';
-import 'firebase/firestore';
+// firebase.tsx
+// Firebase konfigürasyonu ve modüler Web SDK kullanımı
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBxqQGr9HYsDNdiv8BNjUwy8NDoD1ZQjEM",
-  authDomain: "loginscreenfirebase-55198.firebaseapp.com",
-  projectId: "loginscreenfirebase-55198",
-  storageBucket: "loginscreenfirebase-55198.appspot.com",
-  messagingSenderId: "63361277261",
-  appId: "1:63361277261:web:1478cb146aaa5147966b04"
+import { initializeApp } from 'firebase/app';
+import { getAuth, Auth } from 'firebase/auth';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  Firestore,
+} from 'firebase/firestore';
+
+// Firebase Console’dan aldığınız ayarlar
+export const firebaseConfig = {
+  apiKey: 'AIzaSyBxqQGr9HYsDNdiv8BNjUwy8NDoD1ZQjEM',
+  authDomain: 'loginscreenfirebase-55198.firebaseapp.com',
+  projectId: 'loginscreenfirebase-55198',
+  storageBucket: 'loginscreenfirebase-55198.appspot.com',
+  messagingSenderId: '63361277261',
+  appId: '1:63361277261:web:1478cb146aaa5147966b04',
 };
 
-// Initialize Firebase
+// Uygulama örneğini hemen oluştur ve initialize et
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with *disabled* offline persistence
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+// Authentication ve Firestore örneklerini oluştur
+export const auth: Auth = getAuth(app);
+export const db: Firestore = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
 });
 
-// Get auth
-const auth = getAuth(app);
+// Varsayılan export: initialize edilmiş Firebase app
+export default app;
 
-export { auth, db, app };
+// named export: initializeFirebase fonksiyonu (mevcut app örneğini döner)
+export function initializeFirebase(): typeof app {
+  return app;
+}
