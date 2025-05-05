@@ -156,6 +156,11 @@ const ProfileScreen = () => {
     navigation.navigate('OtherProfile', { userId });
   };
 
+  // AddArtwork ekranına yönlendirme
+  const goToAddArtwork = () => {
+    navigation.navigate('AddArtwork');
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -198,6 +203,16 @@ const ProfileScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
+      )}
+
+      {/* Yeni Eser Ekle butonu */}
+      {isOwnProfile && (
+        <TouchableOpacity
+          style={styles.addArtworkButton}
+          onPress={goToAddArtwork}
+        >
+          <Text style={styles.addArtworkText}>Yeni Eser Ekle</Text>
+        </TouchableOpacity>
       )}
 
       <TouchableOpacity style={styles.soldBox} onPress={goToSold}>
@@ -313,4 +328,13 @@ const styles = StyleSheet.create({
   },
   modalImageWrapper: { justifyContent: 'center', alignItems: 'center' },
   modalImage: { width: 250, height: 250, borderRadius: 150 },
+  addArtworkButton: {
+    backgroundColor: '#0066cc',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 5,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  addArtworkText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });

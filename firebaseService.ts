@@ -1,42 +1,81 @@
-import { db, auth } from './firebase'; // firebase.tsx dosyanızdaki yapı ile uygun import yapmalısınız
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { db, auth } from './firebase';
+import {
+  doc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  addDoc,
+  collection,
+  serverTimestamp,
+} from 'firebase/firestore';
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from 'firebase/storage';
 
-// Kullanıcıyı takip etme fonksiyonu
+const storage = getStorage(); // storage'ı burada başlat
+
+// 📌 Takip etme
 export const followUser = async (userId: string) => {
-  const currentUser = auth.currentUser; // Şu an giriş yapan kullanıcı
+  const currentUser = auth.currentUser;
   if (currentUser) {
     const currentUserId = currentUser.uid;
 
-    // Takip edilen kullanıcının 'followers' listesine ekleyin
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
-      followers: arrayUnion(currentUserId), // Takipçi ekleniyor
+    await updateDoc(doc(db, 'users', userId), {
+      followers: arrayUnion(currentUserId),
     });
 
-    // Takip eden kullanıcının 'following' listesine ekleyin
-    const currentUserRef = doc(db, 'users', currentUserId);
-    await updateDoc(currentUserRef, {
-      following: arrayUnion(userId), // Takip edilen kişi ekleniyor
+    await updateDoc(doc(db, 'users', currentUserId), {
+      following: arrayUnion(userId),
     });
   }
 };
 
-// Kullanıcıyı takipten çıkarma fonksiyonu
+// 📌 Takipten çıkma
 export const unfollowUser = async (userId: string) => {
   const currentUser = auth.currentUser;
   if (currentUser) {
     const currentUserId = currentUser.uid;
 
-    // Takip edilen kullanıcının 'followers' listesinden çıkarın
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
-      followers: arrayRemove(currentUserId), // Takipçi çıkarılıyor
+    await updateDoc(doc(db, 'users', userId), {
+      followers: arrayRemove(currentUserId),
     });
 
-    // Takip eden kullanıcının 'following' listesinden çıkarın
-    const currentUserRef = doc(db, 'users', currentUserId);
-    await updateDoc(currentUserRef, {
-      following: arrayRemove(userId), // Takip edilen kişi çıkarılıyor
+    await updateDoc(doc(db, 'users', currentUserId), {
+      following: arrayRemove(userId),
     });
   }
+};
+
+// 📌 Görsel yükleme ve URL alma
+export const uploadImageAndGetUrl = async (uri: string): Promise<string> => {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const imageRef = ref(storage, `artworks/${Date.now()}.jpg`);
+  await uploadBytes(imageRef, blob);
+  return await getDownloadURL(imageRef);
+};
+
+// 📌 Yeni artwork kaydetme (Firestore'a)
+export const saveArtwork = async ({
+  ownerId,
+  title,
+  description,
+  imageUrl,
+}: {
+  ownerId: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+}) => {
+  await addDoc(collection(db, 'products'), {
+    ownerId,
+    title,
+    description,
+    imageUrl,
+    isSold: false,
+    createdAt: serverTimestamp(),
+  });
 };

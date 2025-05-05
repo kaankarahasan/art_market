@@ -9,6 +9,7 @@ import {
   persistentMultipleTabManager,
   Firestore,
 } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage'; // Sadece getStorage fonksiyonunu import ediyoruz
 
 // Firebase Console’dan aldığınız ayarlar
 export const firebaseConfig = {
@@ -20,18 +21,18 @@ export const firebaseConfig = {
   appId: '1:63361277261:web:1478cb146aaa5147966b04',
 };
 
-// Uygulama örneğini hemen oluştur ve initialize et
+// Firebase uygulamasını başlatma
 const app = initializeApp(firebaseConfig);
 
-// Authentication ve Firestore örneklerini oluştur
+// Firebase servislerini alıyoruz
 export const auth: Auth = getAuth(app);
 export const db: Firestore = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
   }),
 });
+export const storage = getStorage(app); // Storage servisini export ediyoruz, tipi gerekmiyor
 
-// Varsayılan export: initialize edilmiş Firebase app
 export default app;
 
 // named export: initializeFirebase fonksiyonu (mevcut app örneğini döner)

@@ -19,6 +19,7 @@ import { FavoritesProvider } from './contexts/FavoritesContext';
 // Firebase'i initialize etmek için içeri aktarıyoruz (tek seferlik tetiklenir)
 import './firebase';
 import UserProfileScreen from './UserProfileScreen';
+import AddArtworkScreen from './screens/AddArtworkScreen';
 
 // Parametreler için tipleri tanımlıyoruz
 export type RootStackParamList = {
@@ -30,6 +31,7 @@ export type RootStackParamList = {
   Following: undefined;
   Sold: undefined;
   Settings: undefined;
+  AddArtwork: undefined;
   OtherProfile: { userId: string };
   ProductDetail: {
     product: {
@@ -104,6 +106,11 @@ export default function App() {
             name="OtherProfile"
             component={OtherProfileScreen}
             options={{ title: 'Product Detail' }}
+          />
+          <Stack.Screen
+            name="AddArtwork"
+            component={AddArtworkScreen}
+            options={{ title: 'Add Artwork' }}
           />
         </Stack.Navigator>
       </NavigationContainer>
