@@ -7,7 +7,6 @@ import ProductDetailScreen from '../screens/ProductDetailScreen';
 import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
 import ProfileScreen from '../screens/ProfileScreen';
-import AddProductScreen from '@/screens/AddProductScreen';
 
 
 const Tab = createBottomTabNavigator();
@@ -18,7 +17,6 @@ function HomeStackNavigator() {
     <HomeStack.Navigator>
       <HomeStack.Screen name="Main" component={HomeScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
-      <HomeStack.Screen name="AddProduct" component={AddProductScreen} options={{headerShown: false }} />
     </HomeStack.Navigator>
   );
 }
@@ -57,16 +55,6 @@ export default function MainTabNavigator() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
-        }}
-      />
-      <Tab.Screen
-        name="AddProduct"
-        component={AddProductScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add-circle" color={color} size={size} />
-          ),
-          tabBarLabel: '',
         }}
       />
     </Tab.Navigator>
