@@ -1,6 +1,6 @@
-// firebase.ts
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeAuth } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -8,7 +8,6 @@ import {
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// Firebase config
 const firebaseConfig = {
   apiKey: 'AIzaSyBxqQGr9HYsDNdiv8BNjUwy8NDoD1ZQjEM',
   authDomain: 'loginscreenfirebase-55198.firebaseapp.com',
@@ -18,16 +17,20 @@ const firebaseConfig = {
   appId: '1:63361277261:web:1478cb146aaa5147966b04',
 };
 
-// Initialize Firebase app
 const app = initializeApp(firebaseConfig);
 
-// Export initialized services
-export const auth = getAuth(app);
+// React Native ortamında persistence default AsyncStorage kullanır, opsiyonel.
+// Eğer hata alırsan persistence parametresini kaldırabilirsin.
+export const auth = initializeAuth(app, {
+  persistence: undefined, // veya bu satırı komple kaldır
+});
+
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
   }),
 });
+
 export const storage = getStorage(app);
 
 export default {};
