@@ -127,6 +127,9 @@ const ProfileScreen = () => {
   // Satılan ürünler sayfasına yönlendirme
   const goToSold = () => navigation.navigate('Sold');
 
+  // Ürün ekleme sayfasına yönlendirme
+  const goToAddProduct = () => navigation.navigate('AddProduct');
+
   // Profil fotoğrafı modalını aç/kapat
   const toggleImageModal = () => setImageModalVisible((v) => !v);
 
@@ -202,6 +205,10 @@ const ProfileScreen = () => {
 
       <TouchableOpacity style={styles.soldBox} onPress={goToSold}>
         <Text style={styles.soldText}>Satılanlar: {soldCount}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.AddProductBox} onPress={goToAddProduct}>
+        <Text style={styles.soldText}> Ürün Ekle {soldCount}</Text>
       </TouchableOpacity>
 
       <View style={styles.listContainer}>
@@ -287,6 +294,14 @@ const styles = StyleSheet.create({
   },
   followButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   soldBox: {
+    marginTop: 20,
+    alignSelf: 'center',
+    backgroundColor: '#f2f2f2',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  AddProductBox: {
     marginTop: 20,
     alignSelf: 'center',
     backgroundColor: '#f2f2f2',
