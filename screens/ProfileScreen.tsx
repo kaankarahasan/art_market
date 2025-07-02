@@ -33,14 +33,12 @@ import { RootStackParamList } from '../App';
 
 type ProfileRouteProp = RouteProp<RootStackParamList, 'Profile'>;
 
-// Kullanıcı tipi tanımı
 type UserInfo = {
   uid: string;
   username: string;
 };
 
 const ProfileScreen = () => {
-  // Navigation tipi tanımı yapılıyor (önemli)
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<ProfileRouteProp>();
   const auth = getAuth();
@@ -48,12 +46,12 @@ const ProfileScreen = () => {
   const insets = useSafeAreaInsets();
 
   const currentUser = auth.currentUser;
-  const profileId = route.params?.userId ?? currentUser?.uid;
+  const profileId = route.params?.userId ?? currentUser?.uid ?? '';
 
-  if (!profileId) {
+  if (!profileId || !currentUser) {
     return (
-      <View>
-        <Text>Kullanıcı bulunamadı.</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={{ color: 'red' }}>Kullanıcı bulunamadı veya oturum açılmamış.</Text>
       </View>
     );
   }
@@ -65,16 +63,16 @@ const ProfileScreen = () => {
   const [followers, setFollowers] = useState<UserInfo[]>([]);
   const [following, setFollowing] = useState<UserInfo[]>([]);
   const [soldCount, setSoldCount] = useState(0);
+  const [products, setProducts] = useState<any[]>([]);
 
-  const isOwnProfile = profileId === currentUser?.uid;
+  const isOwnProfile = profileId === currentUser.uid;
 
   useEffect(() => {
-    const ownUid = currentUser!.uid;
-    const ownRef = doc(firestore, 'users', ownUid);
-    const targetRef = doc(firestore, 'users', profileId);
-
     const fetchAll = async () => {
       try {
+        const ownRef = doc(firestore, 'users', currentUser.uid);
+        const targetRef = doc(firestore, 'users', profileId);
+
         const ownSnap = await getDoc(ownRef);
         const ownData = ownSnap.data() || {};
         setUserData(ownData);
@@ -88,7 +86,6 @@ const ProfileScreen = () => {
         const followerIds: string[] = Array.isArray(targetData.followers) ? targetData.followers : [];
         const followingIds: string[] = Array.isArray(targetData.following) ? targetData.following : [];
 
-        // UID listesine göre kullanıcı bilgilerini getirir
         const fetchUserInfos = async (uids: string[]): Promise<UserInfo[]> => {
           const promises = uids.map(async (uid) => {
             const userDoc = await getDoc(doc(firestore, 'users', uid));
@@ -108,9 +105,15 @@ const ProfileScreen = () => {
         setFollowing(followingData);
 
         const productsRef = collection(firestore, 'products');
-        const q = query(productsRef, where('ownerId', '==', profileId), where('isSold', '==', true));
-        const querySnapshot = await getDocs(q);
-        setSoldCount(querySnapshot.size);
+        const soldQuery = query(productsRef, where('ownerId', '==', profileId), where('isSold', '==', true));
+        const soldSnapshot = await getDocs(soldQuery);
+        setSoldCount(soldSnapshot.size);
+
+        const userProductsQuery = query(productsRef, where('ownerId', '==', profileId), where('isSold', '==', false));
+        const productsSnapshot = await getDocs(userProductsQuery);
+        const productList = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setProducts(productList);
+
       } catch (err) {
         console.error('Profil verisi alınırken hata:', err);
       } finally {
@@ -121,19 +124,11 @@ const ProfileScreen = () => {
     fetchAll();
   }, [firestore, currentUser, profileId]);
 
-  // Ayarlar sayfasına yönlendirme
   const goToSettings = () => navigation.navigate('Settings');
-
-  // Satılan ürünler sayfasına yönlendirme
   const goToSold = () => navigation.navigate('Sold');
-
-  // Ürün ekleme sayfasına yönlendirme
   const goToAddProduct = () => navigation.navigate('AddProduct');
-
-  // Profil fotoğrafı modalını aç/kapat
   const toggleImageModal = () => setImageModalVisible((v) => !v);
 
-  // Takip/çık işlemi
   const handleFollow = async () => {
     if (!currentUser) return;
     try {
@@ -154,7 +149,6 @@ const ProfileScreen = () => {
     }
   };
 
-  // Diğer profil sayfasına yönlendirme
   const goToOtherProfile = (userId: string) => {
     navigation.navigate('OtherProfile', { userId });
   };
@@ -207,9 +201,29 @@ const ProfileScreen = () => {
         <Text style={styles.soldText}>Satılanlar: {soldCount}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.AddProductBox} onPress={goToAddProduct}>
-        <Text style={styles.soldText}> Ürün Ekle {soldCount}</Text>
-      </TouchableOpacity>
+      {isOwnProfile && (
+        <TouchableOpacity style={styles.AddProductBox} onPress={goToAddProduct}>
+          <Text style={styles.soldText}> Ürün Ekle </Text>
+        </TouchableOpacity>
+      )}
+
+      <View style={styles.listContainer}>
+        <Text style={styles.listTitle}>Ürünler</Text>
+        {products.length > 0 ? (
+          <FlatList
+            data={products}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.productItem}>
+                <Text style={styles.productTitle}>{item.title}</Text>
+                <Text style={styles.productDesc}>{item.description}</Text>
+              </View>
+            )}
+          />
+        ) : (
+          <Text>Henüz ürün yok.</Text>
+        )}
+      </View>
 
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Takipçiler</Text>
@@ -276,7 +290,6 @@ const ProfileScreen = () => {
 
 export default ProfileScreen;
 
-// --- Styles ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -302,17 +315,27 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   AddProductBox: {
-    marginTop: 20,
+    marginTop: 10,
     alignSelf: 'center',
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#d9f7e7',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
   },
   soldText: { fontSize: 16, fontWeight: 'bold' },
   listContainer: { marginTop: 20, paddingHorizontal: 15 },
-  listTitle: { fontSize: 18, fontWeight: 'bold' },
+  listTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
   listItem: { paddingVertical: 10 },
+  productItem: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    marginBottom: 10,
+    backgroundColor: '#f9f9f9',
+  },
+  productTitle: { fontWeight: 'bold', fontSize: 16 },
+  productDesc: { fontSize: 14, color: '#555' },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
