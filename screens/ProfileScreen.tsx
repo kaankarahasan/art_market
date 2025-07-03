@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   useRoute,
   RouteProp,
   NavigationProp,
+  useFocusEffect,
 } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getAuth } from 'firebase/auth';
@@ -48,14 +49,6 @@ const ProfileScreen = () => {
   const currentUser = auth.currentUser;
   const profileId = route.params?.userId ?? currentUser?.uid ?? '';
 
-  if (!profileId || !currentUser) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={{ color: 'red' }}>Kullanıcı bulunamadı veya oturum açılmamış.</Text>
-      </View>
-    );
-  }
-
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isImageModalVisible, setImageModalVisible] = useState(false);
@@ -65,64 +58,69 @@ const ProfileScreen = () => {
   const [soldCount, setSoldCount] = useState(0);
   const [products, setProducts] = useState<any[]>([]);
 
-  const isOwnProfile = profileId === currentUser.uid;
+  const isOwnProfile = profileId === currentUser?.uid;
 
-  useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        const ownRef = doc(firestore, 'users', currentUser.uid);
-        const targetRef = doc(firestore, 'users', profileId);
+  const fetchProfileData = async () => {
+    if (!currentUser) return;
+    try {
+      setLoading(true);
+      const ownRef = doc(firestore, 'users', currentUser.uid);
+      const targetRef = doc(firestore, 'users', profileId);
 
-        const ownSnap = await getDoc(ownRef);
-        const ownData = ownSnap.data() || {};
-        setUserData(ownData);
+      const ownSnap = await getDoc(ownRef);
+      const ownData = ownSnap.data() || {};
+      setUserData(ownData);
 
-        const ownFollowing = Array.isArray(ownData.following) ? ownData.following : [];
-        setIsFollowing(ownFollowing.includes(profileId));
+      const ownFollowing = Array.isArray(ownData.following) ? ownData.following : [];
+      setIsFollowing(ownFollowing.includes(profileId));
 
-        const targetSnap = await getDoc(targetRef);
-        const targetData = targetSnap.data() || {};
+      const targetSnap = await getDoc(targetRef);
+      const targetData = targetSnap.data() || {};
 
-        const followerIds: string[] = Array.isArray(targetData.followers) ? targetData.followers : [];
-        const followingIds: string[] = Array.isArray(targetData.following) ? targetData.following : [];
+      const followerIds: string[] = Array.isArray(targetData.followers) ? targetData.followers : [];
+      const followingIds: string[] = Array.isArray(targetData.following) ? targetData.following : [];
 
-        const fetchUserInfos = async (uids: string[]): Promise<UserInfo[]> => {
-          const promises = uids.map(async (uid) => {
-            const userDoc = await getDoc(doc(firestore, 'users', uid));
-            const data = userDoc.data();
-            return {
-              uid,
-              username: data?.username || 'Bilinmeyen',
-            };
-          });
-          return Promise.all(promises);
-        };
+      const fetchUserInfos = async (uids: string[]): Promise<UserInfo[]> => {
+        const promises = uids.map(async (uid) => {
+          const userDoc = await getDoc(doc(firestore, 'users', uid));
+          const data = userDoc.data();
+          return {
+            uid,
+            username: data?.username || 'Bilinmeyen',
+          };
+        });
+        return Promise.all(promises);
+      };
 
-        const followersData = await fetchUserInfos(followerIds);
-        const followingData = await fetchUserInfos(followingIds);
+      const followersData = await fetchUserInfos(followerIds);
+      const followingData = await fetchUserInfos(followingIds);
 
-        setFollowers(followersData);
-        setFollowing(followingData);
+      setFollowers(followersData);
+      setFollowing(followingData);
 
-        const productsRef = collection(firestore, 'products');
-        const soldQuery = query(productsRef, where('ownerId', '==', profileId), where('isSold', '==', true));
-        const soldSnapshot = await getDocs(soldQuery);
-        setSoldCount(soldSnapshot.size);
+      const productsRef = collection(firestore, 'products');
 
-        const userProductsQuery = query(productsRef, where('ownerId', '==', profileId), where('isSold', '==', false));
-        const productsSnapshot = await getDocs(userProductsQuery);
-        const productList = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setProducts(productList);
+      const soldQuery = query(productsRef, where('ownerId', '==', profileId), where('isSold', '==', true));
+      const soldSnapshot = await getDocs(soldQuery);
+      setSoldCount(soldSnapshot.size);
 
-      } catch (err) {
-        console.error('Profil verisi alınırken hata:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const unsoldQuery = query(productsRef, where('ownerId', '==', profileId), where('isSold', '==', false));
+      const productsSnapshot = await getDocs(unsoldQuery);
+      const productList = productsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setProducts(productList);
 
-    fetchAll();
-  }, [firestore, currentUser, profileId]);
+    } catch (err) {
+      console.error('Profil verisi alınırken hata:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfileData();
+    }, [profileId])
+  );
 
   const goToSettings = () => navigation.navigate('Settings');
   const goToSold = () => navigation.navigate('Sold');
@@ -163,11 +161,9 @@ const ProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Ayarlar ve Profil */}
       {isOwnProfile && (
-        <TouchableOpacity
-          style={[styles.settingsIcon, { top: insets.top + 10 }]}
-          onPress={goToSettings}
-        >
+        <TouchableOpacity style={[styles.settingsIcon, { top: insets.top + 10 }]} onPress={goToSettings}>
           <Icon name="settings-outline" size={28} color="#000" />
         </TouchableOpacity>
       )}
@@ -187,6 +183,7 @@ const ProfileScreen = () => {
         <Text style={styles.fullName}>{userData?.fullName || 'Ad Soyad'}</Text>
       </View>
 
+      {/* Takip Et butonu */}
       {!isOwnProfile && (
         <View style={styles.followButtonContainer}>
           <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
@@ -197,16 +194,18 @@ const ProfileScreen = () => {
         </View>
       )}
 
+      {/* Satılanlar ve Ürün Ekle */}
       <TouchableOpacity style={styles.soldBox} onPress={goToSold}>
         <Text style={styles.soldText}>Satılanlar: {soldCount}</Text>
       </TouchableOpacity>
 
       {isOwnProfile && (
         <TouchableOpacity style={styles.AddProductBox} onPress={goToAddProduct}>
-          <Text style={styles.soldText}> Ürün Ekle </Text>
+          <Text style={styles.soldText}>Ürün Ekle</Text>
         </TouchableOpacity>
       )}
 
+      {/* Ürün Listesi */}
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Ürünler</Text>
         {products.length > 0 ? (
@@ -225,40 +224,36 @@ const ProfileScreen = () => {
         )}
       </View>
 
+      {/* Takipçiler ve Takip Edilenler */}
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Takipçiler</Text>
-        {followers.length > 0 ? (
-          <FlatList
-            data={followers}
-            keyExtractor={(item) => item.uid}
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => goToOtherProfile(item.uid)} style={styles.listItem}>
-                <Text>@{item.username}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        ) : (
-          <Text>Henüz takipçi yok.</Text>
-        )}
+        <FlatList
+          data={followers}
+          keyExtractor={(item) => item.uid}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => goToOtherProfile(item.uid)} style={styles.listItem}>
+              <Text>@{item.username}</Text>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={<Text>Henüz takipçi yok.</Text>}
+        />
       </View>
 
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Takip Edilenler</Text>
-        {following.length > 0 ? (
-          <FlatList
-            data={following}
-            keyExtractor={(item) => item.uid}
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => goToOtherProfile(item.uid)} style={styles.listItem}>
-                <Text>@{item.username}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        ) : (
-          <Text>Henüz kimseyi takip etmiyorsunuz.</Text>
-        )}
+        <FlatList
+          data={following}
+          keyExtractor={(item) => item.uid}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => goToOtherProfile(item.uid)} style={styles.listItem}>
+              <Text>@{item.username}</Text>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={<Text>Henüz kimseyi takip etmiyorsunuz.</Text>}
+        />
       </View>
 
+      {/* Profil Fotoğrafı Modalı */}
       <Modal
         visible={isImageModalVisible}
         transparent

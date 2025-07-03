@@ -1,36 +1,50 @@
-// --- AddProductScreen.tsx ---
 import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, Alert } from 'react-native';
-import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import {
+  View,
+  TextInput,
+  Button,
+  StyleSheet,
+  Text,
+  Alert,
+} from 'react-native';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 
 const AddProductScreen = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const auth = getAuth();
-  const db = getFirestore();
   const navigation = useNavigation();
 
   const handleAddProduct = async () => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) return;
+    if (!title.trim() || !description.trim()) {
+      Alert.alert('Uyarı', 'Lütfen tüm alanları doldurun.');
+      return;
+    }
 
     try {
-      const newProduct = {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        Alert.alert('Hata', 'Kullanıcı oturumu bulunamadı.');
+        return;
+      }
+
+      await addDoc(collection(db, 'products'), {
         title,
         description,
-        ownerId: currentUser.uid,
-        createdAt: Timestamp.now(),
+        ownerId: userId,
         isSold: false,
-      };
+        createdAt: serverTimestamp(),
+      });
 
-      await addDoc(collection(db, 'products'), newProduct);
-      Alert.alert('Başarılı', 'Ürün eklendi');
-      navigation.goBack();
+      Alert.alert('Başarılı', 'Ürün başarıyla eklendi.');
+      setTitle('');
+      setDescription('');
+
+      navigation.goBack(); // Bu yeterli, çünkü ProfileScreen useFocusEffect ile yenileniyor.
     } catch (error) {
-      console.error('Ürün eklenemedi:', error);
-      Alert.alert('Hata', 'Ürün eklenirken bir hata oluştu');
+      console.error('Ürün eklenirken hata:', error);
+      Alert.alert('Hata', 'Ürün eklenirken bir sorun oluştu.');
     }
   };
 
@@ -43,6 +57,7 @@ const AddProductScreen = () => {
         value={title}
         onChangeText={setTitle}
       />
+
       <Text style={styles.label}>Açıklama</Text>
       <TextInput
         style={[styles.input, { height: 100 }]}
@@ -51,6 +66,7 @@ const AddProductScreen = () => {
         value={description}
         onChangeText={setDescription}
       />
+
       <Button title="Kaydet" onPress={handleAddProduct} />
     </View>
   );
@@ -59,7 +75,10 @@ const AddProductScreen = () => {
 export default AddProductScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: {
+    flex: 1,
+    padding: 20,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',

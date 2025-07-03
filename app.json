@@ -18,13 +18,15 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
        }
-      }
+      },
+       "bundleIdentifier": "com.kaankarahasan.FireBase"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.kaankarahasan.FireBase"
     },
     "web": {
       "favicon": "./assets/favicon.png"
