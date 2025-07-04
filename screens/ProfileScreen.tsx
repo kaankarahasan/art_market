@@ -27,13 +27,15 @@ import {
   query,
   where,
   getDocs,
+  onSnapshot,
 } from 'firebase/firestore';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { followUser, unfollowUser } from '../firebaseService';
 import { RootStackParamList } from '../App';
+import { deleteProduct } from '../utils/deleteProduct';
 
+// types
 type ProfileRouteProp = RouteProp<RootStackParamList, 'Profile'>;
-
 type UserInfo = {
   uid: string;
   username: string;
@@ -97,17 +99,7 @@ const ProfileScreen = () => {
 
       setFollowers(followersData);
       setFollowing(followingData);
-
-      const productsRef = collection(firestore, 'products');
-
-      const soldQuery = query(productsRef, where('ownerId', '==', profileId), where('isSold', '==', true));
-      const soldSnapshot = await getDocs(soldQuery);
-      setSoldCount(soldSnapshot.size);
-
-      const unsoldQuery = query(productsRef, where('ownerId', '==', profileId), where('isSold', '==', false));
-      const productsSnapshot = await getDocs(unsoldQuery);
-      const productList = productsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setProducts(productList);
+      setSoldCount(await getSoldCount());
 
     } catch (err) {
       console.error('Profil verisi alınırken hata:', err);
@@ -116,9 +108,33 @@ const ProfileScreen = () => {
     }
   };
 
+  const fetchProducts = () => {
+    const q = query(
+      collection(firestore, 'products'),
+      where('ownerId', '==', profileId),
+      where('isSold', '==', false)
+    );
+    return onSnapshot(q, snapshot => {
+      const productList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProducts(productList);
+    });
+  };
+
+  const getSoldCount = async () => {
+    const soldQuery = query(
+      collection(firestore, 'products'),
+      where('ownerId', '==', profileId),
+      where('isSold', '==', true)
+    );
+    const soldSnapshot = await getDocs(soldQuery);
+    return soldSnapshot.size;
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchProfileData();
+      const unsubscribe = fetchProducts();
+      return () => unsubscribe();
     }, [profileId])
   );
 
@@ -218,7 +234,13 @@ const ProfileScreen = () => {
                   <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
                 ) : null}
                 <Text style={styles.productTitle}>{item.title}</Text>
-                <Text style={styles.productDesc}>{item.description}</Text>
+                <Text style={styles.productDesc}>{item.description}</Text><TouchableOpacity
+                onPress={() =>
+                  deleteProduct(item.id, item.imageUrl || null, item.isSold, fetchProducts)
+                }
+              >
+                <Text style={{ color: 'red', marginTop: 5 }}>Sil</Text>
+              </TouchableOpacity>
               </View>
             )}
           />
