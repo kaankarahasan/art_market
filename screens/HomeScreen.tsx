@@ -8,106 +8,129 @@ import {
   Image,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';  // Doğru import işlemi
+import { RootStackParamList } from '../App';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
 const numColumns = 2;
 const itemSize = Dimensions.get('window').width / numColumns - 20;
 
 const HomeScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [users, setUsers] = useState<any[]>([]);
-  const [artworks, setArtworks] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();  // Burada da doğru navigation tipi kullanılıyor
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    const fetchFirestoreData = async () => {
+    const fetchRandomProducts = async () => {
       try {
-        const userSnapshot = await getDocs(collection(db, 'users'));
-        const userList = userSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setUsers(userList);
+        setLoading(true);
+        const productsRef = collection(db, 'products');
+        const q = query(productsRef, where('isSold', '==', false), limit(50));
+        const snapshot = await getDocs(q);
 
-        const artworkSnapshot = await getDocs(collection(db, 'artworks'));
-        const artworkList = artworkSnapshot.docs.map((doc) => ({
+        let productsArray = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setArtworks(artworkList);
+
+        // Shuffle products
+        for (let i = productsArray.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [productsArray[i], productsArray[j]] = [productsArray[j], productsArray[i]];
+        }
+
+        setProducts(productsArray);
       } catch (error) {
-        console.error('Firestore veri çekme hatası:', error);
+        console.error('Ürünler alınırken hata:', error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchFirestoreData();
+    fetchRandomProducts();
   }, []);
 
-  const filteredData = [
-    ...artworks.filter(
-      (item) =>
-        item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.artistName?.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-    ...users.filter(
-      (user) =>
-        user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-  ];
+  // Arama filtreleme: ürün başlığı ve açıklamasında arama yap
+  const filteredProducts = products.filter(product =>
+    product.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const renderItem = ({ item }: { item: any }) => {
-    const isFavorite = favorites.some((fav) => fav.id === item.id);
+    const isFavorite = favorites.some(fav => fav.id === item.id);
 
     return (
       <View style={styles.card}>
-        {item.title ? (
-          <TouchableOpacity onPress={() => navigation.navigate('ProductDetail', { product: item })}>
-            <Image source={{ uri: item.image }} style={styles.image} />
-            <Text style={styles.title}>{item.title}</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { user: item })}>
-            <Image source={{ uri: item.avatarUrl }} style={styles.image} />
-            <Text style={styles.title}>{item.name}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ProductDetail', { product: item })}
+          activeOpacity={0.7}
+        >
+          {item.imageUrl ? (
+            <Image source={{ uri: item.imageUrl }} style={styles.image} />
+          ) : (
+            <View style={[styles.image, { justifyContent: 'center', alignItems: 'center' }]}>
+              <Text>Resim yok</Text>
+            </View>
+          )}
+          <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+          <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           onPress={() => (isFavorite ? removeFromFavorites(item.id) : addToFavorites(item))}
           style={styles.favoriteButton}
         >
-          <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color="red" />
+          <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color="red" />
         </TouchableOpacity>
       </View>
     );
   };
 
+  if (loading) {
+    return (
+      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color="#666" />
+      </View>
+    );
+  }
+
+  if (filteredProducts.length === 0) {
+    return (
+      <View style={[styles.emptyContainer, { paddingTop: insets.top }]}>
+        <Text>Aradığınız ürün bulunamadı.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <TextInput
         style={styles.searchBox}
-        placeholder="Search for artworks or users..."
+        placeholder="Ürünlerde ara..."
         value={searchQuery}
         onChangeText={setSearchQuery}
+        clearButtonMode="while-editing"
       />
       <FlatList
-        data={filteredData}
+        data={filteredProducts}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={item => item.id.toString()}
         numColumns={numColumns}
         columnWrapperStyle={styles.row}
-        contentContainerStyle={{ padding: 10 }}
+        contentContainerStyle={{ padding: 10, paddingBottom: 30 }}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
@@ -130,16 +153,24 @@ const styles = StyleSheet.create({
     width: itemSize,
     alignItems: 'center',
     padding: 10,
+    position: 'relative',
   },
   image: {
     width: itemSize - 20,
     height: itemSize - 20,
     borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 8,
+    backgroundColor: '#ddd',
   },
   title: {
     fontSize: 14,
+    fontWeight: '600',
     color: '#333',
+  },
+  desc: {
+    fontSize: 12,
+    color: '#555',
+    marginTop: 2,
   },
   favoriteButton: {
     position: 'absolute',
@@ -152,7 +183,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     marginHorizontal: 15,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     marginBottom: 15,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
