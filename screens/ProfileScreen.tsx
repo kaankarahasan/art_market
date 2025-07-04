@@ -33,6 +33,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { followUser, unfollowUser } from '../firebaseService';
 import { RootStackParamList } from '../App';
 import { deleteProduct } from '../utils/deleteProduct';
+import { updateProduct } from '../utils/updateProduct';
+import { TextInput, Button } from 'react-native';
 
 // types
 type ProfileRouteProp = RouteProp<RootStackParamList, 'Profile'>;
@@ -47,6 +49,11 @@ const ProfileScreen = () => {
   const auth = getAuth();
   const firestore = getFirestore();
   const insets = useSafeAreaInsets();
+
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
 
   const currentUser = auth.currentUser;
   const profileId = route.params?.userId ?? currentUser?.uid ?? '';
@@ -247,6 +254,17 @@ const ProfileScreen = () => {
                   <Text style={{ color: 'red', marginTop: 5 }}>Sil</Text>
                 </TouchableOpacity>
               )}
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedProduct(item);
+                  setNewTitle(item.title);
+                  setNewDescription(item.description);
+                  setUpdateModalVisible(true);
+                }}
+              >
+                <Text style={{ color: 'blue', marginTop: 5 }}>Güncelle</Text>
+              </TouchableOpacity>
+
             </View>
           )}
         />
@@ -311,6 +329,45 @@ const ProfileScreen = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {/* Güncelleme modalı */}
+    <Modal visible={updateModalVisible} transparent animationType="slide">
+      <TouchableWithoutFeedback onPress={() => setUpdateModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.modalContent}>
+              <Text style={styles.label}>Başlık</Text>
+              <TextInput
+                style={styles.input}
+                value={newTitle}
+                onChangeText={setNewTitle}
+                placeholder="Yeni başlık"
+              />
+              <Text style={styles.label}>Açıklama</Text>
+              <TextInput
+                style={[styles.input, { height: 80 }]}
+                value={newDescription}
+                onChangeText={setNewDescription}
+                placeholder="Yeni açıklama"
+                multiline
+              />
+              <Button
+                title="Kaydet"
+                onPress={async () => {
+                  if (selectedProduct) {
+                    await updateProduct(selectedProduct.id, {
+                      title: newTitle,
+                      description: newDescription,
+                    });
+                    setUpdateModalVisible(false);
+                  }
+                }}
+              />
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
     </SafeAreaView>
   );
 };
@@ -389,4 +446,25 @@ const styles = StyleSheet.create({
   },
   modalImageWrapper: { justifyContent: 'center', alignItems: 'center' },
   modalImage: { width: 250, height: 250, borderRadius: 150 },
+
+  // ✅ Yeni eklenen güncelleme modalı stilleri:
+  modalContent: {
+    width: '85%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+  },
+  input: {
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  label: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+    fontSize: 14,
+  },
 });
