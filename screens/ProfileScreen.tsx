@@ -214,6 +214,9 @@ const ProfileScreen = () => {
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <View style={styles.productItem}>
+                {item.imageUrl ? (
+                  <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
+                ) : null}
                 <Text style={styles.productTitle}>{item.title}</Text>
                 <Text style={styles.productDesc}>{item.description}</Text>
               </View>
@@ -322,15 +325,26 @@ const styles = StyleSheet.create({
   listTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
   listItem: { paddingVertical: 10 },
   productItem: {
+    marginBottom: 15,
     padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 5,
-    marginBottom: 10,
     backgroundColor: '#f9f9f9',
   },
-  productTitle: { fontWeight: 'bold', fontSize: 16 },
-  productDesc: { fontSize: 14, color: '#555' },
+  productTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  productDesc: {
+    fontSize: 14,
+    color: '#555',
+  },
+  productImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',

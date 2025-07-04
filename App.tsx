@@ -1,5 +1,8 @@
 import 'react-native-gesture-handler';
 import React from 'react';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
+import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 

@@ -9,6 +9,7 @@ import {
   persistentMultipleTabManager,
   Firestore,
 } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // Firebase Console’dan aldığınız ayarlar
 export const firebaseConfig = {
@@ -33,6 +34,8 @@ export const db: Firestore = initializeFirestore(app, {
 
 // Varsayılan export: initialize edilmiş Firebase app
 export default app;
+
+export const storage = getStorage(app);
 
 // named export: initializeFirebase fonksiyonu (mevcut app örneğini döner)
 export function initializeFirebase(): typeof app {
