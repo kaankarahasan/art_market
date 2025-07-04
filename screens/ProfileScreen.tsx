@@ -228,22 +228,29 @@ const ProfileScreen = () => {
           <FlatList
             data={products}
             keyExtractor={(item) => item.id}
+            contentContainerStyle={{ padding: 16 }}
             renderItem={({ item }) => (
               <View style={styles.productItem}>
                 {item.imageUrl ? (
                   <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
-                ) : null}
-                <Text style={styles.productTitle}>{item.title}</Text>
-                <Text style={styles.productDesc}>{item.description}</Text><TouchableOpacity
-                onPress={() =>
-                  deleteProduct(item.id, item.imageUrl || null, item.isSold, fetchProducts)
-                }
-              >
-                <Text style={{ color: 'red', marginTop: 5 }}>Sil</Text>
-              </TouchableOpacity>
-              </View>
-            )}
-          />
+              ) : null}
+
+              <Text style={styles.productTitle}>{item.title}</Text>
+              <Text style={styles.productDesc}>{item.description}</Text>
+
+              {isOwnProfile && (
+                <TouchableOpacity
+                  onPress={() =>
+                    deleteProduct(item.id, item.imageUrl || null, item.isSold)
+                  }
+                >
+                  <Text style={{ color: 'red', marginTop: 5 }}>Sil</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        />
+
         ) : (
           <Text>Henüz ürün yok.</Text>
         )}
