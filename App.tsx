@@ -23,6 +23,8 @@ import { FavoritesProvider } from './contexts/FavoritesContext';
 // Firebase'i initialize etmek için içeri aktarıyoruz (tek seferlik tetiklenir)
 import './firebase';
 import UserProfileScreen from './UserProfileScreen';
+import UpdateProductScreen from './screens/UpdateProductScreen';
+import { Product } from './types';
 
 // Parametreler için tipleri tanımlıyoruz
 export type RootStackParamList = {
@@ -35,16 +37,9 @@ export type RootStackParamList = {
   Sold: undefined;
   Settings: undefined;
   AddProduct: undefined;
+  UpdateProduct: { product: Product };
   OtherProfile: { userId: string };
-  ProductDetail: {
-    product: {
-      id: string;
-      title: string;
-      image: string;
-      seller?: string;
-      description?: string;
-    };
-  };
+  ProductDetail: { product: Product };
   UserProfile: { user: any };  // UserProfile ekranını ve parametrelerini ekliyoruz
 };
 
@@ -114,6 +109,11 @@ export default function App() {
             name="AddProduct"
             component={AddProductScreen}
             options={{ title: 'Add Product' }}
+          />
+          <Stack.Screen
+            name="UpdateProduct"
+            component={UpdateProductScreen}
+            options={{ title: 'Update Product' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

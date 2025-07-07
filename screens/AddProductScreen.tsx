@@ -10,8 +10,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { MediaType } from 'expo-image-picker';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -22,21 +21,19 @@ const AddProductScreen = () => {
   const [description, setDescription] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [price, setPrice] = useState('');
+  const [category, setCategory] = useState('');
 
   const navigation = useNavigation();
 
   const pickImage = async () => {
-    console.log("ImagePicker keys:", Object.keys(ImagePicker));
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Hata', 'Galeriden resim seçmek için izin gerekli.');
       return;
     }
 
-    console.log("ImagePicker keys:", Object.keys(ImagePicker));
-
     const result = await ImagePicker.launchImageLibraryAsync({
-      // MediaType enum'u desteklenmiyorsa eski şekilde kullanılır
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.7,
@@ -48,35 +45,25 @@ const AddProductScreen = () => {
   };
 
   const uploadImageAsync = async (uri: string): Promise<string> => {
-  setUploading(true);
-  try {
-    const response = await fetch(uri);
-    const blob = await response.blob();
+    setUploading(true);
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const imageId = uuidv4();
+      const imageRef = ref(storage, `product_images/${imageId}.jpg`);
+      await uploadBytes(imageRef, blob);
+      return await getDownloadURL(imageRef);
+    } catch (error: any) {
+      console.log("🔥 Upload error:", error);
+      Alert.alert('Hata', error.message ?? 'Resim yüklenemedi.');
+      return '';
+    } finally {
+      setUploading(false);
+    }
+  };
 
-    const imageId = uuidv4();
-    const imageRef = ref(storage, `product_images/${imageId}.jpg`);
-
-    console.log('Yükleme başlatılıyor:', imageRef.fullPath);
-
-    await uploadBytes(imageRef, blob);
-
-    const downloadURL = await getDownloadURL(imageRef);
-    console.log('Download URL:', downloadURL);
-
-    return downloadURL;
-  } catch (error: any) {
-    console.log("🔥 Upload error object:", error);
-    console.log("🔥 Upload error JSON:", JSON.stringify(error));
-    Alert.alert('Hata', error.message ?? 'Resim yüklenemedi.');
-    return '';
-  } finally {
-    setUploading(false);
-  }
-};
-
-  console.log('Aktif kullanıcı:', auth.currentUser);
   const handleAddProduct = async () => {
-    if (!title.trim() || !description.trim()) {
+    if (!title.trim() || !description.trim() || !price.trim() || !category.trim()) {
       Alert.alert('Uyarı', 'Lütfen tüm alanları doldurun.');
       return;
     }
@@ -88,6 +75,14 @@ const AddProductScreen = () => {
         return;
       }
 
+      // Kullanıcı bilgileri
+      const userDocRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userDocRef);
+      const userData = userSnap.data();
+
+      const username = userData?.username || 'Bilinmeyen';
+      const userProfileImage = userData?.profileImageUrl || '';
+
       let imageUrl = '';
       if (image) {
         imageUrl = await uploadImageAsync(image);
@@ -98,14 +93,21 @@ const AddProductScreen = () => {
         title,
         description,
         ownerId: userId,
+        username,
+        userProfileImage,
+        price: parseFloat(price),
+        category,
         isSold: false,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         imageUrl,
       });
 
       Alert.alert('Başarılı', 'Ürün başarıyla eklendi.');
       setTitle('');
       setDescription('');
+      setPrice('');
+      setCategory('');
       setImage(null);
       navigation.goBack();
     } catch (error) {
@@ -131,6 +133,23 @@ const AddProductScreen = () => {
         multiline
         value={description}
         onChangeText={setDescription}
+      />
+
+      <Text style={styles.label}>Fiyat (₺)</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Fiyat girin"
+        keyboardType="numeric"
+        value={price}
+        onChangeText={setPrice}
+      />
+
+      <Text style={styles.label}>Kategori</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Kategori girin"
+        value={category}
+        onChangeText={setCategory}
       />
 
       <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>

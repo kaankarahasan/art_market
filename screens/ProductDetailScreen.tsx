@@ -1,41 +1,110 @@
-import React, { useLayoutEffect } from 'react';
-import { View, Text, Image, StyleSheet, Button, TouchableOpacity } from 'react-native';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import React, { useLayoutEffect, useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  Button,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+import { NavigationProp, RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { getDoc, doc, Timestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
+import { Product } from '../types';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
 const ProductDetailScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<ProductDetailRouteProp>();
   const { product } = route.params;
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
 
+  const currentUser = auth.currentUser;
+  const [ownerData, setOwnerData] = useState<{ username?: string; email?: string; photoURL?: string } | null>(null);
+  const [loadingOwner, setLoadingOwner] = useState(false);
+
   const isFavorite = favorites.some((fav) => fav.id === product.id);
+  const isOwner = product.ownerId === currentUser?.uid;
 
   useLayoutEffect(() => {
-    navigation.setOptions({
-      tabBarStyle: { display: 'flex' },
-    });
+    navigation.setOptions({ tabBarStyle: { display: 'flex' } });
   }, [navigation]);
+
+  useEffect(() => {
+    const fetchOwnerData = async () => {
+      if (!product.ownerId) return;
+      setLoadingOwner(true);
+      try {
+        const userDoc = await getDoc(doc(db, 'users', product.ownerId));
+        if (userDoc.exists()) setOwnerData(userDoc.data());
+      } catch (error) {
+        console.error('Ürün sahibi bilgisi alınırken hata:', error);
+      } finally {
+        setLoadingOwner(false);
+      }
+    };
+    fetchOwnerData();
+  }, [product.ownerId]);
+
+  const formatDate = (timestamp: Timestamp) => {
+    const date = timestamp.toDate();
+    return date.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
   return (
     <View style={styles.container}>
-      <Image source={{ uri: product.image }} style={styles.image} />
+      <Image source={{ uri: product.imageUrl }} style={styles.image} />
       <TouchableOpacity
         onPress={() => (isFavorite ? removeFromFavorites(product.id) : addToFavorites(product))}
         style={styles.favoriteButton}
       >
         <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color="red" />
       </TouchableOpacity>
+
       <Text style={styles.title}>{product.title}</Text>
-      <Text style={styles.seller}>👤 Seller: {product.seller || "John Doe"}</Text>
+
+      {loadingOwner ? (
+        <ActivityIndicator size="small" color="#666" />
+      ) : ownerData ? (
+        <View style={styles.ownerContainer}>
+          {ownerData.photoURL ? (
+            <Image source={{ uri: ownerData.photoURL }} style={styles.ownerImage} />
+          ) : null}
+          <Text style={styles.ownerName}>👤 Satıcı: {ownerData.username || ownerData.email || 'Bilinmiyor'}</Text>
+        </View>
+      ) : (
+        <Text style={styles.ownerName}>👤 Satıcı bilgisi yok</Text>
+      )}
+
+      <Text style={styles.detail}>📦 Kategori: {product.category || 'Bilinmiyor'}</Text>
+      <Text style={styles.detail}>💰 Fiyat: {product.price ? `${product.price} ₺` : 'Belirtilmemiş'}</Text>
+      {product.createdAt && (
+        <Text style={styles.detail}>📅 Eklenme Tarihi: {formatDate(product.createdAt)}</Text>
+      )}
+
       <Text style={styles.description}>
-        {product.description || "This is a beautiful artwork created with passion and creativity."}
+        {product.description || 'Bu ürün hakkında detaylı bilgi bulunmamaktadır.'}
       </Text>
-      <Button title="← Back to Gallery" onPress={() => navigation.goBack()} />
+
+      {isOwner && (
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => navigation.navigate('UpdateProduct', { product })}
+        >
+          <Text style={styles.editButtonText}>Ürünü Güncelle</Text>
+        </TouchableOpacity>
+      )}
+
+      <Button title="← Galeriye Dön" onPress={() => navigation.goBack()} />
     </View>
   );
 };
@@ -43,18 +112,8 @@ const ProductDetailScreen = () => {
 export default ProductDetailScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
-    position: 'relative',
-  },
-  image: {
-    width: '100%',
-    height: 300,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
+  container: { flex: 1, padding: 20, backgroundColor: '#fff', position: 'relative' },
+  image: { width: '100%', height: 300, borderRadius: 12, marginBottom: 20 },
   favoriteButton: {
     position: 'absolute',
     top: 30,
@@ -63,19 +122,18 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-  seller: {
-    fontSize: 16,
-    color: '#888',
+  title: { fontSize: 22, fontWeight: '600', marginBottom: 10 },
+  description: { fontSize: 16, color: '#333', marginTop: 10, marginBottom: 20 },
+  detail: { fontSize: 15, color: '#555', marginBottom: 5 },
+  ownerContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  ownerImage: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
+  ownerName: { fontSize: 16, color: '#888', marginBottom: 5 },
+  editButton: {
+    backgroundColor: '#0066cc',
+    padding: 10,
+    borderRadius: 6,
     marginBottom: 15,
+    alignItems: 'center',
   },
-  description: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 30,
-  },
+  editButtonText: { color: '#fff', fontWeight: 'bold' },
 });
