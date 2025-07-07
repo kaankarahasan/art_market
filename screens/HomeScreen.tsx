@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 const numColumns = 2;
 const itemSize = Dimensions.get('window').width / numColumns - 20;
@@ -30,6 +32,18 @@ const HomeScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const insets = useSafeAreaInsets();
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchProducts = async () => {
+        const snapshot = await getDocs(collection(db, 'products'));
+        const productList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setProducts(productList);
+      };
+
+      fetchProducts();
+    }, [])
+  );
 
   useEffect(() => {
     const fetchRandomProducts = async () => {
