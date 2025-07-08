@@ -33,6 +33,15 @@ const OtherProfileScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { userId } = route.params;
 
+   const goToFollowers = () => {
+    navigation.navigate('Followers', { userId });
+  };
+
+  // Takip edilenler ekranına git
+  const goToFollowing = () => {
+    navigation.navigate('Following', { userId });
+  };
+
   const currentUser = auth.currentUser;
   const [userData, setUserData] = useState<any>(null);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -55,7 +64,6 @@ const OtherProfileScreen = () => {
       }
       const data = userSnap.data();
       setUserData(data);
-
       // Takipçi ve takip edilenleri detaylı çek
       const followerIds: string[] = Array.isArray(data.followers) ? data.followers : [];
       const followingIds: string[] = Array.isArray(data.following) ? data.following : [];
@@ -94,11 +102,41 @@ const OtherProfileScreen = () => {
     }
   }, [userId, currentUser?.uid]);
 
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
   useEffect(() => {
-  if (userId === currentUser?.uid) {
-    navigation.navigate('Profile' as never);
-  }
+  const fetchUser = async () => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      const docSnap = await getDoc(userRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setUserData(data);
+
+        if (!currentUser?.uid) return;
+        const currentUserRef = doc(db, 'users', currentUser.uid);
+        const currentUserSnap = await getDoc(currentUserRef);
+        const followingList = currentUserSnap.data()?.following || [];
+        setIsFollowing(followingList.includes(userId));
+
+        const followerIds = Array.isArray(data.followers) ? data.followers : [];
+        const followingIds = Array.isArray(data.following) ? data.following : [];
+        setFollowersCount(followerIds.length);
+        setFollowingCount(followingIds.length);
+      }
+
+      // ürünleri çekme kısmı burada
+    } catch (error) {
+      console.error('Kullanıcı profili alınamadı:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchUser();
 }, [userId, currentUser?.uid]);
+
 
   // Ürünleri realtime dinle
   useEffect(() => {
@@ -189,55 +227,21 @@ const OtherProfileScreen = () => {
       <Text style={styles.username}>{userData?.username || 'Kullanıcı'}</Text>
       <Text style={styles.bio}>{userData?.bio || 'Açıklama yok.'}</Text>
 
+      <View style={styles.countBox}>
+        <TouchableOpacity style={styles.countItem} onPress={goToFollowers}>
+          <Text style={styles.countNumber}>{followersCount}</Text>
+          <Text style={styles.countLabel}>Takipçi</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.countItem} onPress={goToFollowing}>
+          <Text style={styles.countNumber}>{followingCount}</Text>
+          <Text style={styles.countLabel}>Takip</Text>
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity onPress={toggleFollow} style={styles.followButton}>
         <Text style={styles.followText}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
       </TouchableOpacity>
-
-      {/* Takipçiler */}
-      <View style={{ marginVertical: 10 }}>
-        <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Takipçiler</Text>
-        {followers.length === 0 ? (
-          <Text>Henüz takipçi yok.</Text>
-        ) : (
-          <FlatList
-            data={followers}
-            keyExtractor={(item) => item.uid}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => navigation.navigate('OtherProfile', { userId: item.uid })}
-                style={{ marginRight: 10, padding: 5, backgroundColor: '#eee', borderRadius: 5 }}
-              >
-                <Text>@{item.username}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        )}
-      </View>
-
-      {/* Takip Edilenler */}
-      <View style={{ marginVertical: 10 }}>
-        <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Takip Edilenler</Text>
-        {following.length === 0 ? (
-          <Text>Henüz kimseyi takip etmiyorsunuz.</Text>
-        ) : (
-          <FlatList
-            data={following}
-            keyExtractor={(item) => item.uid}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => navigation.navigate('OtherProfile', { userId: item.uid })}
-                style={{ marginRight: 10, padding: 5, backgroundColor: '#eee', borderRadius: 5 }}
-              >
-                <Text>@{item.username}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        )}
-      </View>
 
       <Text style={styles.sectionTitle}>Ürünleri</Text>
       {products.length === 0 ? (
@@ -274,6 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0066cc',
     padding: 10,
     borderRadius: 6,
+    marginTop: 15,
     marginBottom: 15,
     alignSelf: 'center',
   },
@@ -291,4 +296,22 @@ const styles = StyleSheet.create({
   },
   productImage: { width: '100%', height: 100 },
   productTitle: { padding: 5, fontSize: 14 },
+
+  countBox: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+    gap: 30,
+  },
+  countItem: {
+    alignItems: 'center',
+  },
+  countNumber: {
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  countLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
 });

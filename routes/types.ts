@@ -18,8 +18,8 @@ export type RootStackParamList = {
   SignUp: undefined;
   Main: undefined;
   Profile: { userId?: string };
-  Followers: undefined;
-  Following: undefined;
+  Followers: { userId: string };
+  Following: { userId: string };
   Sold: undefined;
   Settings: undefined;
   AddProduct: undefined;

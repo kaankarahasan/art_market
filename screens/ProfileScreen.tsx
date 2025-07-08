@@ -164,6 +164,14 @@ const ProfileScreen = () => {
   const goToAddProduct = () => navigation.navigate('AddProduct');
   const toggleImageModal = () => setImageModalVisible((v) => !v);
 
+  const goToFollowers = () => {
+    navigation.navigate('Followers', { userId: profileId });
+  };
+
+  const goToFollowing = () => {
+    navigation.navigate('Following', { userId: profileId });
+  };
+
   // Takip et / takipten çık işlemi
   const handleFollow = async () => {
     if (!currentUser) return;
@@ -215,188 +223,121 @@ const ProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Ayarlar ve Profil */}
-      {isOwnProfile && (
-        <TouchableOpacity style={[styles.settingsIcon, { top: insets.top + 10 }]} onPress={goToSettings}>
-          <Icon name="settings-outline" size={28} color="#000" />
-        </TouchableOpacity>
-      )}
+      <FlatList
+        data={products}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ padding: 16 }}
+        ListHeaderComponent={
+          <>
+            {/* Ayarlar */}
+            {isOwnProfile && (
+              <TouchableOpacity style={[styles.settingsIcon, { top: insets.top + 10 }]} onPress={goToSettings}>
+                <Icon name="settings-outline" size={28} color="#000" />
+              </TouchableOpacity>
+            )}
 
-      <View style={styles.headerSection}>
-        <TouchableOpacity onPress={toggleImageModal}>
-          <Image
-            source={
-              userData?.profilePicture
-                ? { uri: userData.profilePicture }
-                : require('../assets/default-avatar.png')
-            }
-            style={styles.avatar}
-          />
-        </TouchableOpacity>
-        <Text style={styles.username}>@{userData?.username || 'kullaniciadi'}</Text>
-        <Text style={styles.fullName}>{userData?.fullName || 'Ad Soyad'}</Text>
-      </View>
+            {/* Profil */}
+            <View style={styles.headerSection}>
+              <TouchableOpacity onPress={toggleImageModal}>
+                <Image
+                  source={
+                    userData?.profilePicture
+                      ? { uri: userData.profilePicture }
+                      : require('../assets/default-avatar.png')
+                  }
+                  style={styles.avatar}
+                />
+              </TouchableOpacity>
+              <Text style={styles.username}>@{userData?.username || 'kullaniciadi'}</Text>
+              <Text style={styles.fullName}>{userData?.fullName || 'Ad Soyad'}</Text>
+            </View>
 
-      {/* Takip Et butonu */}
-      {!isOwnProfile && (
-        <View style={styles.followButtonContainer}>
-          <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
-            <Text style={styles.followButtonText}>
-              {isFollowing ? 'Takipten Çık' : 'Takip Et'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+            <View style={styles.countBox}>
+              <TouchableOpacity style={styles.countItem} onPress={goToFollowers}>
+                <Text style={styles.countNumber}>{followers.length}</Text>
+                <Text style={styles.countLabel}>Takipçi</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.countItem} onPress={goToFollowing}>
+                <Text style={styles.countNumber}>{following.length}</Text>
+                <Text style={styles.countLabel}>Takip</Text>
+              </TouchableOpacity>
+            </View>
 
-      {/* Satılanlar ve Ürün Ekle */}
-      <TouchableOpacity style={styles.soldBox} onPress={goToSold}>
-        <Text style={styles.soldText}>Satılanlar: {soldCount}</Text>
-      </TouchableOpacity>
-
-      {isOwnProfile && (
-        <TouchableOpacity style={styles.AddProductBox} onPress={goToAddProduct}>
-          <Text style={styles.soldText}>Ürün Ekle</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Ürün Listesi */}
-      <View style={styles.listContainer}>
-        <Text style={styles.listTitle}>Ürünler</Text>
-        {products.length > 0 ? (
-          <FlatList
-            data={products}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 16 }}
-            renderItem={({ item }) => (
-              <View style={styles.productItem}>
-                {item.imageUrl ? (
-                  <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
-                ) : null}
-
-                <Text style={styles.productTitle}>{item.title}</Text>
-                <Text style={styles.productDesc}>{item.description}</Text>
-
-                {isOwnProfile && (
-                  <TouchableOpacity
-                    onPress={() => deleteProduct(item.id, item.imageUrl || null, item.isSold)}
-                  >
-                    <Text style={{ color: 'red', marginTop: 5 }}>Sil</Text>
-                  </TouchableOpacity>
-                )}
-                {isOwnProfile && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSelectedProduct(item);
-                      setNewTitle(item.title);
-                      setNewDescription(item.description);
-                      setUpdateModalVisible(true);
-                    }}
-                  >
-                    <Text style={{ color: 'blue', marginTop: 5 }}>Güncelle</Text>
-                  </TouchableOpacity>
-                )}
+            {/* Takip butonu */}
+            {!isOwnProfile && (
+              <View style={styles.followButtonContainer}>
+                <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
+                  <Text style={styles.followButtonText}>
+                    {isFollowing ? 'Takipten Çık' : 'Takip Et'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
-          />
-        ) : (
-          <Text>Henüz ürün yok.</Text>
-        )}
-      </View>
 
-      {/* Takipçiler ve Takip Edilenler */}
-      <View style={styles.listContainer}>
-        <Text style={styles.listTitle}>Takipçiler</Text>
-        <FlatList
-          data={followers}
-          keyExtractor={(item) => item.uid}
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => goToOtherProfile(item.uid)} style={styles.listItem}>
-              <Text>@{item.username}</Text>
+            {/* Satılanlar ve Ürün Ekle */}
+            <TouchableOpacity style={styles.soldBox} onPress={goToSold}>
+              <Text style={styles.soldText}>Satılanlar: {soldCount}</Text>
             </TouchableOpacity>
-          )}
-          ListEmptyComponent={<Text>Henüz takipçi yok.</Text>}
-        />
-      </View>
 
-      <View style={styles.listContainer}>
-        <Text style={styles.listTitle}>Takip Edilenler</Text>
-        <FlatList
-          data={following}
-          keyExtractor={(item) => item.uid}
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => goToOtherProfile(item.uid)} style={styles.listItem}>
-              <Text>@{item.username}</Text>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={<Text>Henüz kimseyi takip etmiyorsunuz.</Text>}
-        />
-      </View>
+            {isOwnProfile && (
+              <TouchableOpacity style={styles.AddProductBox} onPress={goToAddProduct}>
+                <Text style={styles.soldText}>Ürün Ekle</Text>
+              </TouchableOpacity>
+            )}
 
-      {/* Profil Fotoğrafı Modalı */}
-      <Modal
-        visible={isImageModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={toggleImageModal}
-      >
-        <TouchableWithoutFeedback onPress={toggleImageModal}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <TouchableWithoutFeedback>
-                <View style={styles.modalImageWrapper}>
-                  <Image
-                    source={
-                      userData?.profilePicture
-                        ? { uri: userData.profilePicture }
-                        : require('../assets/default-avatar.png')
-                    }
-                    style={styles.modalImage}
-                  />
-                </View>
-              </TouchableWithoutFeedback>
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+            <Text style={styles.listTitle}>Ürünler</Text>
+          </>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.productItem}>
+            {item.imageUrl && (
+              <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
+            )}
+            <Text style={styles.productTitle}>{item.title}</Text>
+            <Text style={styles.productDesc}>{item.description}</Text>
 
-      {/* Güncelleme modalı */}
-      <Modal visible={updateModalVisible} transparent animationType="slide">
-        <TouchableWithoutFeedback onPress={() => setUpdateModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                <Text style={styles.label}>Başlık</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newTitle}
-                  onChangeText={setNewTitle}
-                  placeholder="Yeni başlık"
-                />
-                <Text style={styles.label}>Açıklama</Text>
-                <TextInput
-                  style={[styles.input, { height: 80 }]}
-                  value={newDescription}
-                  onChangeText={setNewDescription}
-                  placeholder="Yeni açıklama"
-                  multiline
-                />
-                <Button
-                  title="Kaydet"
-                  onPress={async () => {
-                    if (selectedProduct) {
-                      await updateProduct(selectedProduct.id, {
-                        title: newTitle,
-                        description: newDescription,
-                      });
-                      setUpdateModalVisible(false);
-                    }
+            {isOwnProfile && (
+              <>
+                <TouchableOpacity onPress={() => deleteProduct(item.id, item.imageUrl, item.isSold)}>
+                  <Text style={{ color: 'red' }}>Sil</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedProduct(item);
+                    setNewTitle(item.title);
+                    setNewDescription(item.description);
+                    setUpdateModalVisible(true);
                   }}
-                />
-              </View>
-            </TouchableWithoutFeedback>
+                >
+                  <Text style={{ color: 'blue' }}>Güncelle</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        )}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>Henüz ürün yok.</Text>}
+        ListFooterComponent={
+          <>
+            <View style={styles.listContainer}>
+              <Text style={styles.listTitle}>Takipçiler</Text>
+              {followers.length > 0 ? followers.map((item) => (
+                <TouchableOpacity key={item.uid} onPress={() => goToOtherProfile(item.uid)} style={styles.listItem}>
+                  <Text>@{item.username}</Text>
+                </TouchableOpacity>
+              )) : <Text>Henüz takipçi yok.</Text>}
+            </View>
+
+            <View style={styles.listContainer}>
+              <Text style={styles.listTitle}>Takip Edilenler</Text>
+              {following.length > 0 ? following.map((item) => (
+                <TouchableOpacity key={item.uid} onPress={() => goToOtherProfile(item.uid)} style={styles.listItem}>
+                  <Text>@{item.username}</Text>
+                </TouchableOpacity>
+              )) : <Text>Henüz kimseyi takip etmiyorsunuz.</Text>}
+            </View>
+          </>
+        }
+      />
     </SafeAreaView>
   );
 };
@@ -493,5 +434,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
     fontSize: 14,
+  },
+  countBox: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+    gap: 30,
+  },
+  countItem: {
+    alignItems: 'center',
+  },
+  countNumber: {
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  countLabel: {
+    fontSize: 14,
+    color: '#666',
   },
 });

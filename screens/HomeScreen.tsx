@@ -83,10 +83,13 @@ const HomeScreen = () => {
     product.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredUsers = users.filter(user =>
-    user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter((user) => {
+  const query = searchQuery.toLowerCase();
+  const usernameMatch = user.username?.toLowerCase().includes(query);
+  const fullNameMatch = user.fullName?.toLowerCase().includes(query);
+  return usernameMatch || fullNameMatch;
+});
+
 
   const renderItem = ({ item }: { item: any }) => {
     const isFavorite = favorites.some(fav => fav.id === item.id);

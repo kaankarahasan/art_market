@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { RootStackParamList } from '../routes/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { getAuth } from 'firebase/auth';
 
 type User = {
   uid: string;
@@ -12,14 +13,28 @@ type User = {
   email?: string;
 };
 
+type FollowersScreenRouteProp = RouteProp<RootStackParamList, 'Followers'>;
+type FollowersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Followers'>;
+
 const FollowersScreen = () => {
-  const route = useRoute<any>(); // RootStackParamList'ten tiplenebilir
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<FollowersScreenRouteProp>();
+  const navigation = useNavigation<FollowersScreenNavigationProp>();
   const { userId } = route.params;
 
   const [followers, setFollowers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+
+  const handleUserPress = (uid: string) => {
+    if (uid === currentUser?.uid) {
+      navigation.navigate('Profile', {}); // userId opsiyonel
+    } else {
+      navigation.navigate('OtherProfile', { userId: uid });
+    }
+  };
 
   useEffect(() => {
     const fetchFollowersData = async () => {
@@ -84,8 +99,8 @@ const FollowersScreen = () => {
         keyExtractor={(item) => item.uid}
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => navigation.navigate('OtherProfile', { userId: item.uid })}
-            style={styles.item}
+            onPress={() => handleUserPress(item.uid)}
+            style={styles.userCard}
           >
             <Text style={styles.username}>{item.username || item.email}</Text>
           </TouchableOpacity>
@@ -101,7 +116,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
-  item: {
+  userCard: {
     padding: 12,
     backgroundColor: '#f1f1f1',
     borderRadius: 8,
