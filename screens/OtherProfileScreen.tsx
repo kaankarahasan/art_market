@@ -94,6 +94,12 @@ const OtherProfileScreen = () => {
     }
   }, [userId, currentUser?.uid]);
 
+  useEffect(() => {
+  if (userId === currentUser?.uid) {
+    navigation.navigate('Profile' as never);
+  }
+}, [userId, currentUser?.uid]);
+
   // Ürünleri realtime dinle
   useEffect(() => {
     const q = query(collection(db, 'products'), where('ownerId', '==', userId));
@@ -120,6 +126,10 @@ const OtherProfileScreen = () => {
   }
   if (!userId) {
     console.warn('target userId undefined');
+    return;
+  }
+  if (currentUser.uid === userId) {
+    alert('Kendinizi takip edemezsiniz.');
     return;
   }
 

@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
+import { auth } from '../firebase';
 
 const numColumns = 2;
 const itemSize = Dimensions.get('window').width / numColumns - 20;
@@ -117,11 +118,21 @@ const HomeScreen = () => {
     );
   };
 
-  const renderUser = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      onPress={() => navigation.navigate('OtherProfile', { userId: item.id })}
-      style={styles.userCard}
-    >
+  const renderUser = ({ item }: { item: any }) => {
+  const currentUser = auth.currentUser;
+
+  const handlePress = () => {
+    if (!currentUser) return;
+
+    if (item.id === currentUser.uid) {
+      navigation.navigate('Profile' as never);
+    } else {
+      navigation.navigate('OtherProfile', { userId: item.id });
+    }
+  };
+
+  return (
+    <TouchableOpacity onPress={handlePress} style={styles.userCard}>
       <Image
         source={item.profilePicture ? { uri: item.profilePicture } : require('../assets/default-avatar.png')}
         style={styles.userAvatar}
@@ -132,14 +143,7 @@ const HomeScreen = () => {
       </View>
     </TouchableOpacity>
   );
-
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color="#666" />
-      </View>
-    );
-  }
+};
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
