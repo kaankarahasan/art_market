@@ -58,12 +58,10 @@ export default function App() {
           <Stack.Screen
             name="Followers"
             component={FollowersScreen}
-            options={{ title: 'Followers' }}
           />
           <Stack.Screen
             name="Following"
             component={FollowingScreen}
-            options={{ title: 'Following' }}
           />
           <Stack.Screen
             name="Sold"

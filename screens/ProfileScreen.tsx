@@ -9,6 +9,8 @@ import {
   Modal,
   TouchableWithoutFeedback,
   FlatList,
+  TextInput,
+  Button,
 } from 'react-native';
 import {
   useNavigation,
@@ -28,13 +30,14 @@ import {
   where,
   getDocs,
   onSnapshot,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
 } from 'firebase/firestore';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { followUser, unfollowUser } from '../firebaseService';
 import { RootStackParamList } from '../routes/types';
 import { deleteProduct } from '../utils/deleteProduct';
 import { updateProduct } from '../utils/updateProduct';
-import { TextInput, Button } from 'react-native';
 
 // types
 type ProfileRouteProp = RouteProp<RootStackParamList, 'Profile'>;
@@ -69,27 +72,25 @@ const ProfileScreen = () => {
 
   const isOwnProfile = profileId === currentUser?.uid;
 
+  // Kullanıcı bilgisi ve takipçi / takip edilenleri çekme
   const fetchProfileData = async () => {
     if (!currentUser) return;
     try {
       setLoading(true);
-      const ownRef = doc(firestore, 'users', currentUser.uid);
+
+      // Profili gösterilen kullanıcının bilgisi
       const targetRef = doc(firestore, 'users', profileId);
-
-      const ownSnap = await getDoc(ownRef);
-      const ownData = ownSnap.data() || {};
-      setUserData(ownData);
-
-      const ownFollowing = Array.isArray(ownData.following) ? ownData.following : [];
-      setIsFollowing(ownFollowing.includes(profileId));
-
       const targetSnap = await getDoc(targetRef);
       const targetData = targetSnap.data() || {};
+      setUserData(targetData);
 
+      // Profil sahibi kullanıcının takipçileri ve takip ettikleri
       const followerIds: string[] = Array.isArray(targetData.followers) ? targetData.followers : [];
       const followingIds: string[] = Array.isArray(targetData.following) ? targetData.following : [];
 
+      // Takipçi ve takip edilenlerin userInfo'larını çek
       const fetchUserInfos = async (uids: string[]): Promise<UserInfo[]> => {
+        if (uids.length === 0) return [];
         const promises = uids.map(async (uid) => {
           const userDoc = await getDoc(doc(firestore, 'users', uid));
           const data = userDoc.data();
@@ -106,6 +107,18 @@ const ProfileScreen = () => {
 
       setFollowers(followersData);
       setFollowing(followingData);
+
+      // currentUser'un takip durumu
+      if (currentUser.uid !== profileId) {
+        const currentUserRef = doc(firestore, 'users', currentUser.uid);
+        const currentUserSnap = await getDoc(currentUserRef);
+        const currentUserData = currentUserSnap.data() || {};
+        const currentUserFollowing: string[] = Array.isArray(currentUserData.following) ? currentUserData.following : [];
+        setIsFollowing(currentUserFollowing.includes(profileId));
+      } else {
+        setIsFollowing(false);
+      }
+
       setSoldCount(await getSoldCount());
 
     } catch (err) {
@@ -115,14 +128,15 @@ const ProfileScreen = () => {
     }
   };
 
+  // Ürünleri dinamik çek
   const fetchProducts = () => {
     const q = query(
       collection(firestore, 'products'),
       where('ownerId', '==', profileId),
       where('isSold', '==', false)
     );
-    return onSnapshot(q, snapshot => {
-      const productList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return onSnapshot(q, (snapshot) => {
+      const productList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setProducts(productList);
     });
   };
@@ -150,15 +164,32 @@ const ProfileScreen = () => {
   const goToAddProduct = () => navigation.navigate('AddProduct');
   const toggleImageModal = () => setImageModalVisible((v) => !v);
 
+  // Takip et / takipten çık işlemi
   const handleFollow = async () => {
     if (!currentUser) return;
+
+    const currentUserRef = doc(firestore, 'users', currentUser.uid);
+    const profileUserRef = doc(firestore, 'users', profileId);
+
     try {
       if (isFollowing) {
-        await unfollowUser(profileId);
+        // Takipten çık
+        await updateDoc(currentUserRef, {
+          following: arrayRemove(profileId),
+        });
+        await updateDoc(profileUserRef, {
+          followers: arrayRemove(currentUser.uid),
+        });
         setIsFollowing(false);
         setFollowers((prev) => prev.filter((user) => user.uid !== currentUser.uid));
       } else {
-        await followUser(profileId);
+        // Takip et
+        await updateDoc(currentUserRef, {
+          following: arrayUnion(profileId),
+        });
+        await updateDoc(profileUserRef, {
+          followers: arrayUnion(currentUser.uid),
+        });
         setIsFollowing(true);
         setFollowers((prev) => [
           ...prev,
@@ -240,35 +271,33 @@ const ProfileScreen = () => {
               <View style={styles.productItem}>
                 {item.imageUrl ? (
                   <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
-              ) : null}
+                ) : null}
 
-              <Text style={styles.productTitle}>{item.title}</Text>
-              <Text style={styles.productDesc}>{item.description}</Text>
+                <Text style={styles.productTitle}>{item.title}</Text>
+                <Text style={styles.productDesc}>{item.description}</Text>
 
-              {isOwnProfile && (
-                <TouchableOpacity
-                  onPress={() =>
-                    deleteProduct(item.id, item.imageUrl || null, item.isSold)
-                  }
-                >
-                  <Text style={{ color: 'red', marginTop: 5 }}>Sil</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onPress={() => {
-                  setSelectedProduct(item);
-                  setNewTitle(item.title);
-                  setNewDescription(item.description);
-                  setUpdateModalVisible(true);
-                }}
-              >
-                <Text style={{ color: 'blue', marginTop: 5 }}>Güncelle</Text>
-              </TouchableOpacity>
-
-            </View>
-          )}
-        />
-
+                {isOwnProfile && (
+                  <TouchableOpacity
+                    onPress={() => deleteProduct(item.id, item.imageUrl || null, item.isSold)}
+                  >
+                    <Text style={{ color: 'red', marginTop: 5 }}>Sil</Text>
+                  </TouchableOpacity>
+                )}
+                {isOwnProfile && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedProduct(item);
+                      setNewTitle(item.title);
+                      setNewDescription(item.description);
+                      setUpdateModalVisible(true);
+                    }}
+                  >
+                    <Text style={{ color: 'blue', marginTop: 5 }}>Güncelle</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          />
         ) : (
           <Text>Henüz ürün yok.</Text>
         )}
@@ -331,43 +360,43 @@ const ProfileScreen = () => {
       </Modal>
 
       {/* Güncelleme modalı */}
-    <Modal visible={updateModalVisible} transparent animationType="slide">
-      <TouchableWithoutFeedback onPress={() => setUpdateModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback>
-            <View style={styles.modalContent}>
-              <Text style={styles.label}>Başlık</Text>
-              <TextInput
-                style={styles.input}
-                value={newTitle}
-                onChangeText={setNewTitle}
-                placeholder="Yeni başlık"
-              />
-              <Text style={styles.label}>Açıklama</Text>
-              <TextInput
-                style={[styles.input, { height: 80 }]}
-                value={newDescription}
-                onChangeText={setNewDescription}
-                placeholder="Yeni açıklama"
-                multiline
-              />
-              <Button
-                title="Kaydet"
-                onPress={async () => {
-                  if (selectedProduct) {
-                    await updateProduct(selectedProduct.id, {
-                      title: newTitle,
-                      description: newDescription,
-                    });
-                    setUpdateModalVisible(false);
-                  }
-                }}
-              />
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
+      <Modal visible={updateModalVisible} transparent animationType="slide">
+        <TouchableWithoutFeedback onPress={() => setUpdateModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Text style={styles.label}>Başlık</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newTitle}
+                  onChangeText={setNewTitle}
+                  placeholder="Yeni başlık"
+                />
+                <Text style={styles.label}>Açıklama</Text>
+                <TextInput
+                  style={[styles.input, { height: 80 }]}
+                  value={newDescription}
+                  onChangeText={setNewDescription}
+                  placeholder="Yeni açıklama"
+                  multiline
+                />
+                <Button
+                  title="Kaydet"
+                  onPress={async () => {
+                    if (selectedProduct) {
+                      await updateProduct(selectedProduct.id, {
+                        title: newTitle,
+                        description: newDescription,
+                      });
+                      setUpdateModalVisible(false);
+                    }
+                  }}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -446,8 +475,6 @@ const styles = StyleSheet.create({
   },
   modalImageWrapper: { justifyContent: 'center', alignItems: 'center' },
   modalImage: { width: 250, height: 250, borderRadius: 150 },
-
-  // ✅ Yeni eklenen güncelleme modalı stilleri:
   modalContent: {
     width: '85%',
     backgroundColor: 'white',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import {
   collection,
   query,
   where,
-  getDocs,
+  onSnapshot,
   updateDoc,
   arrayUnion,
   arrayRemove,
@@ -26,9 +26,10 @@ import { Product } from '../routes/types';
 
 type OtherProfileRouteProp = RouteProp<RootStackParamList, 'OtherProfile'>;
 
+type UserInfo = { uid: string; username: string };
+
 const OtherProfileScreen = () => {
   const route = useRoute<OtherProfileRouteProp>();
-  // Navigation'a tip veriyoruz:
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { userId } = route.params;
 
@@ -37,51 +38,90 @@ const OtherProfileScreen = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
+  const [followers, setFollowers] = useState<UserInfo[]>([]);
+  const [following, setFollowing] = useState<UserInfo[]>([]);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const userRef = doc(db, 'users', userId);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists()) {
-          setUserData(docSnap.data());
+  const fetchUserData = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
 
-          // Takipte mi kontrolü:
-          if (!currentUser?.uid) return;
-          const currentUserRef = doc(db, 'users', currentUser.uid);
-          const currentUserSnap = await getDoc(currentUserRef);
-          const following = currentUserSnap.data()?.following || [];
-          setIsFollowing(following.includes(userId));
-        }
-
-        // Kullanıcının ürünlerini çekiyoruz, id'yi ilk yazıyoruz:
-        const q = query(collection(db, 'products'), where('ownerId', '==', userId));
-        const snapshot = await getDocs(q);
-        const productList = snapshot.docs.map((doc) => {
-          const data = doc.data() as Product;
-          // Eğer data içinde id varsa, onu sil veya almadan kullan:
-          const { id, ...rest } = data as any; // id'yi ayırıp atmıyoruz
-          return {
-            id: doc.id,  // kesinlikle bu id geçerli olacak
-            ...rest,
-          };
-        });
-
-
-        setProducts(productList);
-      } catch (error) {
-        console.error('Kullanıcı profili alınamadı:', error);
-      } finally {
-        setLoading(false);
+    try {
+      // Kullanıcı bilgisi
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        setUserData(null);
+        return;
       }
-    };
+      const data = userSnap.data();
+      setUserData(data);
 
-    fetchUser();
+      // Takipçi ve takip edilenleri detaylı çek
+      const followerIds: string[] = Array.isArray(data.followers) ? data.followers : [];
+      const followingIds: string[] = Array.isArray(data.following) ? data.following : [];
+
+      const fetchUserInfos = async (uids: string[]): Promise<UserInfo[]> => {
+        if (uids.length === 0) return [];
+        const promises = uids.map(async (uid) => {
+          const docSnap = await getDoc(doc(db, 'users', uid));
+          return { uid, username: docSnap.data()?.username || 'Bilinmeyen' };
+        });
+        return Promise.all(promises);
+      };
+
+      const followersData = await fetchUserInfos(followerIds);
+      const followingData = await fetchUserInfos(followingIds);
+
+      setFollowers(followersData);
+      setFollowing(followingData);
+
+      // currentUser’un takip durumu
+      if (currentUser?.uid) {
+        const currentUserRef = doc(db, 'users', currentUser.uid);
+        const currentUserSnap = await getDoc(currentUserRef);  // burada currentUserSnap tanımlanıyor
+        const currentUserData = currentUserSnap.data();         // buradan data çekiliyor
+        const currentUserFollowing: string[] = Array.isArray(currentUserData?.following)
+          ? currentUserData.following
+          : [];
+        setIsFollowing(currentUserFollowing.includes(userId));
+      } else {
+        setIsFollowing(false);
+      }
+    } catch (err) {
+      console.error('Kullanıcı profili alınamadı:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [userId, currentUser?.uid]);
 
-  // Takip Et / Takipten Çık fonksiyonu
+  // Ürünleri realtime dinle
+  useEffect(() => {
+    const q = query(collection(db, 'products'), where('ownerId', '==', userId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const productList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Product[];
+      setProducts(productList);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
+
+  // Takip et / bırak işlemi
   const toggleFollow = async () => {
-    if (!currentUser?.uid) return;
+  if (!currentUser?.uid) {
+    console.warn('currentUser yok veya uid undefined');
+    return;
+  }
+  if (!userId) {
+    console.warn('target userId undefined');
+    return;
+  }
 
     const currentUserRef = doc(db, 'users', currentUser.uid);
     const targetUserRef = doc(db, 'users', userId);
@@ -102,13 +142,25 @@ const OtherProfileScreen = () => {
           followers: arrayUnion(currentUser.uid),
         });
       }
+      // Takip durumu güncelleme için fetchUserData çağrısı yerine manuel güncelleme:
       setIsFollowing(!isFollowing);
-    } catch (error) {
+
+      // Takipçi listesini de manuel güncelle:
+      setFollowers((prev) => {
+        if (isFollowing) {
+          // Takipten çıkıldı
+          return prev.filter((f) => f.uid !== currentUser.uid);
+        } else {
+          // Takip edildi
+          return [...prev, { uid: currentUser.uid, username: currentUser.displayName || 'Sen' }];
+        }
+      });
+    } catch (error: any) {
       console.error('Takip işlemi hatası:', error);
+      alert('Takip işlemi sırasında hata oluştu: ' + (error.message || JSON.stringify(error)));
     }
   };
 
-  // Ürün detayına gitme fonksiyonu
   const goToProductDetail = (product: Product) => {
     navigation.navigate('ProductDetail', { product });
   };
@@ -128,10 +180,54 @@ const OtherProfileScreen = () => {
       <Text style={styles.bio}>{userData?.bio || 'Açıklama yok.'}</Text>
 
       <TouchableOpacity onPress={toggleFollow} style={styles.followButton}>
-        <Text style={styles.followText}>
-          {isFollowing ? 'Takibi Bırak' : 'Takip Et'}
-        </Text>
+        <Text style={styles.followText}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
       </TouchableOpacity>
+
+      {/* Takipçiler */}
+      <View style={{ marginVertical: 10 }}>
+        <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Takipçiler</Text>
+        {followers.length === 0 ? (
+          <Text>Henüz takipçi yok.</Text>
+        ) : (
+          <FlatList
+            data={followers}
+            keyExtractor={(item) => item.uid}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('OtherProfile', { userId: item.uid })}
+                style={{ marginRight: 10, padding: 5, backgroundColor: '#eee', borderRadius: 5 }}
+              >
+                <Text>@{item.username}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        )}
+      </View>
+
+      {/* Takip Edilenler */}
+      <View style={{ marginVertical: 10 }}>
+        <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Takip Edilenler</Text>
+        {following.length === 0 ? (
+          <Text>Henüz kimseyi takip etmiyorsunuz.</Text>
+        ) : (
+          <FlatList
+            data={following}
+            keyExtractor={(item) => item.uid}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('OtherProfile', { userId: item.uid })}
+                style={{ marginRight: 10, padding: 5, backgroundColor: '#eee', borderRadius: 5 }}
+              >
+                <Text>@{item.username}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        )}
+      </View>
 
       <Text style={styles.sectionTitle}>Ürünleri</Text>
       {products.length === 0 ? (

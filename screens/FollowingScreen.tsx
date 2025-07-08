@@ -1,48 +1,74 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { RootStackParamList } from '../routes/types';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type User = {
-  id: string;
-  name: string;
+  uid: string;
+  username?: string;
+  email?: string;
 };
 
 const FollowingScreen = () => {
+  const route = useRoute<any>(); // RootStackParamList'ten tip alabilirsin
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { userId } = route.params;
+
   const [following, setFollowing] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchFollowingData();
-  }, []);
+    const fetchFollowingData = async () => {
+      try {
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await getDoc(userRef);
 
-  const fetchFollowingData = async () => {
-    try {
-      // API'den gelen verinin doğruluğunu test etmek için örnek bir veri kullanıyorum
-      const response = [
-        { id: '1', name: 'Michael Johnson' },
-        { id: '2', name: 'Alice Brown' },
-        { id: '3', name: 'Steve Adams' },
-      ];
+        if (!userSnap.exists()) {
+          throw new Error('Kullanıcı bulunamadı');
+        }
 
-      console.log('Following Data:', response);  // Gelen veriyi konsola yazdırıyoruz
+        const followingIds: string[] = userSnap.data().following || [];
 
-      // API'den gelen verinin doğru formatta olup olmadığını kontrol edelim
-      if (!Array.isArray(response)) {
-        throw new Error('Following verisi dizi formatında değil');
+        const followingData = await Promise.all(
+          followingIds.map(async (uid) => {
+            const snap = await getDoc(doc(db, 'users', uid));
+            if (snap.exists()) {
+              return {
+                uid,
+                username: snap.data().username,
+                email: snap.data().email,
+              };
+            }
+            return null;
+          })
+        );
+
+        setFollowing(followingData.filter(Boolean) as User[]);
+      } catch (err) {
+        console.error('Takip edilen verisi alınamadı:', err);
+        setError('Takip edilen verisi alınamadı');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setFollowing(response);
-      setLoading(false);
-    } catch (err) {
-      console.error('Takip edilen verisi alınamadı:', err);
-      setError('Takip edilen verisi alınamadı');
-      setLoading(false);
-    }
-  };
+    fetchFollowingData();
+  }, [userId]);
 
   if (loading) {
     return (
-      <View>
+      <View style={styles.center}>
         <ActivityIndicator size="large" color="#0000ff" />
         <Text>Yükleniyor...</Text>
       </View>
@@ -51,22 +77,25 @@ const FollowingScreen = () => {
 
   if (error) {
     return (
-      <View>
+      <View style={styles.center}>
         <Text>{error}</Text>
       </View>
     );
   }
 
   return (
-    <View>
-      <Text>Takip Edilenler Listesi:</Text>
+    <View style={styles.container}>
+      <Text style={styles.header}>Takip Ettiklerin</Text>
       <FlatList
         data={following}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.uid}
         renderItem={({ item }) => (
-          <View>
-            <Text>{item.name}</Text>
-          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('OtherProfile', { userId: item.uid })}
+            style={styles.item}
+          >
+            <Text style={styles.username}>{item.username || item.email}</Text>
+          </TouchableOpacity>
         )}
       />
     </View>
@@ -74,3 +103,16 @@ const FollowingScreen = () => {
 };
 
 export default FollowingScreen;
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
+  item: {
+    padding: 12,
+    backgroundColor: '#f1f1f1',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  username: { fontSize: 16 },
+});
