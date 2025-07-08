@@ -93,20 +93,34 @@ const FollowersScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Takipçiler</Text>
+    <Text style={styles.header}>Takipçiler</Text>
+    {followers.length === 0 ? (
+      <View style={styles.center}>
+        <Text style={{ fontSize: 16, color: '#555', textAlign: 'center' }}>
+          {currentUser?.uid === userId
+            ? 'Henüz takipçin yok.'
+            : 'Bu kullanıcının henüz takipçisi yok.'}
+        </Text>
+      </View>
+    ) : (
       <FlatList
         data={followers}
         keyExtractor={(item) => item.uid}
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => handleUserPress(item.uid)}
+            onPress={() =>
+              item.uid === currentUser?.uid
+                ? navigation.navigate('Profile', {})
+                : navigation.navigate('OtherProfile', { userId: item.uid })
+            }
             style={styles.userCard}
           >
             <Text style={styles.username}>{item.username || item.email}</Text>
           </TouchableOpacity>
         )}
       />
-    </View>
+    )}
+  </View>
   );
 };
 
@@ -123,4 +137,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   username: { fontSize: 16 },
+  emptyText: {
+    marginTop: 30,
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#666',
+  }
 });

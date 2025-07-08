@@ -12,6 +12,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { RootStackParamList } from '../routes/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { getAuth } from 'firebase/auth';
+
 
 type User = {
   uid: string;
@@ -27,6 +29,8 @@ const FollowingScreen = () => {
   const [following, setFollowing] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
 
   useEffect(() => {
     const fetchFollowingData = async () => {
@@ -85,7 +89,16 @@ const FollowingScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Takip Ettiklerin</Text>
+  <Text style={styles.header}>Takip Ettiklerin</Text>
+  {following.length === 0 ? (
+    <View style={styles.center}>
+      <Text style={styles.emptyText}>
+        {userId === currentUser?.uid
+          ? 'Henüz kimseyi takip etmiyorsunuz.'
+          : 'Bu kullanıcı henüz kimseyi takip etmiyor.'}
+      </Text>
+    </View>
+    ) : (
       <FlatList
         data={following}
         keyExtractor={(item) => item.uid}
@@ -97,8 +110,10 @@ const FollowingScreen = () => {
             <Text style={styles.username}>{item.username || item.email}</Text>
           </TouchableOpacity>
         )}
+        showsVerticalScrollIndicator={false}
       />
-    </View>
+    )}
+  </View>
   );
 };
 
@@ -115,4 +130,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   username: { fontSize: 16 },
+  emptyText: {
+    marginTop: 30,
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#666',
+  }
 });

@@ -289,7 +289,10 @@ const ProfileScreen = () => {
           </>
         }
         renderItem={({ item }) => (
-          <View style={styles.productItem}>
+          <TouchableOpacity
+            style={styles.productItem}
+            onPress={() => navigation.navigate('ProductDetail', { product: item })}
+          >
             {item.imageUrl && (
               <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
             )}
@@ -313,30 +316,9 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
               </>
             )}
-          </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>Henüz ürün yok.</Text>}
-        ListFooterComponent={
-          <>
-            <View style={styles.listContainer}>
-              <Text style={styles.listTitle}>Takipçiler</Text>
-              {followers.length > 0 ? followers.map((item) => (
-                <TouchableOpacity key={item.uid} onPress={() => goToOtherProfile(item.uid)} style={styles.listItem}>
-                  <Text>@{item.username}</Text>
-                </TouchableOpacity>
-              )) : <Text>Henüz takipçi yok.</Text>}
-            </View>
-
-            <View style={styles.listContainer}>
-              <Text style={styles.listTitle}>Takip Edilenler</Text>
-              {following.length > 0 ? following.map((item) => (
-                <TouchableOpacity key={item.uid} onPress={() => goToOtherProfile(item.uid)} style={styles.listItem}>
-                  <Text>@{item.username}</Text>
-                </TouchableOpacity>
-              )) : <Text>Henüz kimseyi takip etmiyorsunuz.</Text>}
-            </View>
-          </>
-        }
       />
     </SafeAreaView>
   );
