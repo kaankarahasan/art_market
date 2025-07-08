@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { getDoc, doc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { Product } from '../types';
+import { Product } from '../routes/types';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
@@ -25,7 +25,11 @@ const ProductDetailScreen = () => {
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
 
   const currentUser = auth.currentUser;
-  const [ownerData, setOwnerData] = useState<{ username?: string; email?: string; photoURL?: string } | null>(null);
+  const [ownerData, setOwnerData] = useState<{
+    username?: string;
+    email?: string;
+    profilePicture?: string;
+  } | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
 
   const isFavorite = favorites.some((fav) => fav.id === product.id);
@@ -41,9 +45,18 @@ const ProductDetailScreen = () => {
       setLoadingOwner(true);
       try {
         const userDoc = await getDoc(doc(db, 'users', product.ownerId));
-        if (userDoc.exists()) setOwnerData(userDoc.data());
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setOwnerData({
+            username: data.username,
+            email: data.email,
+            profilePicture: data.profilePicture || '',
+          });
+        } else {
+          console.warn('⚠️ Kullanıcı Firestore’da bulunamadı.');
+        }
       } catch (error) {
-        console.error('Ürün sahibi bilgisi alınırken hata:', error);
+        console.error('🔥 Kullanıcı verisi alınırken hata:', error);
       } finally {
         setLoadingOwner(false);
       }
@@ -60,11 +73,23 @@ const ProductDetailScreen = () => {
     });
   };
 
+  const goToUserProfile = () => {
+    if (!product.ownerId) return;
+    if (isOwner) {
+      navigation.navigate('Profile', { userId: undefined });
+    } else {
+      navigation.navigate('OtherProfile', { userId: product.ownerId });
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Image source={{ uri: product.imageUrl }} style={styles.image} />
+
       <TouchableOpacity
-        onPress={() => (isFavorite ? removeFromFavorites(product.id) : addToFavorites(product))}
+        onPress={() =>
+          isFavorite ? removeFromFavorites(product.id) : addToFavorites(product)
+        }
         style={styles.favoriteButton}
       >
         <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color="red" />
@@ -75,12 +100,14 @@ const ProductDetailScreen = () => {
       {loadingOwner ? (
         <ActivityIndicator size="small" color="#666" />
       ) : ownerData ? (
-        <View style={styles.ownerContainer}>
-          {ownerData.photoURL ? (
-            <Image source={{ uri: ownerData.photoURL }} style={styles.ownerImage} />
-          ) : null}
-          <Text style={styles.ownerName}>👤 Satıcı: {ownerData.username || ownerData.email || 'Bilinmiyor'}</Text>
-        </View>
+        <TouchableOpacity onPress={goToUserProfile}>
+          {ownerData.profilePicture && ownerData.profilePicture.length > 5 && (
+            <Image source={{ uri: ownerData.profilePicture }} style={styles.ownerImage} />
+          )}
+          <Text style={[styles.ownerName, { textDecorationLine: 'underline', color: '#0066cc' }]}>
+            👤 Satıcı: {ownerData.username || ownerData.email || 'Bilinmiyor'}
+          </Text>
+        </TouchableOpacity>
       ) : (
         <Text style={styles.ownerName}>👤 Satıcı bilgisi yok</Text>
       )}

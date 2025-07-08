@@ -1,31 +1,21 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState } from 'react';
+import { Product } from '../routes/types';
 
-type Artwork = {
-  id: string;
-  title: string;
-  image: string;
-};
+const FavoritesContext = createContext<{
+  favorites: Product[];
+  addToFavorites: (product: Product) => void;
+  removeFromFavorites: (productId: string) => void;
+} | null>(null);
 
-type FavoritesContextType = {
-  favorites: Artwork[];
-  addToFavorites: (item: Artwork) => void;
-  removeFromFavorites: (itemId: string) => void;
-};
+export const FavoritesProvider = ({ children }: { children: React.ReactNode }) => {
+  const [favorites, setFavorites] = useState<Product[]>([]);
 
-const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
-
-export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
-  const [favorites, setFavorites] = useState<Artwork[]>([]);
-
-  const addToFavorites = (item: Artwork) => {
-    setFavorites((prev) => {
-      const alreadyExists = prev.some((fav) => fav.id === item.id);
-      return alreadyExists ? prev : [...prev, item];
-    });
+  const addToFavorites = (product: Product) => {
+    setFavorites((prev) => [...prev, product]);
   };
 
-  const removeFromFavorites = (itemId: string) => {
-    setFavorites((prev) => prev.filter((fav) => fav.id !== itemId));
+  const removeFromFavorites = (productId: string) => {
+    setFavorites((prev) => prev.filter((p) => p.id !== productId));
   };
 
   return (
@@ -37,8 +27,6 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
 
 export const useFavorites = () => {
   const context = useContext(FavoritesContext);
-  if (!context) {
-    throw new Error('useFavorites must be used within a FavoritesProvider');
-  }
+  if (!context) throw new Error('useFavorites must be used within a FavoritesProvider');
   return context;
 };

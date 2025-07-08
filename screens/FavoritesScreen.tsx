@@ -3,6 +3,8 @@ import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, Dimensions }
 import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from '../routes/types';
 
 const numColumns = 2;
 const itemSize = Dimensions.get('window').width / numColumns - 20;
@@ -10,10 +12,14 @@ const itemSize = Dimensions.get('window').width / numColumns - 20;
 const FavoritesScreen = () => {
   const { favorites, removeFromFavorites } = useFavorites();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const renderItem = ({ item }: { item: typeof favorites[0] }) => (
-    <View style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.image} />
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => navigation.navigate('ProductDetail', { product: item })}
+    >
+      <Image source={{ uri: item.imageUrl || item.image }} style={styles.image} />
       <Text style={styles.title}>{item.title}</Text>
       <TouchableOpacity
         onPress={() => removeFromFavorites(item.id)}
@@ -21,7 +27,7 @@ const FavoritesScreen = () => {
       >
         <Ionicons name="close-circle" size={20} color="red" />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -57,6 +63,7 @@ const styles = StyleSheet.create({
     width: itemSize,
     alignItems: 'center',
     padding: 10,
+    position: 'relative',
   },
   image: {
     width: itemSize - 20,
@@ -78,6 +85,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
+    zIndex: 1,
   },
 });
 

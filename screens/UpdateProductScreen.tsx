@@ -16,7 +16,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '../firebase';
 import { RootStackParamList } from '../App';
 import { v4 as uuidv4 } from 'uuid';
-import { Product } from '../types';
+import { Product } from '../routes/types';
 
 // Route type
 type UpdateProductRouteProp = RouteProp<RootStackParamList, 'UpdateProduct'>;

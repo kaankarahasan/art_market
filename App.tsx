@@ -16,6 +16,7 @@ import SettingsScreen from './screens/SettingsScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import OtherProfileScreen from './screens/OtherProfileScreen';
 import AddProductScreen from './screens/AddProductScreen';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 
 import MainTabNavigator from './navigators/MainTabNavigator';
 import { FavoritesProvider } from './contexts/FavoritesContext';
@@ -24,26 +25,10 @@ import { FavoritesProvider } from './contexts/FavoritesContext';
 import './firebase';
 import UserProfileScreen from './UserProfileScreen';
 import UpdateProductScreen from './screens/UpdateProductScreen';
-import { Product } from './types';
-
-// Parametreler için tipleri tanımlıyoruz
-export type RootStackParamList = {
-  Login: undefined;
-  SignUp: undefined;
-  Main: undefined;
-  Profile: { userId?: string };
-  Followers: undefined;
-  Following: undefined;
-  Sold: undefined;
-  Settings: undefined;
-  AddProduct: undefined;
-  UpdateProduct: { product: Product };
-  OtherProfile: { userId: string };
-  ProductDetail: { product: Product };
-  UserProfile: { user: any };  // UserProfile ekranını ve parametrelerini ekliyoruz
-};
+import { RootStackParamList } from './routes/types'
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+// const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
 export default function App() {
   return (
