@@ -1,4 +1,4 @@
-import { deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase';
 
@@ -11,8 +11,28 @@ export const deleteProduct = async (
     const productRef = doc(db, 'products', productId);
 
     if (imageUrl) {
-      const imageRef = ref(storage, imageUrl);
-      await deleteObject(imageRef);
+      let imagePath: string | null = imageUrl;
+
+      if (imageUrl.startsWith('https://')) {
+        const decodedUrl = decodeURIComponent(imageUrl);
+        const match = decodedUrl.match(/o\/(product_images%2F.+)\?/);
+        if (match && match[1]) {
+          imagePath = match[1].replace(/%2F/g, '/');
+        } else {
+          imagePath = null;
+        }
+      }
+
+      if (imagePath !== null) {
+        const imageRef = ref(storage, imagePath);
+        await deleteObject(imageRef).catch((error) => {
+          if (error.code === 'storage/object-not-found') {
+            console.warn('Silinecek dosya bulunamadı, zaten silinmiş olabilir.');
+          } else {
+            throw error;
+          }
+        });
+      }
     }
 
     await deleteDoc(productRef);
