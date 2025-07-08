@@ -23,7 +23,7 @@ import { FavoritesProvider } from './contexts/FavoritesContext';
 
 // Firebase'i initialize etmek için içeri aktarıyoruz (tek seferlik tetiklenir)
 import './firebase';
-import UserProfileScreen from './UserProfileScreen';
+import UserProfileScreen from './screens/UserProfileScreen';
 import UpdateProductScreen from './screens/UpdateProductScreen';
 import { RootStackParamList } from './routes/types'
 

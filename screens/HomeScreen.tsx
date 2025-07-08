@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,14 +12,13 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import { RootStackParamList } from '../routes/types';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
 
 const numColumns = 2;
 const itemSize = Dimensions.get('window').width / numColumns - 20;
@@ -27,6 +26,7 @@ const itemSize = Dimensions.get('window').width / numColumns - 20;
 const HomeScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -46,40 +46,45 @@ const HomeScreen = () => {
   );
 
   useEffect(() => {
-    const fetchRandomProducts = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
-        const productsRef = collection(db, 'products');
-        const q = query(productsRef, where('isSold', '==', false), limit(50));
-        const snapshot = await getDocs(q);
 
-        let productsArray = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const productSnap = await getDocs(
+          query(collection(db, 'products'), where('isSold', '==', false), limit(50))
+        );
+        const productList = productSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setProducts(shuffleArray(productList));
 
-        // Shuffle products
-        for (let i = productsArray.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [productsArray[i], productsArray[j]] = [productsArray[j], productsArray[i]];
-        }
-
-        setProducts(productsArray);
+        const userSnap = await getDocs(collection(db, 'users'));
+        const userList = userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setUsers(userList);
       } catch (error) {
-        console.error('Ürünler alınırken hata:', error);
-        setProducts([]);
+        console.error('Veriler alınırken hata:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRandomProducts();
+    fetchInitialData();
   }, []);
 
-  // Arama filtreleme: ürün başlığı ve açıklamasında arama yap
+  const shuffleArray = (array: any[]) => {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  };
+
   const filteredProducts = products.filter(product =>
     product.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredUsers = users.filter(user =>
+    user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const renderItem = ({ item }: { item: any }) => {
@@ -112,6 +117,22 @@ const HomeScreen = () => {
     );
   };
 
+  const renderUser = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      onPress={() => navigation.navigate('OtherProfile', { userId: item.id })}
+      style={styles.userCard}
+    >
+      <Image
+        source={item.profilePicture ? { uri: item.profilePicture } : require('../assets/default-avatar.png')}
+        style={styles.userAvatar}
+      />
+      <View>
+        <Text style={styles.username}>{item.username}</Text>
+        <Text style={styles.fullName}>{item.fullName}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
@@ -120,32 +141,44 @@ const HomeScreen = () => {
     );
   }
 
-  if (filteredProducts.length === 0) {
-    return (
-      <View style={[styles.emptyContainer, { paddingTop: insets.top }]}>
-        <Text>Aradığınız ürün bulunamadı.</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <TextInput
         style={styles.searchBox}
-        placeholder="Ürünlerde ara..."
+        placeholder="Ürün veya kullanıcı ara..."
         value={searchQuery}
         onChangeText={setSearchQuery}
         clearButtonMode="while-editing"
       />
-      <FlatList
-        data={filteredProducts}
-        renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
-        numColumns={numColumns}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={{ padding: 10, paddingBottom: 30 }}
-        showsVerticalScrollIndicator={false}
-      />
+
+      {searchQuery.length > 0 && filteredUsers.length > 0 && (
+        <View style={styles.userListContainer}>
+          <Text style={styles.sectionTitle}>Kullanıcılar</Text>
+          <FlatList
+            data={filteredUsers}
+            renderItem={renderUser}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          />
+        </View>
+      )}
+
+      {filteredProducts.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text>Aradığınız ürün bulunamadı.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredProducts}
+          renderItem={renderItem}
+          keyExtractor={item => item.id.toString()}
+          numColumns={numColumns}
+          columnWrapperStyle={styles.row}
+          contentContainerStyle={{ padding: 10, paddingBottom: 30 }}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 };
@@ -153,52 +186,36 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
+  container: { flex: 1, backgroundColor: '#fff' },
+  searchBox: {
+    margin: 10,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
   },
   row: {
     justifyContent: 'space-between',
     marginBottom: 15,
   },
   card: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f9f9f9',
     borderRadius: 10,
     width: itemSize,
     alignItems: 'center',
     padding: 10,
-    position: 'relative',
   },
   image: {
     width: itemSize - 20,
     height: itemSize - 20,
     borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: '#ddd',
+    marginBottom: 10,
   },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  desc: {
-    fontSize: 12,
-    color: '#555',
-    marginTop: 2,
-  },
+  title: { fontSize: 14, fontWeight: 'bold', color: '#333' },
+  desc: { fontSize: 12, color: '#555' },
   favoriteButton: {
     position: 'absolute',
-    bottom: 10,
+    top: 10,
     right: 10,
-  },
-  searchBox: {
-    height: 40,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 20,
-    marginHorizontal: 15,
-    paddingHorizontal: 12,
-    marginBottom: 15,
   },
   loadingContainer: {
     flex: 1,
@@ -207,7 +224,38 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 50,
+  },
+  userListContainer: {
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eee',
+    padding: 10,
+    marginRight: 10,
+    borderRadius: 8,
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  username: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  fullName: {
+    fontSize: 12,
+    color: '#555',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
   },
 });

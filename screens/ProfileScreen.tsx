@@ -31,7 +31,7 @@ import {
 } from 'firebase/firestore';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { followUser, unfollowUser } from '../firebaseService';
-import { RootStackParamList } from '../App';
+import { RootStackParamList } from '../routes/types';
 import { deleteProduct } from '../utils/deleteProduct';
 import { updateProduct } from '../utils/updateProduct';
 import { TextInput, Button } from 'react-native';

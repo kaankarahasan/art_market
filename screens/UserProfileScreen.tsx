@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, Button, ScrollView } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import { RootStackParamList } from '../App'; // Doğru import işlemi
+import { RootStackParamList } from '../routes/types';
 import { RouteProp } from '@react-navigation/native';
 import { useFavorites } from '../contexts/FavoritesContext';
 

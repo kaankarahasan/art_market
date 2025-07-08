@@ -14,7 +14,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { updateProduct } from '../utils/updateProduct';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '../firebase';
-import { RootStackParamList } from '../App';
+import { RootStackParamList } from '../routes/types';
 import { v4 as uuidv4 } from 'uuid';
 import { Product } from '../routes/types';
 
