@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { getAuth, signOut } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase'; // Buradan import ettim
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../routes/types'
+import { RootStackParamList } from '../routes/types';
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -17,10 +18,9 @@ const SettingsScreen = () => {
         {
           text: 'Sign Out',
           onPress: () => {
-            const auth = getAuth();
             signOut(auth)
               .then(() => {
-                navigation.replace('Login'); // Kullanıcıyı Login ekranına yönlendir
+                navigation.replace('Login');
               })
               .catch(error => {
                 Alert.alert('Error', error.message);
@@ -36,10 +36,7 @@ const SettingsScreen = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Settings</Text>
 
-      <TouchableOpacity
-        style={styles.signOutButton}
-        onPress={handleSignOut}
-      >
+      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </TouchableOpacity>
     </View>
@@ -47,17 +44,8 @@ const SettingsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 40,
-  },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 40 },
   signOutButton: {
     paddingVertical: 12,
     paddingHorizontal: 30,
@@ -65,11 +53,7 @@ const styles = StyleSheet.create({
     marginTop: 30,
     backgroundColor: '#ff5252',
   },
-  signOutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  signOutButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });
 
 export default SettingsScreen;

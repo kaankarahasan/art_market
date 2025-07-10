@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// Firebase Console’dan aldığınız ayarlar
+// Firebase Console’dan aldığım ayarlar
 export const firebaseConfig = {
   apiKey: 'AIzaSyBxqQGr9HYsDNdiv8BNjUwy8NDoD1ZQjEM',
   authDomain: 'loginscreenfirebase-55198.firebaseapp.com',

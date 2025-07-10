@@ -45,22 +45,42 @@ const AddProductScreen = () => {
   };
 
   const uploadImageAsync = async (uri: string): Promise<string> => {
-    setUploading(true);
-    try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const imageId = uuidv4();
-      const imageRef = ref(storage, `product_images/${imageId}.jpg`);
-      await uploadBytes(imageRef, blob);
-      return await getDownloadURL(imageRef);
-    } catch (error: any) {
-      console.log("🔥 Upload error:", error);
+  setUploading(true);
+  try {
+    console.log("🚀 Yükleme başladı...");
+    console.log("📷 URI:", uri);
+
+    const response = await fetch(uri);
+    const blob = await response.blob();
+
+    console.log("🟤 Blob oluşturuldu:", blob);
+    console.log("🟤 Blob tipi:", blob.type);
+    console.log("🟤 Blob boyutu:", blob.size);
+
+    const imageId = uuidv4();
+    const imagePath = `product_images/${imageId}.jpg`;
+    const imageRef = ref(storage, imagePath);
+
+    console.log("📂 Storage path:", imagePath);
+
+    // Burada contentType opsiyonu eklendi
+    await uploadBytes(imageRef, blob, { contentType: 'image/jpeg' });
+    console.log("✅ Yükleme başarılı!");
+
+    const downloadURL = await getDownloadURL(imageRef);
+    console.log("🌐 Download URL:", downloadURL);
+
+    return downloadURL;
+  } catch (error: any) {
+      console.log('🔥 Upload error code:', error.code);
+      console.log('🔥 Upload error message:', error.message);
       Alert.alert('Hata', error.message ?? 'Resim yüklenemedi.');
       return '';
-    } finally {
-      setUploading(false);
-    }
-  };
+  } finally {
+    setUploading(false);
+    console.log("📦 Yükleme işlemi tamamlandı.");
+  }
+};
 
   const handleAddProduct = async () => {
     if (!title.trim() || !description.trim() || !price.trim() || !category.trim()) {
