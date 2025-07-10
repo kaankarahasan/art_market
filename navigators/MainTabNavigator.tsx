@@ -7,6 +7,7 @@ import ProductDetailScreen from '../screens/ProductDetailScreen';
 import { RootStackParamList } from '../routes/types';
 import { Ionicons } from '@expo/vector-icons';
 import ProfileScreen from '../screens/ProfileScreen';
+import OtherProfileScreen from '@/screens/OtherProfileScreen';
 
 
 const Tab = createBottomTabNavigator();
@@ -17,6 +18,8 @@ function HomeStackNavigator() {
     <HomeStack.Navigator>
       <HomeStack.Screen name="Main" component={HomeScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
+      <HomeStack.Screen name="OtherProfile" component={OtherProfileScreen} options={{ headerShown: true }} />
+      {/* Add other screens here if needed */}
     </HomeStack.Navigator>
   );
 }

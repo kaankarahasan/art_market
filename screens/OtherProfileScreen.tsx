@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import { RouteProp, useRoute, NavigationProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../routes/types';
@@ -193,55 +194,61 @@ const OtherProfileScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {userData?.profilePicture ? (
-        <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, { backgroundColor: '#ccc' }]} />
-      )}
-      <Text style={styles.username}>{userData?.username || 'Kullanıcı'}</Text>
-      <Text style={styles.bio}>{userData?.bio || 'Açıklama yok.'}</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {userData?.profilePicture ? (
+          <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: '#ccc' }]} />
+        )}
+        <Text style={styles.username}>{userData?.username || 'Kullanıcı'}</Text>
+        <Text style={styles.bio}>{userData?.bio || 'Açıklama yok.'}</Text>
 
-      <View style={styles.countBox}>
-        <TouchableOpacity style={styles.countItem} onPress={goToFollowers}>
-          <Text style={styles.countNumber}>{followersCount}</Text>
-          <Text style={styles.countLabel}>Takipçi</Text>
+        <View style={styles.countBox}>
+          <TouchableOpacity style={styles.countItem} onPress={goToFollowers}>
+            <Text style={styles.countNumber}>{followersCount}</Text>
+            <Text style={styles.countLabel}>Takipçi</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.countItem} onPress={goToFollowing}>
+            <Text style={styles.countNumber}>{followingCount}</Text>
+            <Text style={styles.countLabel}>Takip</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity onPress={toggleFollow} style={styles.followButton}>
+          <Text style={styles.followText}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.countItem} onPress={goToFollowing}>
-          <Text style={styles.countNumber}>{followingCount}</Text>
-          <Text style={styles.countLabel}>Takip</Text>
-        </TouchableOpacity>
+        <Text style={styles.sectionTitle}>Ürünleri</Text>
+        {products.length === 0 ? (
+          <Text style={styles.emptyText}>Henüz ürün eklememiş.</Text>
+        ) : (
+          <FlatList
+            data={products}
+            numColumns={2}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.productList}
+            renderItem={({ item }) => (
+              <TouchableOpacity onPress={() => goToProductDetail(item)} style={styles.productCard}>
+                <Image source={{ uri: item.imageUrl || item.image }} style={styles.productImage} />
+                <Text numberOfLines={1} style={styles.productTitle}>{item.title}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        )}
       </View>
-
-      <TouchableOpacity onPress={toggleFollow} style={styles.followButton}>
-        <Text style={styles.followText}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.sectionTitle}>Ürünleri</Text>
-      {products.length === 0 ? (
-        <Text style={styles.emptyText}>Henüz ürün eklememiş.</Text>
-      ) : (
-        <FlatList
-          data={products}
-          numColumns={2}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.productList}
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => goToProductDetail(item)} style={styles.productCard}>
-              <Image source={{ uri: item.imageUrl || item.image }} style={styles.productImage} />
-              <Text numberOfLines={1} style={styles.productTitle}>{item.title}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      )}
-    </View>
+    </SafeAreaView>
   );
 };
 
 export default OtherProfileScreen;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
   avatar: { width: 100, height: 100, borderRadius: 50, alignSelf: 'center', marginBottom: 10 },
   username: { fontSize: 22, fontWeight: 'bold', textAlign: 'center' },
@@ -287,54 +294,3 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 });
-// This code defines a React Native screen for displaying another user's profile, including their products, followers, and following lists. It allows the current user to follow or unfollow the other user and displays relevant information such as username, bio, and product listings.
-// It uses Firebase Firestore for data storage and retrieval, and handles loading states and errors gracefully. The screen is styled with a clean and modern design, making it user-friendly and visually appealing.
-// The code also includes functionality to navigate to the followers and following lists, and to view product details when a product is clicked. The use of hooks like `useEffect` and `useState` allows for efficient data fetching and state management within the component.
-// The `OtherProfileScreen` component is designed to be reusable and can be easily integrated into a larger application, providing a seamless user experience for viewing and interacting with other users' profiles.
-// The styles are defined using `StyleSheet.create` for better performance and maintainability, ensuring that the UI is responsive and looks good on various screen sizes. The use of TypeScript types helps catch potential errors during development, making the code more robust and easier to maintain in the long run.
-// The component is ready to be used in a React Native application, providing a comprehensive profile view for users to explore and interact with other profiles on the platform.
-// The code is structured to be clean and modular, making it easy to read and understand.
-// It follows best practices for React Native development, ensuring that the component is efficient and performs well on both iOS and Android devices.
-// The use of TypeScript enhances type safety, making the code more reliable and easier to debug.
-// Overall, this implementation provides a solid foundation for a user profile screen in a social media or marketplace application, allowing users to engage with each other effectively.
-// The component is designed to be flexible and can be extended with additional features such as product filtering, sorting, or additional user interactions in the future.
-// It can also be easily adapted to fit different design requirements or branding guidelines, making it a versatile choice for various applications.
-// The use of Firebase for backend services allows for real-time updates and scalability, ensuring that the application can handle a growing user base and large amounts of data without performance issues.
-// This screen can be a key part of a larger user profile management system, providing essential functionalities for users to connect and interact with each other in a meaningful way
-
-// [TR]
-// Bu bileşen, başka bir kullanıcının profilini görüntülemek için oluşturulmuş bir React Native ekranıdır.
-// Kullanıcının ürünlerini, takipçi listesini ve takip ettiklerini gösterir.
-// Mevcut kullanıcının bu profili takip edip etmeme durumunu yönetmesine olanak tanır.
-
-// ÖZELLİKLER:
-// - Firebase Firestore ile veri depolama ve çekme işlemleri
-// - Yüklenme durumları ve hata yönetimi için optimize edilmiş arayüz
-// - Takipçi/takip edilen listelerine geçiş ve ürün detay görüntüleme
-// - Modern ve temiz bir kullanıcı arayüzü
-
-// TEKNİK DETAYLAR:
-// - useEffect ve useState hook'ları ile veri yönetimi
-// - TypeScript kullanılarak tür güvenliği sağlanmıştır
-// - StyleSheet.create ile performans odaklı stil yönetimi
-// - Modüler ve yeniden kullanılabilir bileşen yapısı
-
-// KULLANIM ALANLARI:
-// - Sosyal ağ uygulamalarında kullanıcı profilleri
-// - E-ticaret uygulamalarında satıcı profilleri
-// - Topluluk tabanlı uygulamalarda üye profilleri
-
-// GELİŞTİRİLEBİLİR ÖZELLİKLER:
-// - Ürün filtreleme ve sıralama özellikleri eklenebilir
-// - Kullanıcı etkileşimleri genişletilebilir (mesajlaşma, beğeni vb.)
-// - Tema desteği eklenerek farklı tasarım gereksinimlerine uyum sağlanabilir
-
-// PERFORMANS NOTLARI:
-// - Hem iOS hem Android'de sorunsuz çalışacak şekilde optimize edilmiştir
-// - Büyük veri setlerinde performans testleri yapılmıştır
-// - Gereksiz render işlemlerini önlemek için memoization kullanılmıştır
-
-// GÜVENLİK ÖNLEMLERİ:
-// - Kullanıcı verileri için yetkilendirme kontrolleri uygulanmıştır
-// - Hassas veriler şifrelenerek iletilir
-// - Güvenlik kuralları Firebase seviyesinde yapılandırılmıştır
