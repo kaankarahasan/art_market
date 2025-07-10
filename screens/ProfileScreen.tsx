@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { getDocs } from 'firebase/firestore';
 import {
   View,
   Text,
@@ -6,11 +7,7 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  Modal,
-  TouchableWithoutFeedback,
   FlatList,
-  TextInput,
-  Button,
 } from 'react-native';
 import {
   useNavigation,
@@ -28,7 +25,6 @@ import {
   collection,
   query,
   where,
-  getDocs,
   onSnapshot,
   updateDoc,
   arrayUnion,
@@ -53,128 +49,141 @@ const ProfileScreen = () => {
   const firestore = getFirestore();
   const insets = useSafeAreaInsets();
 
-  const [updateModalVisible, setUpdateModalVisible] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [newTitle, setNewTitle] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-
   const currentUser = auth.currentUser;
   const profileId = route.params?.userId ?? currentUser?.uid ?? '';
 
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isImageModalVisible, setImageModalVisible] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
+
   const [followers, setFollowers] = useState<UserInfo[]>([]);
   const [following, setFollowing] = useState<UserInfo[]>([]);
+  const [isFollowing, setIsFollowing] = useState(false);
+
   const [soldCount, setSoldCount] = useState(0);
   const [products, setProducts] = useState<any[]>([]);
 
   const isOwnProfile = profileId === currentUser?.uid;
 
-  // Kullanıcı bilgisi ve takipçi / takip edilenleri çekme
-  const fetchProfileData = async () => {
-    if (!currentUser) return;
+  // Realtime followers dinle
+  useEffect(() => {
+    if (!profileId) return;
+
+    const followersCollectionRef = collection(firestore, 'users', profileId, 'followers');
+    const unsubscribeFollowers = onSnapshot(followersCollectionRef, async (snapshot) => {
+      const followerIds = snapshot.docs.map(doc => doc.id);
+      const promises = followerIds.map(async (uid) => {
+        const userSnap = await getDoc(doc(firestore, 'users', uid));
+        return { uid, username: userSnap.data()?.username || 'Bilinmeyen' };
+      });
+      const followerInfos = await Promise.all(promises);
+      setFollowers(followerInfos);
+    });
+
+    return () => unsubscribeFollowers();
+  }, [profileId]);
+
+  // Realtime following dinle
+  useEffect(() => {
+    if (!profileId) return;
+
+    const followingCollectionRef = collection(firestore, 'users', profileId, 'following');
+    const unsubscribeFollowing = onSnapshot(followingCollectionRef, async (snapshot) => {
+      const followingIds = snapshot.docs.map(doc => doc.id);
+      const promises = followingIds.map(async (uid) => {
+        const userSnap = await getDoc(doc(firestore, 'users', uid));
+        return { uid, username: userSnap.data()?.username || 'Bilinmeyen' };
+      });
+      const followingInfos = await Promise.all(promises);
+      setFollowing(followingInfos);
+    });
+
+    return () => unsubscribeFollowing();
+  }, [profileId]);
+
+  // isFollowing realtime kontrolü (currentUser profil sahibini takip ediyor mu)
+  useEffect(() => {
+    if (!profileId || !currentUser) return;
+
+    const followerDocRef = doc(firestore, 'users', profileId, 'followers', currentUser.uid);
+    const unsubscribeIsFollowing = onSnapshot(followerDocRef, (docSnap) => {
+      setIsFollowing(docSnap.exists());
+    });
+
+    return () => unsubscribeIsFollowing();
+  }, [profileId, currentUser]);
+
+  // Kullanıcı bilgisi ve satılan ürün sayısı (tek seferlik)
+  const fetchUserData = useCallback(async () => {
     try {
       setLoading(true);
-
-      // Profili gösterilen kullanıcının bilgisi
-      const targetRef = doc(firestore, 'users', profileId);
-      const targetSnap = await getDoc(targetRef);
-      const targetData = targetSnap.data() || {};
-      setUserData(targetData);
-
-      // Profil sahibi kullanıcının takipçileri ve takip ettikleri
-      const followerIds: string[] = Array.isArray(targetData.followers) ? targetData.followers : [];
-      const followingIds: string[] = Array.isArray(targetData.following) ? targetData.following : [];
-
-      // Takipçi ve takip edilenlerin userInfo'larını çek
-      const fetchUserInfos = async (uids: string[]): Promise<UserInfo[]> => {
-        if (uids.length === 0) return [];
-        const promises = uids.map(async (uid) => {
-          const userDoc = await getDoc(doc(firestore, 'users', uid));
-          const data = userDoc.data();
-          return {
-            uid,
-            username: data?.username || 'Bilinmeyen',
-          };
-        });
-        return Promise.all(promises);
-      };
-
-      const followersData = await fetchUserInfos(followerIds);
-      const followingData = await fetchUserInfos(followingIds);
-
-      setFollowers(followersData);
-      setFollowing(followingData);
-
-      // currentUser'un takip durumu
-      if (currentUser.uid !== profileId) {
-        const currentUserRef = doc(firestore, 'users', currentUser.uid);
-        const currentUserSnap = await getDoc(currentUserRef);
-        const currentUserData = currentUserSnap.data() || {};
-        const currentUserFollowing: string[] = Array.isArray(currentUserData.following) ? currentUserData.following : [];
-        setIsFollowing(currentUserFollowing.includes(profileId));
-      } else {
-        setIsFollowing(false);
+      const userRef = doc(firestore, 'users', profileId);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        setUserData(userSnap.data());
       }
 
-      setSoldCount(await getSoldCount());
-
-    } catch (err) {
-      console.error('Profil verisi alınırken hata:', err);
+      // Satılan ürün sayısı çek
+      const soldQuery = query(
+        collection(firestore, 'products'),
+        where('ownerId', '==', profileId),
+        where('isSold', '==', true)
+      );
+      const soldSnapshot = await getDocs(soldQuery);
+      setSoldCount(soldSnapshot.size);
+    } catch (error) {
+      console.error('Profil verisi alınırken hata:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [profileId]);
 
-  // Ürünleri dinamik çek
-  const fetchProducts = () => {
+  // Ürünleri realtime dinle
+  useEffect(() => {
+    if (!profileId) return;
+
     const q = query(
       collection(firestore, 'products'),
       where('ownerId', '==', profileId),
       where('isSold', '==', false)
     );
-    return onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const productList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setProducts(productList);
     });
-  };
 
-  const getSoldCount = async () => {
-    const soldQuery = query(
-      collection(firestore, 'products'),
-      where('ownerId', '==', profileId),
-      where('isSold', '==', true)
-    );
-    const soldSnapshot = await getDocs(soldQuery);
-    return soldSnapshot.size;
-  };
+    return () => unsubscribe();
+  }, [profileId]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchProfileData();
-      const unsubscribe = fetchProducts();
-      return () => unsubscribe();
-    }, [profileId])
+      fetchUserData();
+    }, [fetchUserData])
   );
 
+  // Navigasyon fonksiyonları
   const goToSettings = () => navigation.navigate('Settings');
   const goToSold = () => navigation.navigate('Sold');
   const goToAddProduct = () => navigation.navigate('AddProduct');
-  const toggleImageModal = () => setImageModalVisible((v) => !v);
-
+  const toggleImageModal = () => {};
   const goToFollowers = () => {
     navigation.navigate('Followers', { userId: profileId });
   };
-
   const goToFollowing = () => {
     navigation.navigate('Following', { userId: profileId });
   };
 
-  // Takip et / takipten çık işlemi
+  // Takip / Takipten çık fonksiyonu
   const handleFollow = async () => {
     if (!currentUser) return;
+    if (currentUser.uid === profileId) {
+      alert('Kendinizi takip edemezsiniz.');
+      return;
+    }
 
     const currentUserRef = doc(firestore, 'users', currentUser.uid);
     const profileUserRef = doc(firestore, 'users', profileId);
@@ -188,8 +197,6 @@ const ProfileScreen = () => {
         await updateDoc(profileUserRef, {
           followers: arrayRemove(currentUser.uid),
         });
-        setIsFollowing(false);
-        setFollowers((prev) => prev.filter((user) => user.uid !== currentUser.uid));
       } else {
         // Takip et
         await updateDoc(currentUserRef, {
@@ -198,11 +205,6 @@ const ProfileScreen = () => {
         await updateDoc(profileUserRef, {
           followers: arrayUnion(currentUser.uid),
         });
-        setIsFollowing(true);
-        setFollowers((prev) => [
-          ...prev,
-          { uid: currentUser.uid, username: currentUser.displayName || 'Sen' },
-        ]);
       }
     } catch (err) {
       console.error('Takip işlemi hatası:', err);
@@ -229,14 +231,15 @@ const ProfileScreen = () => {
         contentContainerStyle={{ padding: 16 }}
         ListHeaderComponent={
           <>
-            {/* Ayarlar */}
             {isOwnProfile && (
-              <TouchableOpacity style={[styles.settingsIcon, { top: insets.top + 10 }]} onPress={goToSettings}>
+              <TouchableOpacity
+                style={[styles.settingsIcon, { top: insets.top + 10 }]}
+                onPress={goToSettings}
+              >
                 <Icon name="settings-outline" size={28} color="#000" />
               </TouchableOpacity>
             )}
 
-            {/* Profil */}
             <View style={styles.headerSection}>
               <TouchableOpacity onPress={toggleImageModal}>
                 <Image
@@ -263,7 +266,6 @@ const ProfileScreen = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Takip butonu */}
             {!isOwnProfile && (
               <View style={styles.followButtonContainer}>
                 <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
@@ -274,7 +276,6 @@ const ProfileScreen = () => {
               </View>
             )}
 
-            {/* Satılanlar ve Ürün Ekle */}
             <TouchableOpacity style={styles.soldBox} onPress={goToSold}>
               <Text style={styles.soldText}>Satılanlar: {soldCount}</Text>
             </TouchableOpacity>
@@ -293,9 +294,7 @@ const ProfileScreen = () => {
             style={styles.productItem}
             onPress={() => navigation.navigate('ProductDetail', { product: item })}
           >
-            {item.imageUrl && (
-              <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
-            )}
+            {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.productImage} />}
             <Text style={styles.productTitle}>{item.title}</Text>
             <Text style={styles.productDesc}>{item.description}</Text>
 
@@ -359,9 +358,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   soldText: { fontSize: 16, fontWeight: 'bold' },
-  listContainer: { marginTop: 20, paddingHorizontal: 15 },
   listTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
-  listItem: { paddingVertical: 10 },
   productItem: {
     marginBottom: 15,
     padding: 10,
@@ -382,40 +379,6 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 8,
     marginBottom: 10,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-  },
-  modalImageWrapper: { justifyContent: 'center', alignItems: 'center' },
-  modalImage: { width: 250, height: 250, borderRadius: 150 },
-  modalContent: {
-    width: '85%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-  },
-  input: {
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 12,
-  },
-  label: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-    fontSize: 14,
   },
   countBox: {
     flexDirection: 'row',

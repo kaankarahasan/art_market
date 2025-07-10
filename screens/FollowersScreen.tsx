@@ -6,6 +6,7 @@ import { db } from '../firebase';
 import { RootStackParamList } from '../routes/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getAuth } from 'firebase/auth';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 type User = {
   uid: string;
@@ -37,42 +38,35 @@ const FollowersScreen = () => {
   };
 
   useEffect(() => {
-    const fetchFollowersData = async () => {
-      try {
-        const userRef = doc(db, 'users', userId);
-        const userSnap = await getDoc(userRef);
+  const unsubscribe = onSnapshot(
+    collection(db, 'users', userId, 'followers'),
+    async (snapshot) => {
+      const fetchedFollowers: User[] = [];
 
-        if (!userSnap.exists()) {
-          throw new Error('Kullanıcı bulunamadı');
+      for (const docSnap of snapshot.docs) {
+        const followerId = docSnap.id;
+        const userDoc = await getDoc(doc(db, 'users', followerId));
+        if (userDoc.exists()) {
+          fetchedFollowers.push({
+            uid: followerId,
+            username: userDoc.data().username,
+            email: userDoc.data().email,
+          });
         }
-
-        const followerIds: string[] = userSnap.data().followers || [];
-
-        const followersData = await Promise.all(
-          followerIds.map(async (followerId) => {
-            const snap = await getDoc(doc(db, 'users', followerId));
-            if (snap.exists()) {
-              return {
-                uid: followerId,
-                username: snap.data().username,
-                email: snap.data().email,
-              };
-            }
-            return null;
-          })
-        );
-
-        setFollowers(followersData.filter(Boolean) as User[]);
-      } catch (err) {
-        console.error('Takipçi verisi alınamadı:', err);
-        setError('Takipçi verisi alınamadı');
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchFollowersData();
-  }, [userId]);
+      setFollowers(fetchedFollowers);
+      setLoading(false);
+    },
+    (error) => {
+      console.error('Takipçi verisi alınamadı:', error);
+      setError('Takipçi verisi alınamadı');
+      setLoading(false);
+    }
+  );
+
+  return () => unsubscribe(); // cleanup on unmount
+}, [userId]);
 
   if (loading) {
     return (
