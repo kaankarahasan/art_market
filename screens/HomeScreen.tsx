@@ -10,16 +10,14 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { useFocusEffect } from '@react-navigation/native';
-import { auth } from '../firebase';
 
 const numColumns = 2;
 const itemSize = Dimensions.get('window').width / numColumns - 20;
@@ -34,41 +32,32 @@ const HomeScreen = () => {
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const insets = useSafeAreaInsets();
 
+  // Hem ürün hem kullanıcıları her odaklandığında yenile
   useFocusEffect(
     useCallback(() => {
-      const fetchProducts = async () => {
-        const snapshot = await getDocs(collection(db, 'products'));
-        const productList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setProducts(productList);
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+
+          const productSnap = await getDocs(
+            query(collection(db, 'products'), where('isSold', '==', false), limit(50))
+          );
+          const productList = productSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setProducts(shuffleArray(productList));
+
+          const userSnap = await getDocs(collection(db, 'users'));
+          const userList = userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setUsers(userList);
+        } catch (error) {
+          console.error('Veriler alınırken hata:', error);
+        } finally {
+          setLoading(false);
+        }
       };
 
-      fetchProducts();
+      fetchData();
     }, [])
   );
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        setLoading(true);
-
-        const productSnap = await getDocs(
-          query(collection(db, 'products'), where('isSold', '==', false), limit(50))
-        );
-        const productList = productSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setProducts(shuffleArray(productList));
-
-        const userSnap = await getDocs(collection(db, 'users'));
-        const userList = userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setUsers(userList);
-      } catch (error) {
-        console.error('Veriler alınırken hata:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInitialData();
-  }, []);
 
   const shuffleArray = (array: any[]) => {
     for (let i = array.length - 1; i > 0; i--) {
@@ -83,13 +72,12 @@ const HomeScreen = () => {
     product.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredUsers = users.filter((user) => {
-  const query = searchQuery.toLowerCase();
-  const usernameMatch = user.username?.toLowerCase().includes(query);
-  const fullNameMatch = user.fullName?.toLowerCase().includes(query);
-  return usernameMatch || fullNameMatch;
-});
-
+  const filteredUsers = users.filter(user => {
+    const queryLower = searchQuery.toLowerCase();
+    const usernameMatch = user.username?.toLowerCase().includes(queryLower);
+    const fullNameMatch = user.fullName?.toLowerCase().includes(queryLower);
+    return usernameMatch || fullNameMatch;
+  });
 
   const renderItem = ({ item }: { item: any }) => {
     const isFavorite = favorites.some(fav => fav.id === item.id);
@@ -122,31 +110,31 @@ const HomeScreen = () => {
   };
 
   const renderUser = ({ item }: { item: any }) => {
-  const currentUser = auth.currentUser;
+    const currentUser = auth.currentUser;
 
-  const handlePress = () => {
-    if (!currentUser) return;
+    const handlePress = () => {
+      if (!currentUser) return;
 
-    if (item.id === currentUser.uid) {
-      navigation.navigate('Profile' as never);
-    } else {
-      navigation.navigate('OtherProfile', { userId: item.id });
-    }
+      if (item.id === currentUser.uid) {
+        navigation.navigate('Profile' as never);
+      } else {
+        navigation.navigate('OtherProfile', { userId: item.id });
+      }
+    };
+
+    return (
+      <TouchableOpacity onPress={handlePress} style={styles.userCard}>
+        <Image
+          source={item.profilePicture ? { uri: item.profilePicture } : require('../assets/default-avatar.png')}
+          style={styles.userAvatar}
+        />
+        <View>
+          <Text style={styles.username}>{item.username}</Text>
+          <Text style={styles.fullName}>{item.fullName}</Text>
+        </View>
+      </TouchableOpacity>
+    );
   };
-
-  return (
-    <TouchableOpacity onPress={handlePress} style={styles.userCard}>
-      <Image
-        source={item.profilePicture ? { uri: item.profilePicture } : require('../assets/default-avatar.png')}
-        style={styles.userAvatar}
-      />
-      <View>
-        <Text style={styles.username}>{item.username}</Text>
-        <Text style={styles.fullName}>{item.fullName}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-};
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -158,33 +146,41 @@ const HomeScreen = () => {
         clearButtonMode="while-editing"
       />
 
-      {searchQuery.length > 0 && filteredUsers.length > 0 && (
-        <View style={styles.userListContainer}>
-          <Text style={styles.sectionTitle}>Kullanıcılar</Text>
-          <FlatList
-            data={filteredUsers}
-            renderItem={renderUser}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          />
-        </View>
-      )}
-
-      {filteredProducts.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text>Aradığınız ürün bulunamadı.</Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#666" />
         </View>
       ) : (
-        <FlatList
-          data={filteredProducts}
-          renderItem={renderItem}
-          keyExtractor={item => item.id.toString()}
-          numColumns={numColumns}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={{ padding: 10, paddingBottom: 30 }}
-          showsVerticalScrollIndicator={false}
-        />
+        <>
+          {searchQuery.length > 0 && filteredUsers.length > 0 && (
+            <View style={styles.userListContainer}>
+              <Text style={styles.sectionTitle}>Kullanıcılar</Text>
+              <FlatList
+                data={filteredUsers}
+                renderItem={renderUser}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+              />
+            </View>
+          )}
+
+          {filteredProducts.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text>Aradığınız ürün bulunamadı.</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredProducts}
+              renderItem={renderItem}
+              keyExtractor={item => item.id.toString()}
+              numColumns={numColumns}
+              columnWrapperStyle={styles.row}
+              contentContainerStyle={{ padding: 10, paddingBottom: 30 }}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </>
       )}
     </View>
   );
