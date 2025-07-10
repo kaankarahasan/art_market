@@ -260,7 +260,11 @@ const ProfileScreen = () => {
           </>
         }
         renderItem={({ item }) => (
-          <View style={styles.productItem}>
+          <TouchableOpacity
+            style={styles.productItem}
+            onPress={() => navigation.navigate('ProductDetail', { product: item })}
+            activeOpacity={0.8}
+          >
             {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.productImage} />}
             <Text style={styles.productTitle}>{item.title}</Text>
             <Text style={styles.productDesc}>{item.description}</Text>
@@ -289,7 +293,7 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
               </>
             )}
-          </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>Henüz ürün yok.</Text>}
       />
