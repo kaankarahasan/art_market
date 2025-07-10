@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   FlatList,
+  Alert,
 } from 'react-native';
 import {
   useNavigation,
@@ -69,93 +70,80 @@ const ProfileScreen = () => {
 
   const isOwnProfile = profileId === currentUser?.uid;
 
-  // Realtime followers dinle
+  // Realtime takipçiler
   useEffect(() => {
     if (!profileId) return;
-
-    const followersCollectionRef = collection(firestore, 'users', profileId, 'followers');
-    const unsubscribeFollowers = onSnapshot(followersCollectionRef, async (snapshot) => {
-      const followerIds = snapshot.docs.map(doc => doc.id);
-      const promises = followerIds.map(async (uid) => {
-        const userSnap = await getDoc(doc(firestore, 'users', uid));
-        return { uid, username: userSnap.data()?.username || 'Bilinmeyen' };
-      });
-      const followerInfos = await Promise.all(promises);
-      setFollowers(followerInfos);
+    const followersRef = collection(firestore, 'users', profileId, 'followers');
+    const unsubscribe = onSnapshot(followersRef, async (snapshot) => {
+      const followersData = await Promise.all(
+        snapshot.docs.map(async (docSnap) => {
+          const userSnap = await getDoc(doc(firestore, 'users', docSnap.id));
+          return { uid: docSnap.id, username: userSnap.data()?.username || 'Bilinmeyen' };
+        })
+      );
+      setFollowers(followersData);
     });
-
-    return () => unsubscribeFollowers();
+    return () => unsubscribe();
   }, [profileId]);
 
-  // Realtime following dinle
+  // Realtime takip edilenler
   useEffect(() => {
     if (!profileId) return;
-
-    const followingCollectionRef = collection(firestore, 'users', profileId, 'following');
-    const unsubscribeFollowing = onSnapshot(followingCollectionRef, async (snapshot) => {
-      const followingIds = snapshot.docs.map(doc => doc.id);
-      const promises = followingIds.map(async (uid) => {
-        const userSnap = await getDoc(doc(firestore, 'users', uid));
-        return { uid, username: userSnap.data()?.username || 'Bilinmeyen' };
-      });
-      const followingInfos = await Promise.all(promises);
-      setFollowing(followingInfos);
+    const followingRef = collection(firestore, 'users', profileId, 'following');
+    const unsubscribe = onSnapshot(followingRef, async (snapshot) => {
+      const followingData = await Promise.all(
+        snapshot.docs.map(async (docSnap) => {
+          const userSnap = await getDoc(doc(firestore, 'users', docSnap.id));
+          return { uid: docSnap.id, username: userSnap.data()?.username || 'Bilinmeyen' };
+        })
+      );
+      setFollowing(followingData);
     });
-
-    return () => unsubscribeFollowing();
+    return () => unsubscribe();
   }, [profileId]);
 
-  // isFollowing realtime kontrolü (currentUser profil sahibini takip ediyor mu)
+  // isFollowing kontrol
   useEffect(() => {
     if (!profileId || !currentUser) return;
-
-    const followerDocRef = doc(firestore, 'users', profileId, 'followers', currentUser.uid);
-    const unsubscribeIsFollowing = onSnapshot(followerDocRef, (docSnap) => {
+    const docRef = doc(firestore, 'users', profileId, 'followers', currentUser.uid);
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
       setIsFollowing(docSnap.exists());
     });
-
-    return () => unsubscribeIsFollowing();
+    return () => unsubscribe();
   }, [profileId, currentUser]);
 
-  // Kullanıcı bilgisi ve satılan ürün sayısı (tek seferlik)
   const fetchUserData = useCallback(async () => {
     try {
       setLoading(true);
-      const userRef = doc(firestore, 'users', profileId);
-      const userSnap = await getDoc(userRef);
+      const userSnap = await getDoc(doc(firestore, 'users', profileId));
       if (userSnap.exists()) {
         setUserData(userSnap.data());
       }
-
-      // Satılan ürün sayısı çek
-      const soldQuery = query(
-        collection(firestore, 'products'),
-        where('ownerId', '==', profileId),
-        where('isSold', '==', true)
+      const soldSnap = await getDocs(
+        query(
+          collection(firestore, 'products'),
+          where('ownerId', '==', profileId),
+          where('isSold', '==', true)
+        )
       );
-      const soldSnapshot = await getDocs(soldQuery);
-      setSoldCount(soldSnapshot.size);
-    } catch (error) {
-      console.error('Profil verisi alınırken hata:', error);
+      setSoldCount(soldSnap.size);
+    } catch (e) {
+      console.error('Hata:', e);
     } finally {
       setLoading(false);
     }
   }, [profileId]);
 
-  // Ürünleri realtime dinle
   useEffect(() => {
-    if (!profileId) return;
-
     const q = query(
       collection(firestore, 'products'),
       where('ownerId', '==', profileId),
       where('isSold', '==', false)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const productList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setProducts(productList);
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setProducts(data);
     });
-
     return () => unsubscribe();
   }, [profileId]);
 
@@ -165,54 +153,38 @@ const ProfileScreen = () => {
     }, [fetchUserData])
   );
 
-  // Navigasyon fonksiyonları
-  const goToSettings = () => navigation.navigate('Settings');
-  const goToSold = () => navigation.navigate('Sold');
-  const goToAddProduct = () => navigation.navigate('AddProduct');
-  const toggleImageModal = () => {};
-  const goToFollowers = () => {
-    navigation.navigate('Followers', { userId: profileId });
-  };
-  const goToFollowing = () => {
-    navigation.navigate('Following', { userId: profileId });
-  };
-
-  // Takip / Takipten çık fonksiyonu
   const handleFollow = async () => {
-    if (!currentUser) return;
-    if (currentUser.uid === profileId) {
-      alert('Kendinizi takip edemezsiniz.');
-      return;
-    }
-
+    if (!currentUser || currentUser.uid === profileId) return;
     const currentUserRef = doc(firestore, 'users', currentUser.uid);
     const profileUserRef = doc(firestore, 'users', profileId);
 
     try {
       if (isFollowing) {
-        // Takipten çık
-        await updateDoc(currentUserRef, {
-          following: arrayRemove(profileId),
-        });
-        await updateDoc(profileUserRef, {
-          followers: arrayRemove(currentUser.uid),
-        });
+        await updateDoc(currentUserRef, { following: arrayRemove(profileId) });
+        await updateDoc(profileUserRef, { followers: arrayRemove(currentUser.uid) });
       } else {
-        // Takip et
-        await updateDoc(currentUserRef, {
-          following: arrayUnion(profileId),
-        });
-        await updateDoc(profileUserRef, {
-          followers: arrayUnion(currentUser.uid),
-        });
+        await updateDoc(currentUserRef, { following: arrayUnion(profileId) });
+        await updateDoc(profileUserRef, { followers: arrayUnion(currentUser.uid) });
       }
-    } catch (err) {
-      console.error('Takip işlemi hatası:', err);
+    } catch (e) {
+      console.error('Takip işlemi hatası:', e);
     }
   };
 
-  const goToOtherProfile = (userId: string) => {
-    navigation.navigate('OtherProfile', { userId });
+  const confirmDelete = (productId: string, imageUrl: string, isSold: boolean) => {
+    Alert.alert(
+      'Ürünü Sil',
+      'Bu ürünü silmek istediğinizden emin misiniz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: () => deleteProduct(productId, imageUrl, isSold),
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   if (loading) {
@@ -234,33 +206,31 @@ const ProfileScreen = () => {
             {isOwnProfile && (
               <TouchableOpacity
                 style={[styles.settingsIcon, { top: insets.top + 10 }]}
-                onPress={goToSettings}
+                onPress={() => navigation.navigate('Settings')}
               >
                 <Icon name="settings-outline" size={28} color="#000" />
               </TouchableOpacity>
             )}
 
             <View style={styles.headerSection}>
-              <TouchableOpacity onPress={toggleImageModal}>
-                <Image
-                  source={
-                    userData?.profilePicture
-                      ? { uri: userData.profilePicture }
-                      : require('../assets/default-avatar.png')
-                  }
-                  style={styles.avatar}
-                />
-              </TouchableOpacity>
+              <Image
+                source={
+                  userData?.profilePicture
+                    ? { uri: userData.profilePicture }
+                    : require('../assets/default-avatar.png')
+                }
+                style={styles.avatar}
+              />
               <Text style={styles.username}>@{userData?.username || 'kullaniciadi'}</Text>
               <Text style={styles.fullName}>{userData?.fullName || 'Ad Soyad'}</Text>
             </View>
 
             <View style={styles.countBox}>
-              <TouchableOpacity style={styles.countItem} onPress={goToFollowers}>
+              <TouchableOpacity style={styles.countItem} onPress={() => navigation.navigate('Followers', { userId: profileId })}>
                 <Text style={styles.countNumber}>{followers.length}</Text>
                 <Text style={styles.countLabel}>Takipçi</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.countItem} onPress={goToFollowing}>
+              <TouchableOpacity style={styles.countItem} onPress={() => navigation.navigate('Following', { userId: profileId })}>
                 <Text style={styles.countNumber}>{following.length}</Text>
                 <Text style={styles.countLabel}>Takip</Text>
               </TouchableOpacity>
@@ -276,12 +246,12 @@ const ProfileScreen = () => {
               </View>
             )}
 
-            <TouchableOpacity style={styles.soldBox} onPress={goToSold}>
+            <TouchableOpacity style={styles.soldBox} onPress={() => navigation.navigate('Sold')}>
               <Text style={styles.soldText}>Satılanlar: {soldCount}</Text>
             </TouchableOpacity>
 
             {isOwnProfile && (
-              <TouchableOpacity style={styles.AddProductBox} onPress={goToAddProduct}>
+              <TouchableOpacity style={styles.AddProductBox} onPress={() => navigation.navigate('AddProduct')}>
                 <Text style={styles.soldText}>Ürün Ekle</Text>
               </TouchableOpacity>
             )}
@@ -290,32 +260,36 @@ const ProfileScreen = () => {
           </>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.productItem}
-            onPress={() => navigation.navigate('ProductDetail', { product: item })}
-          >
+          <View style={styles.productItem}>
             {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.productImage} />}
             <Text style={styles.productTitle}>{item.title}</Text>
             <Text style={styles.productDesc}>{item.description}</Text>
 
             {isOwnProfile && (
               <>
-                <TouchableOpacity onPress={() => deleteProduct(item.id, item.imageUrl, item.isSold)}>
-                  <Text style={{ color: 'red' }}>Sil</Text>
-                </TouchableOpacity>
                 <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => confirmDelete(item.id, item.imageUrl, item.isSold)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteButtonText}>Sil</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.updateButton}
                   onPress={() => {
                     setSelectedProduct(item);
                     setNewTitle(item.title);
                     setNewDescription(item.description);
                     setUpdateModalVisible(true);
+                    navigation.navigate('UpdateProduct', { product: item });
                   }}
                 >
-                  <Text style={{ color: 'blue' }}>Güncelle</Text>
+                  <Text style={styles.updateButtonText}>Güncelle</Text>
                 </TouchableOpacity>
               </>
             )}
-          </TouchableOpacity>
+          </View>
         )}
         ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>Henüz ürün yok.</Text>}
       />
@@ -396,5 +370,32 @@ const styles = StyleSheet.create({
   countLabel: {
     fontSize: 14,
     color: '#666',
+  },
+  deleteButton: {
+    backgroundColor: '#e33057',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  updateButton: {
+    backgroundColor: '#2196f3',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 5,
+  },
+  updateButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
