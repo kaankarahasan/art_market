@@ -48,6 +48,7 @@ const OtherProfileScreen = () => {
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [followersAllowed, setFollowersAllowed] = useState(true); // Takipçi ayarı
 
   const fetchFollowCounts = useCallback(async () => {
     if (!userId) return;
@@ -79,12 +80,14 @@ const OtherProfileScreen = () => {
         setFollowersCount(0);
         setFollowingCount(0);
         setIsPrivate(false);
+        setFollowersAllowed(true);
         return;
       }
 
       const data = userSnap.data();
       setUserData(data);
       setIsPrivate(data.isPrivate || false);
+      setFollowersAllowed(data.followersAllowed !== false); // followersAllowed default true, false ise kapalı demek
 
       // Gizlilik kontrolü
       let isAllowedToView = true;
@@ -92,6 +95,12 @@ const OtherProfileScreen = () => {
         const currentUserFollowerDoc = doc(db, 'users', userId, 'followers', currentUser?.uid || '');
         const followerSnap = await getDoc(currentUserFollowerDoc);
         isAllowedToView = followerSnap.exists();
+      }
+
+      // Takipçi ayarı kapalı ise, takipçi listesi ve ürünlere erişim kısıtlanabilir.
+      if (!followersAllowed && currentUser?.uid !== userId) {
+        // Takipçi ayarı kapalı, takipçi olmayanlar erişemez
+        isAllowedToView = false;
       }
 
       if (!isAllowedToView) {
@@ -143,7 +152,7 @@ const OtherProfileScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId, currentUser?.uid]);
+  }, [userId, currentUser?.uid, followersAllowed]);
 
   useEffect(() => {
     if (!userId) return;
@@ -158,6 +167,12 @@ const OtherProfileScreen = () => {
           const followerSnap = await getDoc(currentUserFollowerDoc);
           isAllowedToView = followerSnap.exists();
         }
+
+        // Takipçi ayarı kapalı ise, erişim kapalı
+        if (userData.followersAllowed === false && currentUser?.uid !== userId) {
+          isAllowedToView = false;
+        }
+
         if (!isAllowedToView) {
           setProducts([]);
           return;
@@ -186,48 +201,70 @@ const OtherProfileScreen = () => {
   }, [fetchUserData, fetchFollowCounts]);
 
   const toggleFollow = async () => {
-    if (!currentUser?.uid) {
-      console.warn('currentUser yok veya uid undefined');
+  if (!currentUser?.uid) {
+    console.warn('currentUser yok veya uid undefined');
+    return;
+  }
+  if (!userId) {
+    console.warn('target userId undefined');
+    return;
+  }
+  if (currentUser.uid === userId) {
+    alert('Kendinizi takip edemezsiniz.');
+    return;
+  }
+
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      alert('Kullanıcı bulunamadı.');
       return;
     }
-    if (!userId) {
-      console.warn('target userId undefined');
+    const userData = userSnap.data();
+    const followerPermission = userData?.privacySettings?.followerPermission || 'everyone';
+
+    if (followerPermission === 'none') {
+      alert('Bu kullanıcı takipçi ayarını kapalı tutuyor, takip edemezsiniz.');
       return;
     }
-    if (currentUser.uid === userId) {
-      alert('Kendinizi takip edemezsiniz.');
-      return;
-    }
+
+    // Eğer 'approved' mantığına göre daha detay kontrol istersen buraya ekle
 
     const followerDocRef = doc(db, 'users', userId, 'followers', currentUser.uid);
     const followingDocRef = doc(db, 'users', currentUser.uid, 'following', userId);
 
-    try {
-      const docSnap = await getDoc(followerDocRef);
-      const alreadyFollowing = docSnap.exists();
+    const docSnap = await getDoc(followerDocRef);
+    const alreadyFollowing = docSnap.exists();
 
-      if (alreadyFollowing) {
-        // Takipten çıkar
-        await deleteDoc(followerDocRef);
-        await deleteDoc(followingDocRef);
-        setIsFollowing(false);
-        setFollowers((prev) => prev.filter((f) => f.uid !== currentUser.uid));
-        setFollowersCount((c) => c - 1);
-      } else {
-        // Takip et
-        await setDoc(followerDocRef, { followedAt: serverTimestamp() });
-        await setDoc(followingDocRef, { followedAt: serverTimestamp() });
-        setIsFollowing(true);
-        setFollowers((prev) => [...prev, { uid: currentUser.uid, username: currentUser.displayName || 'Sen' }]);
-        setFollowersCount((c) => c + 1);
-      }
-    } catch (error: any) {
-      console.error('Takip işlemi hatası:', error);
-      alert('Takip işlemi sırasında hata oluştu: ' + (error.message || JSON.stringify(error)));
+    if (alreadyFollowing) {
+      // Takipten çıkar
+      await deleteDoc(followerDocRef);
+      await deleteDoc(followingDocRef);
+      setIsFollowing(false);
+      setFollowers((prev) => prev.filter((f) => f.uid !== currentUser.uid));
+      setFollowersCount((c) => c - 1);
+    } else {
+      // Takip et
+      await setDoc(followerDocRef, { followedAt: serverTimestamp() });
+      await setDoc(followingDocRef, { followedAt: serverTimestamp() });
+      setIsFollowing(true);
+      setFollowers((prev) => [...prev, { uid: currentUser.uid, username: currentUser.displayName || 'Sen' }]);
+      setFollowersCount((c) => c + 1);
     }
-  };
+  } catch (error: any) {
+    console.error('Takip işlemi hatası:', error);
+    alert('Takip işlemi sırasında hata oluştu: ' + (error.message || JSON.stringify(error)));
+  }
+};
 
-  const goToFollowers = () => navigation.navigate('Followers', { userId });
+  const goToFollowers = () => {
+    if (!followersAllowed && currentUser?.uid !== userId) {
+      alert('Kullanıcı takipçi listesini gizli tutuyor.');
+      return;
+    }
+    navigation.navigate('Followers', { userId });
+  };
   const goToFollowing = () => navigation.navigate('Following', { userId });
 
   const goToProductDetail = (product: Product) => {
@@ -286,9 +323,16 @@ const OtherProfileScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={toggleFollow} style={[styles.followButton, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.followText, { color: colors.background }]}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
-        </TouchableOpacity>
+        {/* Eğer takipçi ayarı kapalıysa takip butonunu ve takipçi sayısını gizle */}
+        {!followersAllowed && currentUser?.uid !== userId ? (
+          <Text style={{ textAlign: 'center', color: colors.notification, marginVertical: 10 }}>
+            Kullanıcı takipçi listesini gizli tutuyor.
+          </Text>
+        ) : (
+          <TouchableOpacity onPress={toggleFollow} style={[styles.followButton, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.followText, { color: colors.background }]}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
+          </TouchableOpacity>
+        )}
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Ürünleri</Text>
         {products.length === 0 ? (

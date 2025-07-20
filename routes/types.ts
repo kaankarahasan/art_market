@@ -32,4 +32,5 @@ export type RootStackParamList = {
   About: undefined;
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
+  PrivacyFollowerCommentSettings: undefined;
 };

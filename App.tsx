@@ -32,6 +32,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import AboutScreen from './screens/AboutScreen';
 import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import TermsOfUseScreen from './screens/TermsOfUseScreen';
+import PrivacyFollowerCommentSettingsScreen from './screens/PrivacyFollowerCommentSettingsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -123,6 +124,10 @@ export default function App() {
             <Stack.Screen
               name="TermsOfService"
               component={TermsOfUseScreen}
+            />
+            <Stack.Screen
+              name="PrivacyFollowerCommentSettings"
+              component={PrivacyFollowerCommentSettingsScreen}
             />
           </Stack.Navigator>
         </NavigationContainer>

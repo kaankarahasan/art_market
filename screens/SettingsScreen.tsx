@@ -117,9 +117,7 @@ const SettingsScreen = () => {
           )}
         </View>
 
-        <TouchableOpacity
-          onPress={() => Alert.alert('Takipçi / Yorum Ayarları', 'Bu özellik üzerinde çalışılıyor.')}
-        >
+        <TouchableOpacity onPress={() => navigation.navigate('PrivacyFollowerCommentSettings')}>
           <Text style={[styles.item, { color: colors.text }]}>Takipçi / Yorum Ayarları</Text>
         </TouchableOpacity>
       </View>
