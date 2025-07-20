@@ -1,13 +1,47 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Switch } from 'react-native';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebase'; 
+import { auth, db } from '../firebase'; 
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const userId = auth.currentUser?.uid;
+
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [loadingPrivacy, setLoadingPrivacy] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+    const fetchPrivacy = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          setIsPrivate(userDoc.data().isPrivate || false);
+        }
+      } catch {
+        Alert.alert('Hata', 'Gizlilik durumu alınamadı');
+      } finally {
+        setLoadingPrivacy(false);
+      }
+    };
+    fetchPrivacy();
+  }, [userId]);
+
+  const togglePrivacy = async () => {
+    if (!userId) return;
+    try {
+      const newPrivacy = !isPrivate;
+      await updateDoc(doc(db, 'users', userId), { isPrivate: newPrivacy });
+      setIsPrivate(newPrivacy);
+      Alert.alert('Başarılı', `Profiliniz ${newPrivacy ? 'gizli' : 'açık'} olarak ayarlandı.`);
+    } catch {
+      Alert.alert('Hata', 'Gizlilik ayarı güncellenemedi');
+    }
+  };
 
   const handleSignOut = () => {
     Alert.alert(
@@ -36,35 +70,54 @@ const SettingsScreen = () => {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Settings</Text>
 
-      {/* Ayarlar bölümleri */}
+      {/* Hesap Bölümü */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Hesap</Text>
         <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
           <Text style={styles.item}>Profil Bilgilerini Düzenle</Text>
         </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('ChangeEmailAndPassword')}>
-        <Text style={styles.item}>E-posta / Şifre Değiştir</Text>
-      </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('ChangeEmailAndPassword')}>
+          <Text style={styles.item}>E-posta / Şifre Değiştir</Text>
+        </TouchableOpacity>
       </View>
 
-
+      {/* Gizlilik Bölümü */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Gizlilik</Text>
-        <Text style={styles.item}>Hesabı Gizli Yap</Text>
-        <Text style={styles.item}>Takipçi / Yorum Ayarları</Text>
+
+        <View style={styles.privacyRow}>
+          <Text style={styles.item}>Hesabı Gizli Yap</Text>
+          {loadingPrivacy ? (
+            <Text>Yükleniyor...</Text>
+          ) : (
+            <Switch
+              value={isPrivate}
+              onValueChange={togglePrivacy}
+              trackColor={{ false: '#ccc', true: '#1976d2' }}
+              thumbColor={isPrivate ? '#fff' : '#fff'}
+            />
+          )}
+        </View>
+
+        <TouchableOpacity onPress={() => Alert.alert('Takipçi / Yorum Ayarları', 'Bu özellik üzerinde çalışılıyor.')}>
+          <Text style={styles.item}>Takipçi / Yorum Ayarları</Text>
+        </TouchableOpacity>
       </View>
 
+      {/* Görünüm */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Görünüm</Text>
         <Text style={styles.item}>Tema: Açık / Karanlık</Text>
       </View>
 
+      {/* Bildirimler */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Bildirimler</Text>
         <Text style={styles.item}>Push Bildirimleri</Text>
         <Text style={styles.item}>Ürün Bildirimleri</Text>
       </View>
 
+      {/* Hakkında */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Hakkında</Text>
         <Text style={styles.item}>Hakkımızda</Text>
@@ -72,7 +125,7 @@ const SettingsScreen = () => {
         <Text style={styles.item}>Kullanım Şartları</Text>
       </View>
 
-      {/* Mevcut Sign Out butonu */}
+      {/* Çıkış */}
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </TouchableOpacity>
@@ -105,6 +158,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingLeft: 10,
     color: '#666',
+  },
+  privacyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   signOutButton: {
     paddingVertical: 12,

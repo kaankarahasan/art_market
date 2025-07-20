@@ -45,6 +45,7 @@ const OtherProfileScreen = () => {
   const [following, setFollowing] = useState<UserInfo[]>([]);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const fetchFollowCounts = useCallback(async () => {
     if (!userId) return;
@@ -75,11 +76,33 @@ const OtherProfileScreen = () => {
         setIsFollowing(false);
         setFollowersCount(0);
         setFollowingCount(0);
+        setIsPrivate(false);
         return;
       }
 
       const data = userSnap.data();
       setUserData(data);
+      setIsPrivate(data.isPrivate || false);
+
+      // Eğer hesap gizliyse ve currentUser takip etmiyorsa ürünleri ve takipçileri çekme
+      let isAllowedToView = true;
+      if (data.isPrivate && currentUser?.uid !== userId) {
+        // Takip ediyorsa izin ver
+        const currentUserFollowerDoc = doc(db, 'users', userId, 'followers', currentUser?.uid || '');
+        const followerSnap = await getDoc(currentUserFollowerDoc);
+        isAllowedToView = followerSnap.exists();
+      }
+
+      if (!isAllowedToView) {
+        // Gizli hesap, takip etmiyor
+        setProducts([]);
+        setFollowers([]);
+        setFollowing([]);
+        setIsFollowing(false);
+        setFollowersCount(0);
+        setFollowingCount(0);
+        return;
+      }
 
       // Followers bilgilerini çek
       const followersRef = collection(db, 'users', userId, 'followers');
@@ -124,16 +147,38 @@ const OtherProfileScreen = () => {
 
   useEffect(() => {
     if (!userId) return;
-    const q = query(collection(db, 'products'), where('ownerId', '==', userId));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const productList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Product[];
-      setProducts(productList);
-    });
-    return () => unsubscribe();
-  }, [userId]);
+
+    // Ürünler için de gizlilik kontrolü yapıyoruz:
+    const fetchProducts = async () => {
+      try {
+        if (!userData) return;
+        let isAllowedToView = true;
+        if (userData.isPrivate && currentUser?.uid !== userId) {
+          const currentUserFollowerDoc = doc(db, 'users', userId, 'followers', currentUser?.uid || '');
+          const followerSnap = await getDoc(currentUserFollowerDoc);
+          isAllowedToView = followerSnap.exists();
+        }
+        if (!isAllowedToView) {
+          setProducts([]);
+          return;
+        }
+
+        const q = query(collection(db, 'products'), where('ownerId', '==', userId));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const productList = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as Product[];
+          setProducts(productList);
+        });
+        return unsubscribe;
+      } catch (error) {
+        console.error('Ürünler alınamadı:', error);
+      }
+    };
+
+    fetchProducts();
+  }, [userId, userData, currentUser?.uid]);
 
   useEffect(() => {
     fetchUserData();
@@ -193,6 +238,34 @@ const OtherProfileScreen = () => {
     return <ActivityIndicator style={{ marginTop: 40 }} size="large" color="#000" />;
   }
 
+  // Gizlilik sebebiyle erişim engellendiyse mesaj göster
+  if (isPrivate && currentUser?.uid !== userId) {
+    // Takip etmiyorsa erişim engellenecek (fetchUserData'da kontrol edildi)
+    if (!isFollowing) {
+      return (
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.container}>
+            {userData?.profilePicture ? (
+              <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: '#ccc' }]} />
+            )}
+            <Text style={styles.username}>{userData?.username || 'Kullanıcı'}</Text>
+            <Text style={styles.bio}>{userData?.bio || 'Açıklama yok.'}</Text>
+
+            <Text style={[styles.accessDeniedText, { marginTop: 30, textAlign: 'center' }]}>
+              Bu hesap gizli. Ürünlerini ve takipçilerini görebilmek için takipçi olmalısınız.
+            </Text>
+
+            <TouchableOpacity onPress={toggleFollow} style={styles.followButton}>
+              <Text style={styles.followText}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      );
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -232,7 +305,9 @@ const OtherProfileScreen = () => {
             renderItem={({ item }) => (
               <TouchableOpacity onPress={() => goToProductDetail(item)} style={styles.productCard}>
                 <Image source={{ uri: item.imageUrl || item.image }} style={styles.productImage} />
-                <Text numberOfLines={1} style={styles.productTitle}>{item.title}</Text>
+                <Text numberOfLines={1} style={styles.productTitle}>
+                  {item.title}
+                </Text>
               </TouchableOpacity>
             )}
           />
@@ -292,5 +367,9 @@ const styles = StyleSheet.create({
   countLabel: {
     fontSize: 14,
     color: '#666',
+  },
+  accessDeniedText: {
+    fontSize: 16,
+    color: '#a00',
   },
 });
