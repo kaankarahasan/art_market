@@ -223,6 +223,7 @@ const ProfileScreen = () => {
               />
               <Text style={styles.username}>@{userData?.username || 'kullaniciadi'}</Text>
               <Text style={styles.fullName}>{userData?.fullName || 'Ad Soyad'}</Text>
+              {userData?.bio ? <Text style={styles.bio}>{userData.bio}</Text> : null}
             </View>
 
             <View style={styles.countBox}>
@@ -402,4 +403,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  bio: {
+  fontSize: 14,
+  color: '#333',
+  textAlign: 'center',
+  marginTop: 4,
+  paddingHorizontal: 20,
+},
+
 });

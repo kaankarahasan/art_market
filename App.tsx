@@ -16,6 +16,7 @@ import SettingsScreen from './screens/SettingsScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import OtherProfileScreen from './screens/OtherProfileScreen';
 import AddProductScreen from './screens/AddProductScreen';
+import EditProfileScreen from './screens/EditProfileScreen';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 
 import MainTabNavigator from './navigators/MainTabNavigator';
@@ -97,6 +98,10 @@ export default function App() {
             name="UpdateProduct"
             component={UpdateProductScreen}
             options={{ title: 'Update Product' }}
+          />
+          <Stack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
           />
         </Stack.Navigator>
       </NavigationContainer>

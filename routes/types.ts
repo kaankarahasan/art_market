@@ -1,4 +1,4 @@
-// types.ts
+declare module 'uuid';
 
 export type Product = {
   id: string;
@@ -27,4 +27,5 @@ export type RootStackParamList = {
   OtherProfile: { userId: string };
   ProductDetail: { product: Product };
   UserProfile: { user: any };
+  EditProfile: undefined;
 };

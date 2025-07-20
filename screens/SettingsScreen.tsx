@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebase'; // Buradan import ettim
+import { auth } from '../firebase'; 
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
@@ -33,27 +33,90 @@ const SettingsScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Settings</Text>
 
+      {/* Ayarlar bölümleri */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Hesap</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
+          <Text style={styles.item}>Profil Bilgilerini Düzenle</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.item}>E-posta / Şifre Değiştir</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Gizlilik</Text>
+        <Text style={styles.item}>Hesabı Gizli Yap</Text>
+        <Text style={styles.item}>Takipçi / Yorum Ayarları</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Görünüm</Text>
+        <Text style={styles.item}>Tema: Açık / Karanlık</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Bildirimler</Text>
+        <Text style={styles.item}>Push Bildirimleri</Text>
+        <Text style={styles.item}>Ürün Bildirimleri</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Hakkında</Text>
+        <Text style={styles.item}>Hakkımızda</Text>
+        <Text style={styles.item}>Gizlilik Politikası</Text>
+        <Text style={styles.item}>Kullanım Şartları</Text>
+      </View>
+
+      {/* Mevcut Sign Out butonu */}
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 40 },
+  container: { 
+    padding: 20,
+    paddingBottom: 40,
+  },
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    marginBottom: 30,
+    alignSelf: 'center',
+  },
+  section: {
+    marginBottom: 25,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#444',
+  },
+  item: {
+    fontSize: 16,
+    paddingVertical: 6,
+    paddingLeft: 10,
+    color: '#666',
+  },
   signOutButton: {
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 10,
-    marginTop: 30,
     backgroundColor: '#ff5252',
+    alignSelf: 'center',
+    marginTop: 30,
   },
-  signOutButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  signOutButtonText: { 
+    color: '#fff', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
 });
 
 export default SettingsScreen;
