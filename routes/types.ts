@@ -29,4 +29,7 @@ export type RootStackParamList = {
   UserProfile: { user: any };
   EditProfile: undefined;
   ChangeEmailAndPassword: undefined;
+  About: undefined;
+  PrivacyPolicy: undefined;
+  TermsOfService: undefined;
 };

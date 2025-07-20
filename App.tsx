@@ -28,7 +28,10 @@ import UserProfileScreen from './screens/UserProfileScreen';
 import UpdateProductScreen from './screens/UpdateProductScreen';
 import { RootStackParamList } from './routes/types'
 import ChangeEmailAndPasswordScreen from './screens/ChangeEmailAndPasswordScreen';
-import { ThemeProvider } from './contexts/ThemeContext'; // Burayı projenin gerçek yolu ile değiştir
+import { ThemeProvider } from './contexts/ThemeContext';
+import AboutScreen from './screens/AboutScreen';
+import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
+import TermsOfUseScreen from './screens/TermsOfUseScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -108,6 +111,18 @@ export default function App() {
             <Stack.Screen
               name="ChangeEmailAndPassword"
               component={ChangeEmailAndPasswordScreen}
+            />
+            <Stack.Screen
+              name="About"
+              component={AboutScreen}
+            />
+            <Stack.Screen
+              name="PrivacyPolicy"
+              component={PrivacyPolicyScreen}
+            />
+            <Stack.Screen
+              name="TermsOfService"
+              component={TermsOfUseScreen}
             />
           </Stack.Navigator>
         </NavigationContainer>

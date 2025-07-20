@@ -148,9 +148,18 @@ const SettingsScreen = () => {
       {/* Hakkında */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Hakkında</Text>
-        <Text style={[styles.item, { color: colors.text }]}>Hakkımızda</Text>
-        <Text style={[styles.item, { color: colors.text }]}>Gizlilik Politikası</Text>
-        <Text style={[styles.item, { color: colors.text }]}>Kullanım Şartları</Text>
+
+        <TouchableOpacity onPress={() => navigation.navigate('About')}>
+          <Text style={[styles.item, { color: colors.text }]}>Hakkımızda</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate('PrivacyPolicy')}>
+          <Text style={[styles.item, { color: colors.text }]}>Gizlilik Politikası</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate('TermsOfService')}>
+          <Text style={[styles.item, { color: colors.text }]}>Kullanım Şartları</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Çıkış */}
