@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useContext } from 'react';
 import { getDocs } from 'firebase/firestore';
 import {
   View,
@@ -35,8 +35,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { RootStackParamList } from '../routes/types';
 import { deleteProduct } from '../utils/deleteProduct';
 import { updateProduct } from '../utils/updateProduct';
+import { ThemeContext } from '../contexts/ThemeContext';  // ThemeContext importu
 
-// types
 type ProfileRouteProp = RouteProp<RootStackParamList, 'Profile'>;
 type UserInfo = {
   uid: string;
@@ -49,6 +49,8 @@ const ProfileScreen = () => {
   const auth = getAuth();
   const firestore = getFirestore();
   const insets = useSafeAreaInsets();
+
+  const { colors } = useContext(ThemeContext);
 
   const currentUser = auth.currentUser;
   const profileId = route.params?.userId ?? currentUser?.uid ?? '';
@@ -189,14 +191,14 @@ const ProfileScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#666" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         data={products}
         keyExtractor={(item) => item.id}
@@ -208,7 +210,7 @@ const ProfileScreen = () => {
                 style={[styles.settingsIcon, { top: insets.top + 10 }]}
                 onPress={() => navigation.navigate('Settings')}
               >
-                <Icon name="settings-outline" size={28} color="#000" />
+                <Icon name="settings-outline" size={28} color={colors.text} />
               </TouchableOpacity>
             )}
 
@@ -221,59 +223,80 @@ const ProfileScreen = () => {
                 }
                 style={styles.avatar}
               />
-              <Text style={styles.username}>@{userData?.username || 'kullaniciadi'}</Text>
-              <Text style={styles.fullName}>{userData?.fullName || 'Ad Soyad'}</Text>
-              {userData?.bio ? <Text style={styles.bio}>{userData.bio}</Text> : null}
+              <Text style={[styles.username, { color: colors.text }]}>
+                @{userData?.username || 'kullaniciadi'}
+              </Text>
+              <Text style={[styles.fullName, { color: colors.text }]}>
+                {userData?.fullName || 'Ad Soyad'}
+              </Text>
+              {userData?.bio ? (
+                <Text style={[styles.bio, { color: colors.text }]}>{userData.bio}</Text>
+              ) : null}
             </View>
 
             <View style={styles.countBox}>
-              <TouchableOpacity style={styles.countItem} onPress={() => navigation.navigate('Followers', { userId: profileId })}>
-                <Text style={styles.countNumber}>{followers.length}</Text>
-                <Text style={styles.countLabel}>Takipçi</Text>
+              <TouchableOpacity
+                style={styles.countItem}
+                onPress={() => navigation.navigate('Followers', { userId: profileId })}
+              >
+                <Text style={[styles.countNumber, { color: colors.text }]}>{followers.length}</Text>
+                <Text style={[styles.countLabel, { color: colors.text }]}>Takipçi</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.countItem} onPress={() => navigation.navigate('Following', { userId: profileId })}>
-                <Text style={styles.countNumber}>{following.length}</Text>
-                <Text style={styles.countLabel}>Takip</Text>
+              <TouchableOpacity
+                style={styles.countItem}
+                onPress={() => navigation.navigate('Following', { userId: profileId })}
+              >
+                <Text style={[styles.countNumber, { color: colors.text }]}>{following.length}</Text>
+                <Text style={[styles.countLabel, { color: colors.text }]}>Takip</Text>
               </TouchableOpacity>
             </View>
 
             {!isOwnProfile && (
               <View style={styles.followButtonContainer}>
-                <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
-                  <Text style={styles.followButtonText}>
+                <TouchableOpacity
+                  style={[styles.followButton, { backgroundColor: colors.primary }]}
+                  onPress={handleFollow}
+                >
+                  <Text style={[styles.followButtonText, { color: colors.background }]}>
                     {isFollowing ? 'Takipten Çık' : 'Takip Et'}
                   </Text>
                 </TouchableOpacity>
               </View>
             )}
 
-            <TouchableOpacity style={styles.soldBox} onPress={() => navigation.navigate('Sold')}>
-              <Text style={styles.soldText}>Satılanlar: {soldCount}</Text>
+            <TouchableOpacity
+              style={[styles.soldBox, { backgroundColor: colors.card }]}
+              onPress={() => navigation.navigate('Sold')}
+            >
+              <Text style={[styles.soldText, { color: colors.text }]}>Satılanlar: {soldCount}</Text>
             </TouchableOpacity>
 
             {isOwnProfile && (
-              <TouchableOpacity style={styles.AddProductBox} onPress={() => navigation.navigate('AddProduct')}>
-                <Text style={styles.soldText}>Ürün Ekle</Text>
+              <TouchableOpacity
+                style={[styles.AddProductBox, { backgroundColor: colors.primary }]}
+                onPress={() => navigation.navigate('AddProduct')}
+              >
+                <Text style={[styles.soldText, { color: colors.background }]}>Ürün Ekle</Text>
               </TouchableOpacity>
             )}
 
-            <Text style={styles.listTitle}>Ürünler</Text>
+            <Text style={[styles.listTitle, { color: colors.text }]}>Ürünler</Text>
           </>
         }
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.productItem}
+            style={[styles.productItem, { backgroundColor: colors.card }]}
             onPress={() => navigation.navigate('ProductDetail', { product: item })}
             activeOpacity={0.8}
           >
             {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.productImage} />}
-            <Text style={styles.productTitle}>{item.title}</Text>
-            <Text style={styles.productDesc}>{item.description}</Text>
+            <Text style={[styles.productTitle, { color: colors.text }]}>{item.title}</Text>
+            <Text style={[styles.productDesc, { color: colors.text }]}>{item.description}</Text>
 
             {isOwnProfile && (
               <>
                 <TouchableOpacity
-                  style={styles.deleteButton}
+                  style={[styles.deleteButton, { backgroundColor: colors.notification }]}
                   onPress={() => confirmDelete(item.id, item.imageUrl, item.isSold)}
                   activeOpacity={0.7}
                 >
@@ -281,7 +304,7 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.updateButton}
+                  style={[styles.updateButton, { backgroundColor: colors.primary }]}
                   onPress={() => {
                     setSelectedProduct(item);
                     setNewTitle(item.title);
@@ -296,7 +319,11 @@ const ProfileScreen = () => {
             )}
           </TouchableOpacity>
         )}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>Henüz ürün yok.</Text>}
+        ListEmptyComponent={
+          <Text style={{ textAlign: 'center', marginTop: 20, color: colors.text }}>
+            Henüz ürün yok.
+          </Text>
+        }
       />
     </SafeAreaView>
   );
@@ -305,25 +332,23 @@ const ProfileScreen = () => {
 export default ProfileScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   settingsIcon: { position: 'absolute', right: 20, zIndex: 1 },
   headerSection: { alignItems: 'center', marginTop: 15 },
   avatar: { width: 100, height: 100, borderRadius: 60, marginBottom: 12 },
   username: { fontSize: 20, fontWeight: 'bold', marginBottom: 4 },
-  fullName: { fontSize: 16, color: '#666' },
+  fullName: { fontSize: 16 },
   followButtonContainer: { marginTop: 20, alignItems: 'center' },
   followButton: {
-    backgroundColor: '#0066cc',
     paddingVertical: 10,
     paddingHorizontal: 25,
     borderRadius: 5,
   },
-  followButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  followButtonText: { fontSize: 16, fontWeight: 'bold' },
   soldBox: {
     marginTop: 20,
     alignSelf: 'center',
-    backgroundColor: '#f2f2f2',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
@@ -331,7 +356,6 @@ const styles = StyleSheet.create({
   AddProductBox: {
     marginTop: 10,
     alignSelf: 'center',
-    backgroundColor: '#d9f7e7',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
@@ -342,7 +366,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     padding: 10,
     borderRadius: 5,
-    backgroundColor: '#f9f9f9',
   },
   productTitle: {
     fontWeight: 'bold',
@@ -351,7 +374,6 @@ const styles = StyleSheet.create({
   },
   productDesc: {
     fontSize: 14,
-    color: '#555',
   },
   productImage: {
     width: '100%',
@@ -374,10 +396,8 @@ const styles = StyleSheet.create({
   },
   countLabel: {
     fontSize: 14,
-    color: '#666',
   },
   deleteButton: {
-    backgroundColor: '#e33057',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
@@ -391,7 +411,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   updateButton: {
-    backgroundColor: '#2196f3',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
@@ -404,11 +423,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   bio: {
-  fontSize: 14,
-  color: '#333',
-  textAlign: 'center',
-  marginTop: 4,
-  paddingHorizontal: 20,
-},
-
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 4,
+    paddingHorizontal: 20,
+  },
 });

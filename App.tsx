@@ -28,88 +28,90 @@ import UserProfileScreen from './screens/UserProfileScreen';
 import UpdateProductScreen from './screens/UpdateProductScreen';
 import { RootStackParamList } from './routes/types'
 import ChangeEmailAndPasswordScreen from './screens/ChangeEmailAndPasswordScreen';
+import { ThemeProvider } from './contexts/ThemeContext'; // Burayı projenin gerçek yolu ile değiştir
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-// const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
 export default function App() {
   return (
     <FavoritesProvider>
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName="Login">
-          <Stack.Screen
-            name="Login"
-            component={LoginScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="SignUp"
-            component={SignUpScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Main"
-            component={MainTabNavigator}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Profile"
-            component={ProfileScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Followers"
-            component={FollowersScreen}
-          />
-          <Stack.Screen
-            name="Following"
-            component={FollowingScreen}
-          />
-          <Stack.Screen
-            name="Sold"
-            component={SoldScreen}
-            options={{ title: 'Sold Products' }}
-          />
-          <Stack.Screen
-            name="Settings"
-            component={SettingsScreen}
-            options={{ title: 'Settings' }}
-          />
-          <Stack.Screen
-            name="ProductDetail"
-            component={ProductDetailScreen}
-            options={{ title: 'Product Detail' }}
-          />
-          <Stack.Screen
-            name="UserProfile"  // Bu satırı ekliyoruz
-            component={UserProfileScreen}  // Bu ekranı daha sonra oluşturacağız
-            options={{ title: 'User Profile' }}
-          />
-          <Stack.Screen
-            name="OtherProfile"
-            component={OtherProfileScreen}
-            options={{ title: 'Other Profile' }}
-          />
-          <Stack.Screen
-            name="AddProduct"
-            component={AddProductScreen}
-            options={{ title: 'Add Product' }}
-          />
-          <Stack.Screen
-            name="UpdateProduct"
-            component={UpdateProductScreen}
-            options={{ title: 'Update Product' }}
-          />
-          <Stack.Screen
-            name="EditProfile"
-            component={EditProfileScreen}
-          />
-          <Stack.Screen
-            name="ChangeEmailAndPassword"
-            component={ChangeEmailAndPasswordScreen}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <ThemeProvider>
+        <NavigationContainer>
+          <Stack.Navigator initialRouteName="Login">
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="SignUp"
+              component={SignUpScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Main"
+              component={MainTabNavigator}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Followers"
+              component={FollowersScreen}
+            />
+            <Stack.Screen
+              name="Following"
+              component={FollowingScreen}
+            />
+            <Stack.Screen
+              name="Sold"
+              component={SoldScreen}
+              options={{ title: 'Sold Products' }}
+            />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{ title: 'Settings' }}
+            />
+            <Stack.Screen
+              name="ProductDetail"
+              component={ProductDetailScreen}
+              options={{ title: 'Product Detail' }}
+            />
+            <Stack.Screen
+              name="UserProfile"
+              component={UserProfileScreen}
+              options={{ title: 'User Profile' }}
+            />
+            <Stack.Screen
+              name="OtherProfile"
+              component={OtherProfileScreen}
+              options={{ title: 'Other Profile' }}
+            />
+            <Stack.Screen
+              name="AddProduct"
+              component={AddProductScreen}
+              options={{ title: 'Add Product' }}
+            />
+            <Stack.Screen
+              name="UpdateProduct"
+              component={UpdateProductScreen}
+              options={{ title: 'Update Product' }}
+            />
+            <Stack.Screen
+              name="EditProfile"
+              component={EditProfileScreen}
+            />
+            <Stack.Screen
+              name="ChangeEmailAndPassword"
+              component={ChangeEmailAndPasswordScreen}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ThemeProvider>
     </FavoritesProvider>
   );
 }

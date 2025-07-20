@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState, useEffect, useCallback } from 'react';
+import React, { useLayoutEffect, useState, useEffect, useCallback, useContext } from 'react';
 import {
   Text,
   Image,
@@ -20,6 +20,7 @@ import { useFavorites } from '../contexts/FavoritesContext';
 import { getDoc, doc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemeContext } from '../contexts/ThemeContext';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
@@ -28,6 +29,8 @@ const ProductDetailScreen = () => {
   const route = useRoute<ProductDetailRouteProp>();
   const { product } = route.params;
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
+
+  const { colors } = useContext(ThemeContext);
 
   const currentUser = auth.currentUser;
 
@@ -72,7 +75,6 @@ const ProductDetailScreen = () => {
     fetchOwnerData();
   }, [productData.ownerId]);
 
-  // Geri dönünce ürünü tekrar getir
   useFocusEffect(
     useCallback(() => {
       const fetchProduct = async () => {
@@ -110,57 +112,71 @@ const ProductDetailScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Image source={{ uri: productData.imageUrl }} style={styles.image} />
 
       <TouchableOpacity
         onPress={() =>
           isFavorite ? removeFromFavorites(productData.id) : addToFavorites(productData)
         }
-        style={styles.favoriteButton}
+        style={[styles.favoriteButton, { backgroundColor: colors.card }]}
       >
-        <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color="red" />
+        <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color={colors.notification} />
       </TouchableOpacity>
 
-      <Text style={styles.title}>{productData.title}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{productData.title}</Text>
 
       {loadingOwner ? (
-        <ActivityIndicator size="small" color="#666" />
+        <ActivityIndicator size="small" color={colors.text} />
       ) : ownerData ? (
-        <TouchableOpacity onPress={goToUserProfile}>
+        <TouchableOpacity onPress={goToUserProfile} style={styles.ownerContainer}>
           {ownerData.profilePicture && ownerData.profilePicture.length > 5 && (
             <Image source={{ uri: ownerData.profilePicture }} style={styles.ownerImage} />
           )}
-          <Text style={[styles.ownerName, { textDecorationLine: 'underline', color: '#0066cc' }]}>
+          <Text
+            style={[
+              styles.ownerName,
+              {
+                textDecorationLine: 'underline',
+                color: colors.primary,
+              },
+            ]}
+          >
             👤 Satıcı: {ownerData.username || ownerData.email || 'Bilinmiyor'}
           </Text>
         </TouchableOpacity>
       ) : (
-        <Text style={styles.ownerName}>👤 Satıcı bilgisi yok</Text>
+        <Text style={[styles.ownerName, { color: colors.text }]}>👤 Satıcı bilgisi yok</Text>
       )}
 
-      <Text style={styles.detail}>📦 Kategori: {productData.category || 'Bilinmiyor'}</Text>
-      <Text style={styles.detail}>
+      <Text style={[styles.detail, { color: colors.text }]}>📦 Kategori: {productData.category || 'Bilinmiyor'}</Text>
+      <Text style={[styles.detail, { color: colors.text }]}>
         💰 Fiyat: {productData.price ? `${productData.price} ₺` : 'Belirtilmemiş'}
       </Text>
       {productData.createdAt && (
-        <Text style={styles.detail}>📅 Eklenme Tarihi: {formatDate(productData.createdAt)}</Text>
+        <Text style={[styles.detail, { color: colors.text }]}>
+          📅 Eklenme Tarihi: {formatDate(productData.createdAt)}
+        </Text>
       )}
 
-      <Text style={styles.description}>
+      <Text style={[styles.description, { color: colors.text }]}>
         {productData.description || 'Bu ürün hakkında detaylı bilgi bulunmamaktadır.'}
       </Text>
 
       {isOwner && (
         <TouchableOpacity
-          style={styles.editButton}
+          style={[styles.editButton, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate('UpdateProduct', { product: productData })}
         >
-          <Text style={styles.editButtonText}>Ürünü Güncelle</Text>
+          <Text style={[styles.editButtonText, { color: colors.background }]}>Ürünü Güncelle</Text>
         </TouchableOpacity>
       )}
 
-      <Button title="← Galeriye Dön" onPress={() => navigation.goBack()} />
+      <Button
+        title="← Galeriye Dön"
+        color={colors.primary}
+        onPress={() => navigation.goBack()}
+      />
     </SafeAreaView>
   );
 };
@@ -168,29 +184,27 @@ const ProductDetailScreen = () => {
 export default ProductDetailScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff', position: 'relative' },
+  container: { flex: 1, padding: 20, position: 'relative' },
   image: { width: '100%', height: 300, borderRadius: 12, marginBottom: 20 },
   favoriteButton: {
     position: 'absolute',
     top: 60,
     right: 30,
-    backgroundColor: '#ffffffcc',
     padding: 8,
     borderRadius: 20,
     zIndex: 10,
   },
   title: { fontSize: 22, fontWeight: '600', marginBottom: 10 },
-  description: { fontSize: 16, color: '#333', marginTop: 10, marginBottom: 20 },
-  detail: { fontSize: 15, color: '#555', marginBottom: 5 },
+  description: { fontSize: 16, marginTop: 10, marginBottom: 20 },
+  detail: { fontSize: 15, marginBottom: 5 },
   ownerContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   ownerImage: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
-  ownerName: { fontSize: 16, color: '#888', marginBottom: 5 },
+  ownerName: { fontSize: 16, marginBottom: 5 },
   editButton: {
-    backgroundColor: '#0066cc',
     padding: 10,
     borderRadius: 6,
     marginBottom: 15,
     alignItems: 'center',
   },
-  editButtonText: { color: '#fff', fontWeight: 'bold' },
+  editButtonText: { fontWeight: 'bold' },
 });

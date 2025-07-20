@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   TextInput,
@@ -8,6 +8,8 @@ import {
   Alert,
   Image,
   TouchableOpacity,
+  useColorScheme,
+  ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
@@ -15,8 +17,12 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { v4 as uuidv4 } from 'uuid';
+import { ThemeContext } from '../contexts/ThemeContext';
 
 const AddProductScreen = () => {
+  const { isDarkTheme } = useContext(ThemeContext);
+  const styles = getStyles(isDarkTheme);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState<string | null>(null);
@@ -45,42 +51,26 @@ const AddProductScreen = () => {
   };
 
   const uploadImageAsync = async (uri: string): Promise<string> => {
-  setUploading(true);
-  try {
-    console.log("🚀 Yükleme başladı...");
-    console.log("📷 URI:", uri);
+    setUploading(true);
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
 
-    const response = await fetch(uri);
-    const blob = await response.blob();
+      const imageId = uuidv4();
+      const imagePath = `product_images/${imageId}.jpg`;
+      const imageRef = ref(storage, imagePath);
 
-    console.log("🟤 Blob oluşturuldu:", blob);
-    console.log("🟤 Blob tipi:", blob.type);
-    console.log("🟤 Blob boyutu:", blob.size);
+      await uploadBytes(imageRef, blob, { contentType: 'image/jpeg' });
 
-    const imageId = uuidv4();
-    const imagePath = `product_images/${imageId}.jpg`;
-    const imageRef = ref(storage, imagePath);
-
-    console.log("📂 Storage path:", imagePath);
-
-    // Burada contentType opsiyonu eklendi
-    await uploadBytes(imageRef, blob, { contentType: 'image/jpeg' });
-    console.log("✅ Yükleme başarılı!");
-
-    const downloadURL = await getDownloadURL(imageRef);
-    console.log("🌐 Download URL:", downloadURL);
-
-    return downloadURL;
-  } catch (error: any) {
-      console.log('🔥 Upload error code:', error.code);
-      console.log('🔥 Upload error message:', error.message);
+      const downloadURL = await getDownloadURL(imageRef);
+      return downloadURL;
+    } catch (error: any) {
       Alert.alert('Hata', error.message ?? 'Resim yüklenemedi.');
       return '';
-  } finally {
-    setUploading(false);
-    console.log("📦 Yükleme işlemi tamamlandı.");
-  }
-};
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleAddProduct = async () => {
     if (!title.trim() || !description.trim() || !price.trim() || !category.trim()) {
@@ -95,7 +85,6 @@ const AddProductScreen = () => {
         return;
       }
 
-      // Kullanıcı bilgileri
       const userDocRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userDocRef);
       const userData = userSnap.data();
@@ -137,11 +126,12 @@ const AddProductScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.label}>Ürün Adı</Text>
       <TextInput
         style={styles.input}
         placeholder="Ürün adı girin"
+        placeholderTextColor={isDarkTheme ? '#999' : '#999'}
         value={title}
         onChangeText={setTitle}
       />
@@ -150,6 +140,7 @@ const AddProductScreen = () => {
       <TextInput
         style={[styles.input, { height: 100 }]}
         placeholder="Açıklama girin"
+        placeholderTextColor={isDarkTheme ? '#999' : '#999'}
         multiline
         value={description}
         onChangeText={setDescription}
@@ -159,6 +150,7 @@ const AddProductScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Fiyat girin"
+        placeholderTextColor={isDarkTheme ? '#999' : '#999'}
         keyboardType="numeric"
         value={price}
         onChangeText={setPrice}
@@ -168,6 +160,7 @@ const AddProductScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Kategori girin"
+        placeholderTextColor={isDarkTheme ? '#999' : '#999'}
         value={category}
         onChangeText={setCategory}
       />
@@ -182,44 +175,50 @@ const AddProductScreen = () => {
         title={uploading ? 'Yükleniyor...' : 'Kaydet'}
         onPress={handleAddProduct}
         disabled={uploading}
+        color={isDarkTheme ? '#90caf9' : '#1976d2'}
       />
-    </View>
+    </ScrollView>
   );
 };
 
-export default AddProductScreen;
+const getStyles = (isDarkTheme: boolean) =>
+  StyleSheet.create({
+    container: {
+      flexGrow: 1,
+      padding: 20,
+      backgroundColor: isDarkTheme ? '#121212' : '#fff',
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: isDarkTheme ? '#444' : '#ccc',
+      backgroundColor: isDarkTheme ? '#1e1e1e' : '#fff',
+      color: isDarkTheme ? '#fff' : '#000',
+      padding: 10,
+      marginBottom: 15,
+      borderRadius: 5,
+    },
+    label: {
+      marginBottom: 5,
+      fontWeight: 'bold',
+      color: isDarkTheme ? '#eee' : '#111',
+    },
+    imagePicker: {
+      backgroundColor: isDarkTheme ? '#333' : '#eee',
+      padding: 12,
+      alignItems: 'center',
+      marginBottom: 15,
+      borderRadius: 5,
+    },
+    imagePickerText: {
+      color: isDarkTheme ? '#ccc' : '#555',
+    },
+    previewImage: {
+      width: 150,
+      height: 150,
+      marginBottom: 15,
+      borderRadius: 10,
+      alignSelf: 'center',
+    },
+  });
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 15,
-    borderRadius: 5,
-  },
-  label: {
-    marginBottom: 5,
-    fontWeight: 'bold',
-  },
-  imagePicker: {
-    backgroundColor: '#eee',
-    padding: 12,
-    alignItems: 'center',
-    marginBottom: 15,
-    borderRadius: 5,
-  },
-  imagePickerText: {
-    color: '#555',
-  },
-  previewImage: {
-    width: 150,
-    height: 150,
-    marginBottom: 15,
-    borderRadius: 10,
-    alignSelf: 'center',
-  },
-});
+export default AddProductScreen;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import {
   View,
   Text,
@@ -26,11 +26,13 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { Product } from '../routes/types';
+import { ThemeContext } from '../contexts/ThemeContext';
 
 type OtherProfileRouteProp = RouteProp<RootStackParamList, 'OtherProfile'>;
 type UserInfo = { uid: string; username: string };
 
 const OtherProfileScreen = () => {
+  const { colors } = useContext(ThemeContext);
   const route = useRoute<OtherProfileRouteProp>();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { userId } = route.params;
@@ -84,17 +86,15 @@ const OtherProfileScreen = () => {
       setUserData(data);
       setIsPrivate(data.isPrivate || false);
 
-      // Eğer hesap gizliyse ve currentUser takip etmiyorsa ürünleri ve takipçileri çekme
+      // Gizlilik kontrolü
       let isAllowedToView = true;
       if (data.isPrivate && currentUser?.uid !== userId) {
-        // Takip ediyorsa izin ver
         const currentUserFollowerDoc = doc(db, 'users', userId, 'followers', currentUser?.uid || '');
         const followerSnap = await getDoc(currentUserFollowerDoc);
         isAllowedToView = followerSnap.exists();
       }
 
       if (!isAllowedToView) {
-        // Gizli hesap, takip etmiyor
         setProducts([]);
         setFollowers([]);
         setFollowing([]);
@@ -104,20 +104,20 @@ const OtherProfileScreen = () => {
         return;
       }
 
-      // Followers bilgilerini çek
+      // Takipçi bilgileri
       const followersRef = collection(db, 'users', userId, 'followers');
       const followersDocsSnap = await getDocs(followersRef);
-      const followerIds = followersDocsSnap.docs.map((doc): string => doc.id);
+      const followerIds = followersDocsSnap.docs.map((doc) => doc.id);
 
-      // Following bilgilerini çek
+      // Takip edilenler bilgileri
       const followingRef = collection(db, 'users', userId, 'following');
       const followingDocsSnap = await getDocs(followingRef);
-      const followingIds = followingDocsSnap.docs.map((doc): string => doc.id);
+      const followingIds = followingDocsSnap.docs.map((doc) => doc.id);
 
-      // User bilgilerini fetch et
+      // UserInfo fetch fonksiyonu
       const fetchUserInfos = async (uids: string[]): Promise<UserInfo[]> => {
         if (uids.length === 0) return [];
-        const promises = uids.map(async (uid: string) => {
+        const promises = uids.map(async (uid) => {
           const snap = await getDoc(doc(db, 'users', uid));
           return { uid, username: snap.data()?.username || 'Bilinmeyen' };
         });
@@ -130,7 +130,7 @@ const OtherProfileScreen = () => {
       setFollowers(followersData);
       setFollowing(followingData);
 
-      // Takip durumu kontrolü
+      // Takip durumu
       if (currentUser?.uid) {
         const currentUserFollowerDoc = doc(db, 'users', userId, 'followers', currentUser.uid);
         const docSnap = await getDoc(currentUserFollowerDoc);
@@ -148,7 +148,7 @@ const OtherProfileScreen = () => {
   useEffect(() => {
     if (!userId) return;
 
-    // Ürünler için de gizlilik kontrolü yapıyoruz:
+    // Ürünleri çek, gizlilik kontrolüyle
     const fetchProducts = async () => {
       try {
         if (!userData) return;
@@ -235,67 +235,64 @@ const OtherProfileScreen = () => {
   };
 
   if (loading) {
-    return <ActivityIndicator style={{ marginTop: 40 }} size="large" color="#000" />;
+    return <ActivityIndicator style={{ marginTop: 40 }} size="large" color={colors.primary} />;
   }
 
-  // Gizlilik sebebiyle erişim engellendiyse mesaj göster
-  if (isPrivate && currentUser?.uid !== userId) {
-    // Takip etmiyorsa erişim engellenecek (fetchUserData'da kontrol edildi)
-    if (!isFollowing) {
-      return (
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.container}>
-            {userData?.profilePicture ? (
-              <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, { backgroundColor: '#ccc' }]} />
-            )}
-            <Text style={styles.username}>{userData?.username || 'Kullanıcı'}</Text>
-            <Text style={styles.bio}>{userData?.bio || 'Açıklama yok.'}</Text>
+  if (isPrivate && currentUser?.uid !== userId && !isFollowing) {
+    // Gizli hesap ve takip etmiyorsa erişim engellendi
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          {userData?.profilePicture ? (
+            <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: colors.border }]} />
+          )}
+          <Text style={[styles.username, { color: colors.text }]}>{userData?.username || 'Kullanıcı'}</Text>
+          <Text style={[styles.bio, { color: colors.text }]}>{userData?.bio || 'Açıklama yok.'}</Text>
 
-            <Text style={[styles.accessDeniedText, { marginTop: 30, textAlign: 'center' }]}>
-              Bu hesap gizli. Ürünlerini ve takipçilerini görebilmek için takipçi olmalısınız.
-            </Text>
+          <Text style={[styles.accessDeniedText, { marginTop: 30, textAlign: 'center', color: colors.notification }]}>
+            Bu hesap gizli. Ürünlerini ve takipçilerini görebilmek için takipçi olmalısınız.
+          </Text>
 
-            <TouchableOpacity onPress={toggleFollow} style={styles.followButton}>
-              <Text style={styles.followText}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      );
-    }
+          <TouchableOpacity onPress={toggleFollow} style={[styles.followButton, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.followText, { color: colors.background }]}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {userData?.profilePicture ? (
           <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
         ) : (
-          <View style={[styles.avatar, { backgroundColor: '#ccc' }]} />
+          <View style={[styles.avatar, { backgroundColor: colors.border }]} />
         )}
-        <Text style={styles.username}>{userData?.username || 'Kullanıcı'}</Text>
-        <Text style={styles.bio}>{userData?.bio || 'Açıklama yok.'}</Text>
+        <Text style={[styles.username, { color: colors.text }]}>{userData?.username || 'Kullanıcı'}</Text>
+        <Text style={[styles.bio, { color: colors.text }]}>{userData?.bio || 'Açıklama yok.'}</Text>
 
         <View style={styles.countBox}>
           <TouchableOpacity style={styles.countItem} onPress={goToFollowers}>
-            <Text style={styles.countNumber}>{followersCount}</Text>
-            <Text style={styles.countLabel}>Takipçi</Text>
+            <Text style={[styles.countNumber, { color: colors.text }]}>{followersCount}</Text>
+            <Text style={[styles.countLabel, { color: colors.text }]}>Takipçi</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.countItem} onPress={goToFollowing}>
-            <Text style={styles.countNumber}>{followingCount}</Text>
-            <Text style={styles.countLabel}>Takip</Text>
+            <Text style={[styles.countNumber, { color: colors.text }]}>{followingCount}</Text>
+            <Text style={[styles.countLabel, { color: colors.text }]}>Takip</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={toggleFollow} style={styles.followButton}>
-          <Text style={styles.followText}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
+        <TouchableOpacity onPress={toggleFollow} style={[styles.followButton, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.followText, { color: colors.background }]}>{isFollowing ? 'Takibi Bırak' : 'Takip Et'}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>Ürünleri</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Ürünleri</Text>
         {products.length === 0 ? (
-          <Text style={styles.emptyText}>Henüz ürün eklememiş.</Text>
+          <Text style={[styles.emptyText, { color: colors.text }]}>Henüz ürün eklememiş.</Text>
         ) : (
           <FlatList
             data={products}
@@ -303,9 +300,9 @@ const OtherProfileScreen = () => {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.productList}
             renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => goToProductDetail(item)} style={styles.productCard}>
+              <TouchableOpacity onPress={() => goToProductDetail(item)} style={[styles.productCard, { borderColor: colors.border }]}>
                 <Image source={{ uri: item.imageUrl || item.image }} style={styles.productImage} />
-                <Text numberOfLines={1} style={styles.productTitle}>
+                <Text numberOfLines={1} style={[styles.productTitle, { color: colors.text }]}>
                   {item.title}
                 </Text>
               </TouchableOpacity>
@@ -322,29 +319,26 @@ export default OtherProfileScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
   },
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  container: { flex: 1, padding: 20 },
   avatar: { width: 100, height: 100, borderRadius: 50, alignSelf: 'center', marginBottom: 10 },
   username: { fontSize: 22, fontWeight: 'bold', textAlign: 'center' },
-  bio: { fontSize: 14, color: '#555', textAlign: 'center', marginBottom: 10 },
+  bio: { fontSize: 14, textAlign: 'center', marginBottom: 10 },
   followButton: {
-    backgroundColor: '#0066cc',
     padding: 10,
     borderRadius: 6,
     marginTop: 15,
     marginBottom: 15,
     alignSelf: 'center',
   },
-  followText: { color: '#fff', fontWeight: 'bold' },
+  followText: { fontWeight: 'bold' },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
-  emptyText: { textAlign: 'center', color: '#777' },
+  emptyText: { textAlign: 'center' },
   productList: { gap: 15 },
   productCard: {
     flex: 1,
     margin: 5,
     borderWidth: 1,
-    borderColor: '#eee',
     borderRadius: 8,
     overflow: 'hidden',
   },
@@ -366,10 +360,8 @@ const styles = StyleSheet.create({
   },
   countLabel: {
     fontSize: 14,
-    color: '#666',
   },
   accessDeniedText: {
     fontSize: 16,
-    color: '#a00',
   },
 });

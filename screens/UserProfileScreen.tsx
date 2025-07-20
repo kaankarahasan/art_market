@@ -1,15 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, Button, ScrollView } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../routes/types';
-import { RouteProp } from '@react-navigation/native';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { useThemeContext } from '../contexts/ThemeContext';
 
-// useRoute için doğru parametre tipi
 type UserProfileScreenRouteProp = RouteProp<RootStackParamList, 'UserProfile'>;
 
 const UserProfileScreen = () => {
-  const { params } = useRoute<UserProfileScreenRouteProp>(); // Parametreyi doğru tip ile alıyoruz
+  const { colors } = useThemeContext();
+
+  const { params } = useRoute<UserProfileScreenRouteProp>();
   const { user } = params;
   const [userData, setUserData] = useState<any>(user);
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
@@ -31,20 +39,31 @@ const UserProfileScreen = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}
+    >
       <View style={styles.profileHeader}>
         <Image source={{ uri: userData.avatarUrl }} style={styles.profileImage} />
-        <Text style={styles.username}>{userData.name}</Text>
-        <Text style={styles.fullName}>{userData.fullName}</Text>
-        <Text style={styles.bio}>{userData.bio || 'No bio available'}</Text>
+        <Text style={[styles.username, { color: colors.text }]}>{userData.name}</Text>
+        <Text style={[styles.fullName, { color: colors.text }]}>{userData.fullName}</Text>
+        <Text style={[styles.bio, { color: colors.text }]}>
+          {userData.bio || 'No bio available'}
+        </Text>
       </View>
 
-      <Button
-        title={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+      <TouchableOpacity
+        style={[
+          styles.favoriteButton,
+          { backgroundColor: isFavorite ? colors.notification : colors.primary },
+        ]}
         onPress={handleFavoriteToggle}
-      />
+      >
+        <Text style={styles.favoriteButtonText}>
+          {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+        </Text>
+      </TouchableOpacity>
 
-      {/* Additional sections for user's artwork, posts, etc. can be added here */}
+      {/* İstersen buraya kullanıcının artwork, post vs. bölümleri ekleyebilirsin */}
     </ScrollView>
   );
 };
@@ -53,8 +72,7 @@ export default UserProfileScreen;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#fff',
+    flexGrow: 1,
     padding: 15,
   },
   profileHeader: {
@@ -70,17 +88,24 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
   },
   fullName: {
     fontSize: 18,
-    color: '#666',
     marginBottom: 10,
   },
   bio: {
     fontSize: 14,
-    color: '#777',
     textAlign: 'center',
     marginBottom: 20,
+  },
+  favoriteButton: {
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  favoriteButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });

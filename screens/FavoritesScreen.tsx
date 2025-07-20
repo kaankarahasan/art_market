@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../routes/types';
+import { ThemeContext } from '../contexts/ThemeContext';
 
 const numColumns = 2;
 const itemSize = Dimensions.get('window').width / numColumns - 20;
@@ -13,14 +14,15 @@ const FavoritesScreen = () => {
   const { favorites, removeFromFavorites } = useFavorites();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { isDarkTheme, colors } = useContext(ThemeContext);
 
   const renderItem = ({ item }: { item: typeof favorites[0] }) => (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, { backgroundColor: isDarkTheme ? colors.card : '#f0f0f0' }]}
       onPress={() => navigation.navigate('ProductDetail', { product: item })}
     >
       <Image source={{ uri: item.imageUrl || item.image }} style={styles.image} />
-      <Text style={styles.title}>{item.title}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
       <TouchableOpacity
         onPress={() => removeFromFavorites(item.id)}
         style={styles.favoriteButton}
@@ -31,9 +33,9 @@ const FavoritesScreen = () => {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       {favorites.length === 0 ? (
-        <Text style={styles.emptyText}>No favorites yet!</Text>
+        <Text style={[styles.emptyText, { color: colors.text }]}>No favorites yet!</Text>
       ) : (
         <FlatList
           data={favorites}
@@ -51,14 +53,12 @@ const FavoritesScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   row: {
     justifyContent: 'space-between',
     marginBottom: 15,
   },
   card: {
-    backgroundColor: '#f0f0f0',
     borderRadius: 10,
     width: itemSize,
     alignItems: 'center',
@@ -73,11 +73,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    color: '#333',
   },
   emptyText: {
     fontSize: 18,
-    color: '#888',
     textAlign: 'center',
     marginTop: 20,
   },

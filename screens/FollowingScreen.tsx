@@ -6,6 +6,7 @@ import { db } from '../firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { getAuth } from 'firebase/auth';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 type User = {
   uid: string;
@@ -24,6 +25,8 @@ const FollowingScreen = () => {
 
   const auth = getAuth();
   const currentUser = auth.currentUser;
+
+  const { colors } = useThemeContext();
 
   useEffect(() => {
     if (!userId) return;
@@ -61,27 +64,27 @@ const FollowingScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Yükleniyor...</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.text }}>Yükleniyor...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text>{error}</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.text }}>{error}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Takip Ettiklerin</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.header, { color: colors.text }]}>Takip Ettiklerin</Text>
       {following.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyText}>
+          <Text style={[styles.emptyText, { color: colors.text }]}>
             {userId === currentUser?.uid
               ? 'Henüz kimseyi takip etmiyorsunuz.'
               : 'Bu kullanıcı henüz kimseyi takip etmiyor.'}
@@ -98,9 +101,11 @@ const FollowingScreen = () => {
                   ? navigation.navigate('Profile', {})
                   : navigation.navigate('OtherProfile', { userId: item.uid })
               }
-              style={styles.userCard}
+              style={[styles.userCard, { backgroundColor: colors.card }]}
             >
-              <Text style={styles.username}>{item.username || item.email}</Text>
+              <Text style={[styles.username, { color: colors.text }]}>
+                {item.username || item.email}
+              </Text>
             </TouchableOpacity>
           )}
           showsVerticalScrollIndicator={false}
@@ -113,12 +118,11 @@ const FollowingScreen = () => {
 export default FollowingScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  container: { flex: 1, padding: 20 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
   userCard: {
     padding: 12,
-    backgroundColor: '#f1f1f1',
     borderRadius: 8,
     marginBottom: 10,
   },
@@ -127,6 +131,5 @@ const styles = StyleSheet.create({
     marginTop: 30,
     textAlign: 'center',
     fontSize: 16,
-    color: '#666',
   },
 });

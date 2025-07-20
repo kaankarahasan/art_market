@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Switch } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  Switch,
+} from 'react-native';
 import { signOut } from 'firebase/auth';
-import { auth, db } from '../firebase'; 
+import { auth, db } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const userId = auth.currentUser?.uid;
+
+  const { isDarkTheme, toggleTheme, colors } = useThemeContext();
 
   const [isPrivate, setIsPrivate] = useState(false);
   const [loadingPrivacy, setLoadingPrivacy] = useState(true);
@@ -43,21 +54,26 @@ const SettingsScreen = () => {
     }
   };
 
+  const onToggleTheme = () => {
+    toggleTheme();
+    Alert.alert('Tema Değişti', `Tema ${!isDarkTheme ? 'Karanlık' : 'Açık'} olarak ayarlandı.`);
+  };
+
   const handleSignOut = () => {
     Alert.alert(
-      'Confirm Sign Out',
-      'Are you sure you want to sign out?',
+      'Çıkış Yap',
+      'Çıkış yapmak istediğinize emin misiniz?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'İptal', style: 'cancel' },
         {
-          text: 'Sign Out',
+          text: 'Çıkış Yap',
           onPress: () => {
             signOut(auth)
               .then(() => {
                 navigation.replace('Login');
               })
               .catch(error => {
-                Alert.alert('Error', error.message);
+                Alert.alert('Hata', error.message);
               });
           },
         },
@@ -67,28 +83,30 @@ const SettingsScreen = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Settings</Text>
+    <ScrollView
+      contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <Text style={[styles.title, { color: colors.text }]}>Ayarlar</Text>
 
       {/* Hesap Bölümü */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Hesap</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Hesap</Text>
         <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
-          <Text style={styles.item}>Profil Bilgilerini Düzenle</Text>
+          <Text style={[styles.item, { color: colors.text }]}>Profil Bilgilerini Düzenle</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('ChangeEmailAndPassword')}>
-          <Text style={styles.item}>E-posta / Şifre Değiştir</Text>
+          <Text style={[styles.item, { color: colors.text }]}>E-posta / Şifre Değiştir</Text>
         </TouchableOpacity>
       </View>
 
       {/* Gizlilik Bölümü */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Gizlilik</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Gizlilik</Text>
 
         <View style={styles.privacyRow}>
-          <Text style={styles.item}>Hesabı Gizli Yap</Text>
+          <Text style={[styles.item, { color: colors.text }]}>Hesabı Gizli Yap</Text>
           {loadingPrivacy ? (
-            <Text>Yükleniyor...</Text>
+            <Text style={{ color: colors.text }}>Yükleniyor...</Text>
           ) : (
             <Switch
               value={isPrivate}
@@ -99,48 +117,58 @@ const SettingsScreen = () => {
           )}
         </View>
 
-        <TouchableOpacity onPress={() => Alert.alert('Takipçi / Yorum Ayarları', 'Bu özellik üzerinde çalışılıyor.')}>
-          <Text style={styles.item}>Takipçi / Yorum Ayarları</Text>
+        <TouchableOpacity
+          onPress={() => Alert.alert('Takipçi / Yorum Ayarları', 'Bu özellik üzerinde çalışılıyor.')}
+        >
+          <Text style={[styles.item, { color: colors.text }]}>Takipçi / Yorum Ayarları</Text>
         </TouchableOpacity>
       </View>
 
       {/* Görünüm */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Görünüm</Text>
-        <Text style={styles.item}>Tema: Açık / Karanlık</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Görünüm</Text>
+        <View style={styles.privacyRow}>
+          <Text style={[styles.item, { color: colors.text }]}>Tema: {isDarkTheme ? 'Karanlık' : 'Açık'}</Text>
+          <Switch
+            value={isDarkTheme}
+            onValueChange={onToggleTheme}
+            trackColor={{ false: '#ccc', true: '#1976d2' }}
+            thumbColor={isDarkTheme ? '#fff' : '#fff'}
+          />
+        </View>
       </View>
 
       {/* Bildirimler */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Bildirimler</Text>
-        <Text style={styles.item}>Push Bildirimleri</Text>
-        <Text style={styles.item}>Ürün Bildirimleri</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Bildirimler</Text>
+        <Text style={[styles.item, { color: colors.text }]}>Push Bildirimleri</Text>
+        <Text style={[styles.item, { color: colors.text }]}>Ürün Bildirimleri</Text>
       </View>
 
       {/* Hakkında */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Hakkında</Text>
-        <Text style={styles.item}>Hakkımızda</Text>
-        <Text style={styles.item}>Gizlilik Politikası</Text>
-        <Text style={styles.item}>Kullanım Şartları</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Hakkında</Text>
+        <Text style={[styles.item, { color: colors.text }]}>Hakkımızda</Text>
+        <Text style={[styles.item, { color: colors.text }]}>Gizlilik Politikası</Text>
+        <Text style={[styles.item, { color: colors.text }]}>Kullanım Şartları</Text>
       </View>
 
       {/* Çıkış */}
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Text style={styles.signOutButtonText}>Sign Out</Text>
+      <TouchableOpacity style={[styles.signOutButton, { backgroundColor: '#ff5252' }]} onPress={handleSignOut}>
+        <Text style={[styles.signOutButtonText]}>Çıkış Yap</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
+  container: {
     padding: 20,
     paddingBottom: 40,
   },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
     marginBottom: 30,
     alignSelf: 'center',
   },
@@ -151,13 +179,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 12,
-    color: '#444',
   },
   item: {
     fontSize: 16,
     paddingVertical: 6,
     paddingLeft: 10,
-    color: '#666',
   },
   privacyRow: {
     flexDirection: 'row',
@@ -168,14 +194,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 10,
-    backgroundColor: '#ff5252',
     alignSelf: 'center',
     marginTop: 30,
   },
-  signOutButtonText: { 
-    color: '#fff', 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  signOutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

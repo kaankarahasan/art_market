@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { auth, db, storage } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ThemeContext } from '../contexts/ThemeContext';
 
 const EditProfileScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -24,6 +25,9 @@ const EditProfileScreen = () => {
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+
+  const { isDarkTheme } = useContext(ThemeContext);
+  const styles = getStyles(isDarkTheme);
 
   const userId = auth.currentUser?.uid;
 
@@ -119,11 +123,10 @@ const EditProfileScreen = () => {
       if (image && !image.startsWith('https://')) {
         const uploadedURL = await uploadImage(image);
         if (uploadedURL) {
-            photoURL = uploadedURL;
-            setImage(uploadedURL); // Burada local state'i güncelliyoruz
+          photoURL = uploadedURL;
+          setImage(uploadedURL);
         }
-        }
-
+      }
 
       await updateDoc(doc(db, 'users', userId), {
         username,
@@ -141,7 +144,7 @@ const EditProfileScreen = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#000" />
+        <ActivityIndicator size="large" color={isDarkTheme ? '#90caf9' : '#000'} />
       </View>
     );
   }
@@ -169,12 +172,13 @@ const EditProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {uploading && <ActivityIndicator size="small" color="#1976d2" style={{ marginBottom: 10 }} />}
+      {uploading && <ActivityIndicator size="small" color={isDarkTheme ? '#90caf9' : '#1976d2'} style={{ marginBottom: 10 }} />}
 
       <Text style={styles.label}>Username</Text>
       <TextInput
         style={styles.input}
         placeholder="Enter your username"
+        placeholderTextColor={isDarkTheme ? '#aaa' : '#666'}
         value={username}
         onChangeText={setUsername}
       />
@@ -183,6 +187,7 @@ const EditProfileScreen = () => {
       <TextInput
         style={[styles.input, { height: 100 }]}
         placeholder="Tell us about yourself"
+        placeholderTextColor={isDarkTheme ? '#aaa' : '#666'}
         value={bio}
         onChangeText={setBio}
         multiline
@@ -195,64 +200,90 @@ const EditProfileScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, alignSelf: 'center' },
-  label: { fontSize: 16, fontWeight: '500', marginTop: 10, marginBottom: 5 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    padding: 10,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignSelf: 'center',
-    marginBottom: 10,
-  },
-  avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#ddd',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginBottom: 10,
-  },
-  avatarText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  photoButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 20,
-  },
-  photoButton: {
-    backgroundColor: '#1976d2',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  photoButtonText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  saveButton: {
-    marginTop: 30,
-    backgroundColor: '#4caf50',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-});
+const getStyles = (isDarkTheme: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      backgroundColor: isDarkTheme ? '#121212' : '#fff',
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      alignSelf: 'center',
+      color: isDarkTheme ? '#fff' : '#000',
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: '500',
+      marginTop: 10,
+      marginBottom: 5,
+      color: isDarkTheme ? '#ccc' : '#222',
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: isDarkTheme ? '#444' : '#ccc',
+      borderRadius: 10,
+      padding: 10,
+      fontSize: 16,
+      backgroundColor: isDarkTheme ? '#1e1e1e' : '#f9f9f9',
+      color: isDarkTheme ? '#fff' : '#000',
+    },
+    avatar: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      alignSelf: 'center',
+      marginBottom: 10,
+    },
+    avatarPlaceholder: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: isDarkTheme ? '#333' : '#ddd',
+      justifyContent: 'center',
+      alignItems: 'center',
+      alignSelf: 'center',
+      marginBottom: 10,
+    },
+    avatarText: {
+      color: isDarkTheme ? '#bbb' : '#666',
+      fontSize: 14,
+    },
+    photoButtons: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 10,
+      marginBottom: 20,
+    },
+    photoButton: {
+      backgroundColor: '#1976d2',
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 6,
+    },
+    photoButtonText: {
+      color: '#fff',
+      fontSize: 14,
+    },
+    saveButton: {
+      marginTop: 30,
+      backgroundColor: '#4caf50',
+      paddingVertical: 14,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+    saveButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+  });
 
 export default EditProfileScreen;

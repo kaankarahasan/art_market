@@ -2,29 +2,30 @@ import React, { useState } from 'react';
 import {
   View,
   TextInput,
-  Button,
-  StyleSheet,
   Text,
   Alert,
   Image,
   TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { updateProduct } from '../utils/updateProduct';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, storage } from '../firebase';
+import { storage } from '../firebase';
 import { RootStackParamList } from '../routes/types';
 import { v4 as uuidv4 } from 'uuid';
-import { Product } from '../routes/types';
+import { useThemeContext } from '../contexts/ThemeContext';
 
-// Route type
 type UpdateProductRouteProp = RouteProp<RootStackParamList, 'UpdateProduct'>;
 
 const UpdateProductScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<UpdateProductRouteProp>();
   const { product } = route.params;
+
+  const { colors } = useThemeContext();
 
   const [title, setTitle] = useState(product.title || '');
   const [description, setDescription] = useState(product.description || '');
@@ -95,40 +96,73 @@ const UpdateProductScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Ürün Adı</Text>
-      <TextInput style={styles.input} value={title} onChangeText={setTitle} />
-
-      <Text style={styles.label}>Açıklama</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.label, { color: colors.text }]}>Ürün Adı</Text>
       <TextInput
-        style={[styles.input, { height: 80 }]}
+        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Ürün adı"
+        placeholderTextColor={colors.text + '99'}
+      />
+
+      <Text style={[styles.label, { color: colors.text }]}>Açıklama</Text>
+      <TextInput
+        style={[
+          styles.input,
+          { height: 80, borderColor: colors.border, color: colors.text },
+        ]}
         value={description}
         onChangeText={setDescription}
         multiline
+        placeholder="Ürün açıklaması"
+        placeholderTextColor={colors.text + '99'}
       />
 
-      <Text style={styles.label}>Fiyat (₺)</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Fiyat (₺)</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
         value={price}
         onChangeText={setPrice}
         keyboardType="decimal-pad"
+        placeholder="Fiyat"
+        placeholderTextColor={colors.text + '99'}
       />
 
-      <Text style={styles.label}>Kategori</Text>
-      <TextInput style={styles.input} value={category} onChangeText={setCategory} />
+      <Text style={[styles.label, { color: colors.text }]}>Kategori</Text>
+      <TextInput
+        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        value={category}
+        onChangeText={setCategory}
+        placeholder="Kategori"
+        placeholderTextColor={colors.text + '99'}
+      />
 
-      <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-        <Text style={styles.imagePickerText}>Resim Seç</Text>
+      <TouchableOpacity
+        style={[styles.imagePicker, { backgroundColor: colors.card }]}
+        onPress={pickImage}
+      >
+        <Text style={[styles.imagePickerText, { color: colors.primary }]}>
+          Resim Seç
+        </Text>
       </TouchableOpacity>
 
       {image && <Image source={{ uri: image }} style={styles.previewImage} />}
 
-      <Button
-        title={uploading ? 'Yükleniyor...' : 'Güncelle'}
+      <TouchableOpacity
+        style={[
+          styles.updateButton,
+          { backgroundColor: uploading ? colors.border : colors.primary },
+        ]}
         onPress={handleUpdate}
         disabled={uploading}
-      />
+      >
+        {uploading ? (
+          <ActivityIndicator color={colors.background} />
+        ) : (
+          <Text style={styles.updateButtonText}>Güncelle</Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
 };
@@ -139,25 +173,33 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
     borderRadius: 6,
+    padding: 10,
     marginBottom: 15,
   },
   label: { fontWeight: 'bold', marginBottom: 5 },
   imagePicker: {
-    backgroundColor: '#eee',
     padding: 12,
     alignItems: 'center',
     borderRadius: 5,
     marginBottom: 15,
   },
-  imagePickerText: { color: '#555' },
+  imagePickerText: { fontWeight: '600' },
   previewImage: {
     width: 150,
     height: 150,
     alignSelf: 'center',
     marginBottom: 15,
     borderRadius: 8,
+  },
+  updateButton: {
+    paddingVertical: 15,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  updateButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

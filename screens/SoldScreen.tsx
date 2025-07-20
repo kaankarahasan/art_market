@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 const numColumns = 2;
 const itemMargin = 10;
@@ -17,6 +18,7 @@ const screenWidth = Dimensions.get('window').width;
 const itemWidth = (screenWidth - itemMargin * (numColumns + 1)) / numColumns;
 
 const SoldScreen = () => {
+  const { colors } = useThemeContext();
   const [soldProducts, setSoldProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,29 +49,37 @@ const SoldScreen = () => {
   }, []);
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.itemContainer}>
+    <View style={[styles.itemContainer, { backgroundColor: colors.card }]}>
       <Image
         source={{ uri: item.imageUrl }}
         style={styles.image}
         resizeMode="cover"
       />
-      <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-      {item.price && <Text style={styles.price}>{item.price} ₺</Text>}
+      <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+        {item.title}
+      </Text>
+      {item.price && (
+        <Text style={[styles.price, { color: colors.text + 'cc' }]}>
+          {item.price} ₺
+        </Text>
+      )}
     </View>
   );
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#666" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {soldProducts.length === 0 ? (
-        <Text style={styles.emptyText}>Henüz satılan ürün yok.</Text>
+        <Text style={[styles.emptyText, { color: colors.text + '99' }]}>
+          Henüz satılan ürün yok.
+        </Text>
       ) : (
         <FlatList
           data={soldProducts}
@@ -77,6 +87,7 @@ const SoldScreen = () => {
           keyExtractor={(item, index) => index.toString()}
           numColumns={numColumns}
           contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>
@@ -88,7 +99,6 @@ export default SoldScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     paddingTop: 10,
   },
   loadingContainer: {
@@ -100,7 +110,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 30,
     fontSize: 16,
-    color: '#888',
   },
   listContent: {
     paddingHorizontal: itemMargin,
@@ -108,7 +117,6 @@ const styles = StyleSheet.create({
   itemContainer: {
     width: itemWidth,
     margin: itemMargin,
-    backgroundColor: '#f9f9f9',
     borderRadius: 8,
     overflow: 'hidden',
     alignItems: 'center',
@@ -127,6 +135,5 @@ const styles = StyleSheet.create({
   price: {
     marginTop: 4,
     fontSize: 13,
-    color: '#666',
   },
 });

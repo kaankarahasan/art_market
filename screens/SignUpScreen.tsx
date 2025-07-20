@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 type RootStackParamList = {
   Login: undefined;
@@ -15,6 +23,7 @@ type SignUpScreenProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 const SignUpScreen = () => {
   const navigation = useNavigation<SignUpScreenProp>();
+  const { colors } = useThemeContext();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +32,7 @@ const SignUpScreen = () => {
 
   const handleSignUp = async () => {
     if (!email || !password || !fullName || !username) {
-      Alert.alert('Error', 'Please fill in all fields.');
+      Alert.alert('Hata', 'Lütfen tüm alanları doldurun.');
       return;
     }
 
@@ -37,56 +46,61 @@ const SignUpScreen = () => {
         email: user.email,
         fullName: fullName,
         username: username,
-        profilePicture: '',       // default boş fotoğraf
-        bio: '',                  // başlangıçta boş bio
+        profilePicture: '',
+        bio: '',
         followersCount: 0,
         followingCount: 0,
-        createdAt: serverTimestamp(), // firebase timestamp
+        createdAt: serverTimestamp(),
       });
 
-      Alert.alert('Success', 'Account created and profile saved!');
+      Alert.alert('Başarılı', 'Hesap oluşturuldu ve profil kaydedildi!');
       navigation.navigate('Main');
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert('Hata', error.message);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sign Up</Text>
-      <Text style={styles.titleLogin}>Create a new account.</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Kayıt Ol</Text>
+      <Text style={[styles.titleLogin, { color: colors.text }]}>Yeni bir hesap oluşturun.</Text>
 
       <View style={styles.inputContainer}>
-        <View style={styles.inputWrapper}>
+        <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
           <TextInput
-            style={styles.textInput}
-            placeholder="Full Name"
+            style={[styles.textInput, { color: colors.text }]}
+            placeholder="Ad Soyad"
+            placeholderTextColor={colors.text + '99'}
             onChangeText={setFullName}
             value={fullName}
           />
         </View>
-        <View style={styles.inputWrapper}>
+        <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
           <TextInput
-            style={styles.textInput}
-            placeholder="Username"
+            style={[styles.textInput, { color: colors.text }]}
+            placeholder="Kullanıcı Adı"
+            placeholderTextColor={colors.text + '99'}
             autoCapitalize="none"
             onChangeText={setUsername}
             value={username}
           />
         </View>
-        <View style={styles.inputWrapper}>
+        <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
           <TextInput
-            style={styles.textInput}
-            placeholder="Email"
+            style={[styles.textInput, { color: colors.text }]}
+            placeholder="E-posta"
+            placeholderTextColor={colors.text + '99'}
             autoCapitalize="none"
+            keyboardType="email-address"
             onChangeText={setEmail}
             value={email}
           />
         </View>
-        <View style={styles.inputWrapper}>
+        <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
           <TextInput
-            style={styles.textInput}
-            placeholder="Password"
+            style={[styles.textInput, { color: colors.text }]}
+            placeholder="Şifre"
+            placeholderTextColor={colors.text + '99'}
             secureTextEntry
             onChangeText={setPassword}
             value={password}
@@ -95,15 +109,16 @@ const SignUpScreen = () => {
       </View>
 
       <TouchableOpacity onPress={handleSignUp}>
-        <View style={styles.signUpButton}>
-          <Text style={styles.signUpButtonText}>Sign Up</Text>
+        <View style={[styles.signUpButton, { backgroundColor: '#456FE8' }]}>
+          <Text style={styles.signUpButtonText}>Kayıt Ol</Text>
         </View>
       </TouchableOpacity>
 
       <View style={styles.registerContainer}>
         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.registerText}>
-            Already have an account? <Text style={styles.registerLink}>Log in</Text>
+          <Text style={[styles.registerText, { color: colors.text }]}>
+            Zaten hesabınız var mı?{' '}
+            <Text style={styles.registerLink}>Giriş Yap</Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -116,31 +131,29 @@ export default SignUpScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   title: {
-    color: '#5F5F5F',
     fontSize: 25,
     fontWeight: '600',
   },
   titleLogin: {
-    color: '#5F5F5F',
     fontSize: 15,
     marginTop: 10,
   },
   inputContainer: {
-    width: '80%',
+    width: '100%',
     marginTop: 20,
     gap: 20,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     paddingHorizontal: 10,
-    borderWidth: 0.2,
+    borderWidth: 0.8,
     borderRadius: 5,
   },
   textInput: {
@@ -149,7 +162,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   signUpButton: {
-    backgroundColor: '#456FE8',
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderRadius: 5,
@@ -166,7 +178,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   registerText: {
-    color: '#5F5F5F',
+    fontWeight: '400',
   },
   registerLink: {
     color: '#456FE8',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, auth } from '../firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 const numColumns = 2;
 const itemSize = Dimensions.get('window').width / numColumns - 20;
@@ -31,14 +32,13 @@ const HomeScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const insets = useSafeAreaInsets();
+  const { colors } = useThemeContext();
 
-  // Hem ürün hem kullanıcıları her odaklandığında yenile
   useFocusEffect(
     useCallback(() => {
       const fetchData = async () => {
         try {
           setLoading(true);
-
           const productSnap = await getDocs(
             query(collection(db, 'products'), where('isSold', '==', false), limit(50))
           );
@@ -83,7 +83,7 @@ const HomeScreen = () => {
     const isFavorite = favorites.some(fav => fav.id === item.id);
 
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
         <TouchableOpacity
           onPress={() => navigation.navigate('ProductDetail', { product: item })}
           activeOpacity={0.7}
@@ -92,11 +92,11 @@ const HomeScreen = () => {
             <Image source={{ uri: item.imageUrl }} style={styles.image} />
           ) : (
             <View style={[styles.image, { justifyContent: 'center', alignItems: 'center' }]}>
-              <Text>Resim yok</Text>
+              <Text style={{ color: colors.text }}>Resim yok</Text>
             </View>
           )}
-          <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-          <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
+          <Text style={[styles.desc, { color: colors.text }]} numberOfLines={2}>{item.description}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -123,24 +123,25 @@ const HomeScreen = () => {
     };
 
     return (
-      <TouchableOpacity onPress={handlePress} style={styles.userCard}>
+      <TouchableOpacity onPress={handlePress} style={[styles.userCard, { backgroundColor: colors.card }]}>
         <Image
           source={item.profilePicture ? { uri: item.profilePicture } : require('../assets/default-avatar.png')}
           style={styles.userAvatar}
         />
         <View>
-          <Text style={styles.username}>{item.username}</Text>
-          <Text style={styles.fullName}>{item.fullName}</Text>
+          <Text style={[styles.username, { color: colors.text }]}>{item.username}</Text>
+          <Text style={[styles.fullName, { color: colors.text }]}>{item.fullName}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <TextInput
-        style={styles.searchBox}
+        style={[styles.searchBox, { backgroundColor: '#eee', color: colors.text }]}  // Sabit arka plan rengi koyduk
         placeholder="Ürün veya kullanıcı ara..."
+        placeholderTextColor="#888" // Sabit placeholder rengi koyduk
         value={searchQuery}
         onChangeText={setSearchQuery}
         clearButtonMode="while-editing"
@@ -148,13 +149,13 @@ const HomeScreen = () => {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#666" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <>
           {searchQuery.length > 0 && filteredUsers.length > 0 && (
             <View style={styles.userListContainer}>
-              <Text style={styles.sectionTitle}>Kullanıcılar</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Kullanıcılar</Text>
               <FlatList
                 data={filteredUsers}
                 renderItem={renderUser}
@@ -167,7 +168,7 @@ const HomeScreen = () => {
 
           {filteredProducts.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text>Aradığınız ürün bulunamadı.</Text>
+              <Text style={{ color: colors.text }}>Aradığınız ürün bulunamadı.</Text>
             </View>
           ) : (
             <FlatList
@@ -189,19 +190,17 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
   searchBox: {
     margin: 10,
     padding: 10,
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
   },
   row: {
     justifyContent: 'space-between',
     marginBottom: 15,
   },
   card: {
-    backgroundColor: '#f9f9f9',
     borderRadius: 10,
     width: itemSize,
     alignItems: 'center',
@@ -213,8 +212,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
-  title: { fontSize: 14, fontWeight: 'bold', color: '#333' },
-  desc: { fontSize: 12, color: '#555' },
+  title: { fontSize: 14, fontWeight: 'bold' },
+  desc: { fontSize: 12 },
   favoriteButton: {
     position: 'absolute',
     top: 10,
@@ -237,7 +236,6 @@ const styles = StyleSheet.create({
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eee',
     padding: 10,
     marginRight: 10,
     borderRadius: 8,
@@ -254,7 +252,6 @@ const styles = StyleSheet.create({
   },
   fullName: {
     fontSize: 12,
-    color: '#555',
   },
   sectionTitle: {
     fontSize: 16,

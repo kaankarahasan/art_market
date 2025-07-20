@@ -8,10 +8,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase'; // db kaldırıldı çünkü artık kullanıcı verisini kontrol etmiyoruz
+import { auth } from '../firebase';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 type RootStackParamList = {
   Login: undefined;
@@ -29,6 +30,7 @@ type LoginScreenNavigationProp = NativeStackNavigationProp<
 
 const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const { colors } = useThemeContext();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -72,63 +74,65 @@ const LoginScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View>
-        <Text style={styles.title}>Login</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Login</Text>
       </View>
       <View>
-        <Text style={styles.titleLogin}>Please login to continue.</Text>
+        <Text style={[styles.titleLogin, { color: colors.text }]}>Please login to continue.</Text>
       </View>
       <View style={styles.inputContainer}>
-        <View style={styles.inputWrapper}>
+        <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
           <MaterialIcons
             name="mail"
             size={20}
-            color="#9d9d9d"
+            color={colors.text}
             style={styles.icon}
           />
           <TextInput
             placeholder="Email"
+            placeholderTextColor={colors.border}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
-            style={styles.textInput}
+            style={[styles.textInput, { color: colors.text }]}
           />
         </View>
-        <View style={styles.inputWrapper}>
+        <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
           <MaterialIcons
             name="lock"
             size={20}
-            color="#9d9d9d"
+            color={colors.text}
             style={styles.icon}
           />
           <TextInput
             placeholder="Password"
+            placeholderTextColor={colors.border}
             value={password}
             onChangeText={setPassword}
             onSubmitEditing={handleLogin}
             secureTextEntry={!isPasswordVisible}
-            style={styles.textInput}
+            style={[styles.textInput, { color: colors.text }]}
           />
-          <TouchableOpacity onPress={togglePasswordVisibility}>
+          <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeButton}>
             <MaterialIcons
               name={isPasswordVisible ? 'visibility' : 'visibility-off'}
               size={20}
-              color="#9d9d9d"
+              color={colors.text}
             />
           </TouchableOpacity>
         </View>
         <View style={styles.registerContainer}>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.registerText}>
+            <Text style={[styles.registerText, { color: colors.text }]}>
               Don’t have an account?{' '}
-              <Text style={styles.registerLink}>Sign Up</Text>
+              <Text style={[styles.registerLink, { color: colors.primary }]}>Sign Up</Text>
             </Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={handleLogin}>
-          <View style={styles.loginButton}>
+        <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
+          <View style={[styles.loginButton, { backgroundColor: colors.primary }]}>
             <Text style={styles.loginButtonText}>
               {isLoading ? 'Logging in...' : 'Login'}
             </Text>
@@ -147,17 +151,14 @@ export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    color: '#5F5F5F',
     fontSize: 25,
     fontWeight: '600',
   },
   titleLogin: {
-    color: '#5F5F5F',
     fontSize: 15,
     marginTop: 10,
   },
@@ -169,9 +170,8 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     paddingHorizontal: 10,
-    borderWidth: 0.2,
+    borderWidth: 0.5,
     borderRadius: 5,
   },
   textInput: {
@@ -182,23 +182,25 @@ const styles = StyleSheet.create({
   icon: {
     marginRight: 10,
   },
+  eyeButton: {
+    paddingHorizontal: 5,
+  },
   registerContainer: {
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
   },
   registerText: {
-    color: '#5F5F5F',
+    fontSize: 14,
   },
   registerLink: {
-    color: '#456FE8',
     fontWeight: '600',
   },
   loginButton: {
-    backgroundColor: '#456FE8',
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderRadius: 5,
     alignItems: 'center',
+    marginTop: 10,
   },
   loginButtonText: {
     color: '#fff',
@@ -207,6 +209,7 @@ const styles = StyleSheet.create({
   errorMessageContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 10,
   },
   errorMessage: {
     color: 'red',
