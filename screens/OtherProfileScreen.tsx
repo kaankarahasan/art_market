@@ -201,62 +201,62 @@ const OtherProfileScreen = () => {
   }, [fetchUserData, fetchFollowCounts]);
 
   const toggleFollow = async () => {
-  if (!currentUser?.uid) {
-    console.warn('currentUser yok veya uid undefined');
-    return;
-  }
-  if (!userId) {
-    console.warn('target userId undefined');
-    return;
-  }
-  if (currentUser.uid === userId) {
-    alert('Kendinizi takip edemezsiniz.');
-    return;
-  }
-
-  try {
-    const userRef = doc(db, 'users', userId);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-      alert('Kullanıcı bulunamadı.');
+    if (!currentUser?.uid) {
+      console.warn('currentUser yok veya uid undefined');
       return;
     }
-    const userData = userSnap.data();
-    const followerPermission = userData?.privacySettings?.followerPermission || 'everyone';
-
-    if (followerPermission === 'none') {
-      alert('Bu kullanıcı takipçi ayarını kapalı tutuyor, takip edemezsiniz.');
+    if (!userId) {
+      console.warn('target userId undefined');
+      return;
+    }
+    if (currentUser.uid === userId) {
+      alert('Kendinizi takip edemezsiniz.');
       return;
     }
 
-    // Eğer 'approved' mantığına göre daha detay kontrol istersen buraya ekle
+    try {
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        alert('Kullanıcı bulunamadı.');
+        return;
+      }
+      const userData = userSnap.data();
+      const followerPermission = userData?.privacySettings?.followerPermission || 'everyone';
 
-    const followerDocRef = doc(db, 'users', userId, 'followers', currentUser.uid);
-    const followingDocRef = doc(db, 'users', currentUser.uid, 'following', userId);
+      if (followerPermission === 'none') {
+        alert('Bu kullanıcı takipçi ayarını kapalı tutuyor, takip edemezsiniz.');
+        return;
+      }
 
-    const docSnap = await getDoc(followerDocRef);
-    const alreadyFollowing = docSnap.exists();
+      // Eğer 'approved' mantığına göre daha detay kontrol istersen buraya ekle
 
-    if (alreadyFollowing) {
-      // Takipten çıkar
-      await deleteDoc(followerDocRef);
-      await deleteDoc(followingDocRef);
-      setIsFollowing(false);
-      setFollowers((prev) => prev.filter((f) => f.uid !== currentUser.uid));
-      setFollowersCount((c) => c - 1);
-    } else {
-      // Takip et
-      await setDoc(followerDocRef, { followedAt: serverTimestamp() });
-      await setDoc(followingDocRef, { followedAt: serverTimestamp() });
-      setIsFollowing(true);
-      setFollowers((prev) => [...prev, { uid: currentUser.uid, username: currentUser.displayName || 'Sen' }]);
-      setFollowersCount((c) => c + 1);
+      const followerDocRef = doc(db, 'users', userId, 'followers', currentUser.uid);
+      const followingDocRef = doc(db, 'users', currentUser.uid, 'following', userId);
+
+      const docSnap = await getDoc(followerDocRef);
+      const alreadyFollowing = docSnap.exists();
+
+      if (alreadyFollowing) {
+        // Takipten çıkar
+        await deleteDoc(followerDocRef);
+        await deleteDoc(followingDocRef);
+        setIsFollowing(false);
+        setFollowers((prev) => prev.filter((f) => f.uid !== currentUser.uid));
+        setFollowersCount((c) => c - 1);
+      } else {
+        // Takip et
+        await setDoc(followerDocRef, { followedAt: serverTimestamp() });
+        await setDoc(followingDocRef, { followedAt: serverTimestamp() });
+        setIsFollowing(true);
+        setFollowers((prev) => [...prev, { uid: currentUser.uid, username: currentUser.displayName || 'Sen' }]);
+        setFollowersCount((c) => c + 1);
+      }
+    } catch (error: any) {
+      console.error('Takip işlemi hatası:', error);
+      alert('Takip işlemi sırasında hata oluştu: ' + (error.message || JSON.stringify(error)));
     }
-  } catch (error: any) {
-    console.error('Takip işlemi hatası:', error);
-    alert('Takip işlemi sırasında hata oluştu: ' + (error.message || JSON.stringify(error)));
-  }
-};
+  };
 
   const goToFollowers = () => {
     if (!followersAllowed && currentUser?.uid !== userId) {
@@ -334,6 +334,16 @@ const OtherProfileScreen = () => {
           </TouchableOpacity>
         )}
 
+        {/* *** ChatScreen'e giden buton *** */}
+        {currentUser?.uid && currentUser.uid !== userId && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ChatScreen', { currentUserId: currentUser.uid, otherUserId: userId })}
+            style={[styles.chatButton, { backgroundColor: '#28a745' }]} // renk sabit hex kod
+          >
+            <Text style={[styles.chatButtonText, { color: colors.background }]}>Mesaj Gönder</Text>
+          </TouchableOpacity>
+        )}
+
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Ürünleri</Text>
         {products.length === 0 ? (
           <Text style={[styles.emptyText, { color: colors.text }]}>Henüz ürün eklememiş.</Text>
@@ -407,5 +417,19 @@ const styles = StyleSheet.create({
   },
   accessDeniedText: {
     fontSize: 16,
+  },
+
+  chatButton: {
+    padding: 12,
+    borderRadius: 20,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+    width: 180,
+  },
+  chatButtonText: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });

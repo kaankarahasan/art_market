@@ -33,6 +33,7 @@ import AboutScreen from './screens/AboutScreen';
 import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import TermsOfUseScreen from './screens/TermsOfUseScreen';
 import PrivacyFollowerCommentSettingsScreen from './screens/PrivacyFollowerCommentSettingsScreen';
+import ChatScreen from './screens/ChatScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -128,6 +129,11 @@ export default function App() {
             <Stack.Screen
               name="PrivacyFollowerCommentSettings"
               component={PrivacyFollowerCommentSettingsScreen}
+            />
+            <Stack.Screen
+              name="ChatScreen"
+              component={ChatScreen}
+              options={{ title: 'Chat' }}
             />
           </Stack.Navigator>
         </NavigationContainer>
