@@ -27,6 +27,7 @@ import './firebase';
 import UserProfileScreen from './screens/UserProfileScreen';
 import UpdateProductScreen from './screens/UpdateProductScreen';
 import { RootStackParamList } from './routes/types'
+import ChangeEmailAndPasswordScreen from './screens/ChangeEmailAndPasswordScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 // const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -102,6 +103,10 @@ export default function App() {
           <Stack.Screen
             name="EditProfile"
             component={EditProfileScreen}
+          />
+          <Stack.Screen
+            name="ChangeEmailAndPassword"
+            component={ChangeEmailAndPasswordScreen}
           />
         </Stack.Navigator>
       </NavigationContainer>

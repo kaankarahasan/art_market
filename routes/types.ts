@@ -28,4 +28,5 @@ export type RootStackParamList = {
   ProductDetail: { product: Product };
   UserProfile: { user: any };
   EditProfile: undefined;
+  ChangeEmailAndPassword: undefined;
 };

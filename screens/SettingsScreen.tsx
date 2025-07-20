@@ -42,9 +42,11 @@ const SettingsScreen = () => {
         <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
           <Text style={styles.item}>Profil Bilgilerini Düzenle</Text>
         </TouchableOpacity>
-
+      <TouchableOpacity onPress={() => navigation.navigate('ChangeEmailAndPassword')}>
         <Text style={styles.item}>E-posta / Şifre Değiştir</Text>
+      </TouchableOpacity>
       </View>
+
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Gizlilik</Text>
