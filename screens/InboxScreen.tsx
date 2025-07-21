@@ -6,6 +6,8 @@ import {
   onSnapshot,
   orderBy,
   DocumentData,
+  doc as docRef,
+  getDoc,
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +23,7 @@ type ChatItem = {
   id: string;
   lastMessage: string;
   otherUserId: string;
+  otherUserName: string;
 };
 
 export default function InboxScreen() {
@@ -33,21 +36,36 @@ export default function InboxScreen() {
 
     const q = query(collection(db, 'chats'), orderBy('lastTimestamp', 'desc'));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const userChats: ChatItem[] = snapshot.docs
-        .filter((doc: DocumentData) => doc.id.includes(currentUser.uid))
-        .map((doc: DocumentData) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const userChatsRaw = snapshot.docs.filter((doc) =>
+        doc.id.includes(currentUser.uid)
+      );
+
+      const chatsWithName = await Promise.all(
+        userChatsRaw.map(async (doc) => {
           const data = doc.data();
           const users = doc.id.split('_');
-          const otherUserId = users.find((u: string) => u !== currentUser.uid) ?? '';
+          const otherUserId = users.find((u) => u !== currentUser.uid) ?? '';
+
+          const userDocRef = docRef(db, 'users', otherUserId);
+          const userDocSnap = await getDoc(userDocRef);
+
+          let otherUserName = 'Bilinmeyen';
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data() as { fullName?: string };
+            if (userData.fullName) otherUserName = userData.fullName;
+          }
+
           return {
             id: doc.id,
             lastMessage: data.lastMessage || '',
             otherUserId,
+            otherUserName,
           };
-        });
+        })
+      );
 
-      setChats(userChats);
+      setChats(chatsWithName);
     });
 
     return () => unsubscribe();
@@ -76,10 +94,8 @@ export default function InboxScreen() {
             }
             style={{ padding: 15, borderBottomWidth: 1, borderColor: '#ddd' }}
           >
-            <Text style={{ fontWeight: 'bold' }}>Sohbet: {item.otherUserId}</Text>
-            <Text style={{ color: '#555', marginTop: 5 }}>
-              {item.lastMessage}
-            </Text>
+            <Text style={{ fontWeight: 'bold' }}>{item.otherUserName}</Text>
+            <Text style={{ color: '#555', marginTop: 5 }}>{item.lastMessage}</Text>
           </TouchableOpacity>
         )}
         ListEmptyComponent={<Text>Hiç sohbet yok.</Text>}
