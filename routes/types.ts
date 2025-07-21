@@ -33,5 +33,6 @@ export type RootStackParamList = {
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
   PrivacyFollowerCommentSettings: undefined;
-  ChatScreen: { currentUserId: string; otherUserId: string }; // Chat ekranına gönderilecek parametre
+  InboxScreen: { currentUserId: string };
+  ChatScreen: { currentUserId: string; otherUserId: string };
 };

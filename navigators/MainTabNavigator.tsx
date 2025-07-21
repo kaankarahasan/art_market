@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
@@ -6,12 +6,17 @@ import FavoritesScreen from '../screens/FavoritesScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import OtherProfileScreen from '../screens/OtherProfileScreen';
+import InboxScreen from '../screens/InboxScreen';
+import ChatScreen from '../screens/ChatScreen';
 import { RootStackParamList } from '../routes/types';
 import { Ionicons } from '@expo/vector-icons';
+
+import { auth } from '../firebase'; // Firebase auth import
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator<RootStackParamList>();
 const ProfileStack = createNativeStackNavigator<RootStackParamList>();
+const InboxStack = createNativeStackNavigator<RootStackParamList>();
 
 function HomeStackNavigator() {
   return (
@@ -36,7 +41,6 @@ function HomeStackNavigator() {
         component={ProfileScreen}
         options={{ headerShown: true }}
       />
-      {/* Diğer ekranlar varsa ekleyebilirsin */}
     </HomeStack.Navigator>
   );
 }
@@ -59,12 +63,49 @@ function ProfileStackNavigator() {
         component={OtherProfileScreen}
         options={{ headerShown: true }}
       />
-      {/* Gerekirse buraya da diğer ekranlar */}
     </ProfileStack.Navigator>
   );
 }
 
+function InboxStackNavigator() {
+  return (
+    <InboxStack.Navigator>
+      <InboxStack.Screen
+        name="InboxScreen"
+        component={InboxScreen}
+        options={{ headerShown: true, title: 'Inbox' }}
+      />
+      <InboxStack.Screen
+        name="ChatScreen"
+        component={ChatScreen}
+        options={{ headerShown: true, title: 'Sohbet' }}
+      />
+    </InboxStack.Navigator>
+  );
+}
+
 export default function MainTabNavigator() {
+  const [currentUser, setCurrentUser] = useState(auth.currentUser);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setCurrentUser(user);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  if (loading) {
+    // İstersen burada bir Loading spinner gösterebilirsin
+    return null;
+  }
+
+  if (!currentUser) {
+    // Kullanıcı giriş yapmamışsa boş ekran ya da yönlendirme yapılabilir
+    return null;
+  }
+
   return (
     <Tab.Navigator>
       <Tab.Screen
@@ -75,6 +116,17 @@ export default function MainTabNavigator() {
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="InboxTab"
+        component={InboxStackNavigator}
+        options={{
+          headerShown: false,
+          tabBarLabel: 'Inbox',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="mail-outline" size={size} color={color} />
           ),
         }}
       />
@@ -91,9 +143,9 @@ export default function MainTabNavigator() {
       />
       <Tab.Screen
         name="ProfileTab"
-        component={ProfileStackNavigator} // Burada ProfileStackNavigator kullanıyoruz
+        component={ProfileStackNavigator}
         options={{
-          headerShown: false, // Header stack içinden yönetilecek
+          headerShown: false,
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />

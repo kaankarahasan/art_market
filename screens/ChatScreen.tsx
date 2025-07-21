@@ -1,7 +1,13 @@
-// ChatScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, Button, FlatList, Text, StyleSheet } from 'react-native';
-import { db } from '../firebase'; // kendi firebase dosyana göre değiştir
+import {
+  View,
+  TextInput,
+  Button,
+  FlatList,
+  Text,
+  StyleSheet,
+} from 'react-native';
+import { db } from '../firebase';
 import {
   collection,
   addDoc,
@@ -9,9 +15,10 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  doc,
+  setDoc,
+  getDoc,
 } from 'firebase/firestore';
-import { RootStackParamList } from '../routes/types';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 type Message = {
   id: string;
@@ -49,17 +56,47 @@ export default function ChatScreen({ route }: Props) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [chatId]);
 
   const sendMessage = async () => {
-    if (text.trim() === '') return;
+    if (!text.trim()) return;
 
     const messagesRef = collection(db, 'chats', chatId, 'messages');
+
+    // Yeni mesajı gönder
     await addDoc(messagesRef, {
       text,
       senderId: currentUserId,
       createdAt: serverTimestamp(),
     });
+
+    // Her iki kullanıcının adını al
+    const currentUserSnap = await getDoc(doc(db, 'users', currentUserId));
+    const otherUserSnap = await getDoc(doc(db, 'users', otherUserId));
+
+    const currentUserData = currentUserSnap.exists() ? currentUserSnap.data() : {};
+    const otherUserData = otherUserSnap.exists() ? otherUserSnap.data() : {};
+
+    // Sohbet meta verisini güncelle
+    const chatDocRef = doc(db, 'chats', chatId);
+    await setDoc(
+      chatDocRef,
+      {
+        lastMessage: text,
+        lastTimestamp: serverTimestamp(),
+        userInfos: {
+          [currentUserId]: {
+            displayName: currentUserData.displayName || '',
+            username: currentUserData.username || '',
+          },
+          [otherUserId]: {
+            displayName: otherUserData.displayName || '',
+            username: otherUserData.username || '',
+          },
+        },
+      },
+      { merge: true }
+    );
 
     setText('');
   };
@@ -67,10 +104,18 @@ export default function ChatScreen({ route }: Props) {
   return (
     <View style={styles.container}>
       <FlatList
-        data={messages}
+        inverted
+        data={[...messages].reverse()}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Text style={{ alignSelf: item.senderId === currentUserId ? 'flex-end' : 'flex-start' }}>
+          <Text
+            style={[
+              styles.message,
+              item.senderId === currentUserId
+                ? styles.myMessage
+                : styles.otherMessage,
+            ]}
+          >
             {item.text}
           </Text>
         )}
@@ -83,6 +128,7 @@ export default function ChatScreen({ route }: Props) {
           onChangeText={setText}
           style={styles.input}
           placeholder="Mesaj..."
+          multiline
         />
         <Button title="Gönder" onPress={sendMessage} />
       </View>
@@ -101,5 +147,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginRight: 10,
     height: 40,
+  },
+  message: {
+    padding: 8,
+    borderRadius: 8,
+    marginVertical: 4,
+    maxWidth: '70%',
+  },
+  myMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#DCF8C5',
+  },
+  otherMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFF',
   },
 });
