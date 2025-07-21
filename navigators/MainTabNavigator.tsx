@@ -10,6 +10,7 @@ import InboxScreen from '../screens/InboxScreen';
 import ChatScreen from '../screens/ChatScreen';
 import { RootStackParamList } from '../routes/types';
 import { Ionicons } from '@expo/vector-icons';
+import SearchScreen from '../screens/SearchScreen';
 
 import { auth } from '../firebase'; // Firebase auth import
 
@@ -116,6 +117,16 @@ export default function MainTabNavigator() {
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{
+          tabBarLabel: 'Ara',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="search" color={color} size={size} />
           ),
         }}
       />

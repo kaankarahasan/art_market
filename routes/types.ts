@@ -4,7 +4,6 @@ export type Product = {
   id: string;
   title: string;
   description: string;
-  image: string;
   imageUrl: string;
   ownerId: string;
   seller?: string;
@@ -35,4 +34,5 @@ export type RootStackParamList = {
   PrivacyFollowerCommentSettings: undefined;
   InboxScreen: { currentUserId: string };
   ChatScreen: { currentUserId: string; otherUserId: string };
+  Search: undefined;
 };

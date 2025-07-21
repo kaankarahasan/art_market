@@ -24,6 +24,7 @@ import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import TermsOfUseScreen from './screens/TermsOfUseScreen';
 import PrivacyFollowerCommentSettingsScreen from './screens/PrivacyFollowerCommentSettingsScreen';
 import ChatScreen from './screens/ChatScreen';
+import SearchScreen from './screens/SearchScreen';
 
 import { RootStackParamList } from './routes/types';
 import { FavoritesProvider } from './contexts/FavoritesContext';
@@ -131,6 +132,10 @@ export default function App() {
                 name="ChatScreen"
                 component={ChatScreen}
                 options={{ title: 'Chat' }}
+              />
+              <Stack.Screen
+                name="Search"
+                component={SearchScreen}
               />
             </Stack.Navigator>
           </NavigationContainer>
