@@ -30,41 +30,56 @@ type User = {
   profileImage?: string;
 };
 
+type Category = {
+  id: string;
+  name: string;
+};
+
 const SearchScreen = () => {
   const [searchText, setSearchText] = useState('');
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const categories = ['Resim', 'Heykel', 'Dijital Sanat', 'El İşi', 'Takı', 'Fotoğraf']; // dummy
-
   useEffect(() => {
     const fetchData = async () => {
-      const productSnap = await getDocs(collection(db, 'products'));
-      const userSnap = await getDocs(collection(db, 'users'));
+      try {
+        const productSnap = await getDocs(collection(db, 'products'));
+        const userSnap = await getDocs(collection(db, 'users'));
+        const categorySnap = await getDocs(collection(db, 'categories'));
 
-      const products: Product[] = productSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<Product, 'id'>),
-      }));
+        const products: Product[] = productSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<Product, 'id'>),
+        }));
 
-      const users: User[] = userSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<User, 'id'>),
-      }));
+        const users: User[] = userSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<User, 'id'>),
+        }));
 
-      setAllProducts(products);
-      setAllUsers(users);
+        const cats: Category[] = categorySnap.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<Category, 'id'>),
+        }));
+
+        setAllProducts(products);
+        setAllUsers(users);
+        setCategories(cats);
+      } catch (error) {
+        console.error('Veri çekme hatası:', error);
+      }
     };
 
     fetchData();
   }, []);
 
   useEffect(() => {
-    const search = searchText.toLowerCase();
+    const search = (searchText ?? '').toLowerCase();
 
     const filteredP = allProducts.filter(
       (item) =>
@@ -99,28 +114,31 @@ const SearchScreen = () => {
 
   const renderUser = ({ item }: { item: User }) => (
     <TouchableOpacity
-        style={styles.userCard}
-        onPress={() => navigation.navigate('OtherProfile', { userId: item.id })}
+      style={styles.userCard}
+      onPress={() => navigation.navigate('OtherProfile', { userId: item.id })}
     >
-        <Image
+      <Image
         source={
-            item.profileImage
+          item.profileImage
             ? { uri: item.profileImage }
             : require('../assets/default-profile.png')
         }
         style={styles.avatar}
-        />
-        <View>
+      />
+      <View>
         <Text style={styles.userName}>{item.fullName}</Text>
         {item.username && <Text style={styles.userUsername}>@{item.username}</Text>}
-        </View>
+      </View>
     </TouchableOpacity>
-    );
+  );
 
-
-  const renderCategory = (category: string) => (
-    <TouchableOpacity key={category} style={styles.category}>
-      <Text style={styles.categoryText}>{category}</Text>
+  const renderCategory = (category: Category) => (
+    <TouchableOpacity
+      key={category.id}
+      style={styles.category}
+      onPress={() => setSearchText(category.name)} // kategoriye tıklayınca arama kutusuna yaz
+    >
+      <Text style={styles.categoryText}>{category.name}</Text>
     </TouchableOpacity>
   );
 
@@ -129,11 +147,11 @@ const SearchScreen = () => {
       <TextInput
         placeholder="Ürün veya kullanıcı ara..."
         value={searchText}
-        onChangeText={setSearchText}
+        onChangeText={(text) => setSearchText(text ?? '')}
         style={styles.input}
       />
 
-      {searchText.trim() === '' ? (
+      {(searchText?.trim() ?? '') === '' ? (
         <>
           <Text style={styles.sectionTitle}>Kategoriler</Text>
           <ScrollView contentContainerStyle={styles.categoriesContainer}>
