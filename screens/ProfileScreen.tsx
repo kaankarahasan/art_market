@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   FlatList,
   Alert,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {
   useNavigation,
@@ -69,6 +71,8 @@ const ProfileScreen = () => {
 
   const [soldCount, setSoldCount] = useState(0);
   const [products, setProducts] = useState<any[]>([]);
+
+  const [modalVisible, setModalVisible] = useState(false);
 
   const isOwnProfile = profileId === currentUser?.uid;
 
@@ -215,14 +219,17 @@ const ProfileScreen = () => {
             )}
 
             <View style={styles.headerSection}>
-              <Image
-                source={
-                  userData?.profilePicture
-                    ? { uri: userData.profilePicture }
-                    : require('../assets/default-avatar.png')
-                }
-                style={styles.avatar}
-              />
+              <TouchableOpacity onPress={() => setModalVisible(true)}>
+                <Image
+                  source={
+                    userData?.photoURL
+                      ? { uri: userData.photoURL }
+                      : require('../assets/default-avatar.png')
+                  }
+                  style={styles.avatar}
+                />
+              </TouchableOpacity>
+
               <Text style={[styles.username, { color: colors.text }]}>
                 @{userData?.username || 'kullaniciadi'}
               </Text>
@@ -325,6 +332,28 @@ const ProfileScreen = () => {
           </Text>
         }
       />
+
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalBackground}>
+            <TouchableWithoutFeedback>
+              <Image
+                source={
+                  userData?.photoURL
+                    ? { uri: userData.photoURL }
+                    : require('../assets/default-avatar.png')
+                }
+                style={styles.fullscreenImage}
+              />
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -427,5 +456,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     paddingHorizontal: 20,
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImage: {
+    width: '90%',
+    height: '70%',
+    borderRadius: 15,
+    resizeMode: 'contain',
   },
 });
