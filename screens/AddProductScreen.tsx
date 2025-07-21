@@ -8,7 +8,6 @@ import {
   Alert,
   Image,
   TouchableOpacity,
-  useColorScheme,
   ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -32,6 +31,7 @@ const AddProductScreen = () => {
 
   const navigation = useNavigation();
 
+  // Galeriden resim seçme
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -41,6 +41,24 @@ const AddProductScreen = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  // Kameradan fotoğraf çekme
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Hata', 'Kamerayı kullanmak için izin gerekli.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       quality: 0.7,
     });
@@ -90,7 +108,7 @@ const AddProductScreen = () => {
       const userData = userSnap.data();
 
       const username = userData?.username || 'Bilinmeyen';
-      const userProfileImage = userData?.profileImageUrl || '';
+      const userProfileImage = userData?.photoURL || ''; // profileImageUrl yerine photoURL kullandım
 
       let imageUrl = '';
       if (image) {
@@ -165,9 +183,14 @@ const AddProductScreen = () => {
         onChangeText={setCategory}
       />
 
-      <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-        <Text style={styles.imagePickerText}>Resim Seç</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 15 }}>
+        <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+          <Text style={styles.imagePickerText}>Galeriden Resim Seç</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.imagePicker} onPress={takePhoto}>
+          <Text style={styles.imagePickerText}>Kameradan Fotoğraf Çek</Text>
+        </TouchableOpacity>
+      </View>
 
       {image && <Image source={{ uri: image }} style={styles.previewImage} />}
 
@@ -206,8 +229,9 @@ const getStyles = (isDarkTheme: boolean) =>
       backgroundColor: isDarkTheme ? '#333' : '#eee',
       padding: 12,
       alignItems: 'center',
-      marginBottom: 15,
       borderRadius: 5,
+      flex: 1,
+      marginHorizontal: 5,
     },
     imagePickerText: {
       color: isDarkTheme ? '#ccc' : '#555',
