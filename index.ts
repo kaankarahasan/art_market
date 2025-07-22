@@ -1,5 +1,4 @@
-// index.ts
-import 'react-native-gesture-handler';    // gesture-handler mutlaka en başta
+import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
 import App from './App';
 

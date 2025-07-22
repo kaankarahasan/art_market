@@ -229,7 +229,7 @@ const OtherProfileScreen = () => {
         return;
       }
 
-      // Eğer 'approved' mantığına göre daha detay kontrol istersen buraya ekle
+      // Eğer 'approved' mantığına göre daha detay kontrol istersem buraya ekle yapabilirim.
 
       const followerDocRef = doc(db, 'users', userId, 'followers', currentUser.uid);
       const followingDocRef = doc(db, 'users', currentUser.uid, 'following', userId);
@@ -355,7 +355,7 @@ const OtherProfileScreen = () => {
             contentContainerStyle={styles.productList}
             renderItem={({ item }) => (
               <TouchableOpacity onPress={() => goToProductDetail(item)} style={[styles.productCard, { borderColor: colors.border }]}>
-                <Image source={{ uri: item.imageUrl || item.image }} style={styles.productImage} />
+                <Image source={{ uri: item.imageUrl || item.imageUrl }} style={styles.productImage} />
                 <Text numberOfLines={1} style={[styles.productTitle, { color: colors.text }]}>
                   {item.title}
                 </Text>

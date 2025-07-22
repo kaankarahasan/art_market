@@ -160,7 +160,7 @@ const SettingsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Çıkış */}
+      {/* Çıkış Yap */}
       <TouchableOpacity style={[styles.signOutButton, { backgroundColor: '#ff5252' }]} onPress={handleSignOut}>
         <Text style={[styles.signOutButtonText]}>Çıkış Yap</Text>
       </TouchableOpacity>

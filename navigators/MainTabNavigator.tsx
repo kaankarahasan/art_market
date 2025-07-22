@@ -98,7 +98,7 @@ export default function MainTabNavigator() {
   }, []);
 
   if (loading) {
-    // İstersen burada bir Loading spinner gösterebilirsin
+    // Burada bir Loading spinner gösterilebilir
     return null;
   }
 

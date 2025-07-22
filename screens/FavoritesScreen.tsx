@@ -1,10 +1,18 @@
 import React, { useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../routes/types';
+import { RootStackParamList, Product } from '../routes/types';
 import { ThemeContext } from '../contexts/ThemeContext';
 
 const numColumns = 2;
@@ -16,12 +24,12 @@ const FavoritesScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { isDarkTheme, colors } = useContext(ThemeContext);
 
-  const renderItem = ({ item }: { item: typeof favorites[0] }) => (
+  const renderItem = ({ item }: { item: Product }) => (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: isDarkTheme ? colors.card : '#f0f0f0' }]}
       onPress={() => navigation.navigate('ProductDetail', { product: item })}
     >
-      <Image source={{ uri: item.imageUrl || item.image }} style={styles.image} />
+      <Image source={{ uri: item.imageUrl }} style={styles.image} />
       <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
       <TouchableOpacity
         onPress={() => removeFromFavorites(item.id)}
@@ -33,9 +41,16 @@ const FavoritesScreen = () => {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: colors.background },
+      ]}
+    >
       {favorites.length === 0 ? (
-        <Text style={[styles.emptyText, { color: colors.text }]}>No favorites yet!</Text>
+        <Text style={[styles.emptyText, { color: colors.text }]}>
+          No favorites yet!
+        </Text>
       ) : (
         <FlatList
           data={favorites}
@@ -73,6 +88,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
+    textAlign: 'center',
   },
   emptyText: {
     fontSize: 18,

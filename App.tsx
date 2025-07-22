@@ -28,7 +28,7 @@ import SearchScreen from './screens/SearchScreen';
 
 import { RootStackParamList } from './routes/types';
 import { FavoritesProvider } from './contexts/FavoritesContext';
-import { ThemeProvider } from './contexts/ThemeContext'; // ✅ Eklendi
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Firebase'i initialize etmek için içeri aktarıyoruz (tek seferlik tetiklenir)
 import './firebase';

@@ -1,4 +1,4 @@
-import { db, auth } from './firebase'; // firebase.tsx dosyanızdaki yapı ile uygun import yapmalısınız
+import { db, auth } from './firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 // Kullanıcıyı takip etme fonksiyonu

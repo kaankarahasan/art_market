@@ -1,6 +1,3 @@
-// firebase.tsx
-// Firebase konfigürasyonu ve modüler Web SDK kullanımı
-
 import { initializeApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import {
