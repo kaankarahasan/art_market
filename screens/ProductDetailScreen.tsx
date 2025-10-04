@@ -6,6 +6,7 @@ import {
   Button,
   TouchableOpacity,
   ActivityIndicator,
+  View,
 } from 'react-native';
 import {
   NavigationProp,
@@ -63,10 +64,10 @@ const ProductDetailScreen = () => {
             profilePicture: data.profilePicture || '',
           });
         } else {
-          console.warn('⚠️ Kullanıcı Firestore’da bulunamadı.');
+          console.warn('Kullanıcı bulunamadı');
         }
       } catch (error) {
-        console.error('🔥 Kullanıcı verisi alınırken hata:', error);
+        console.error('Kullanıcı verisi alınırken hata:', error);
       } finally {
         setLoadingOwner(false);
       }
@@ -111,6 +112,27 @@ const ProductDetailScreen = () => {
     }
   };
 
+  const renderDimensions = () => {
+    const dimensions = (productData as any).dimensions;
+    if (!dimensions) return null;
+
+    const { height, width, depth } = dimensions;
+    const hasDimensions = height || width || depth;
+
+    if (!hasDimensions) return null;
+
+    const dimensionParts = [];
+    if (height) dimensionParts.push(`Y: ${height}`);
+    if (width) dimensionParts.push(`G: ${width}`);
+    if (depth) dimensionParts.push(`K: ${depth}`);
+
+    return (
+      <Text style={[styles.detail, { color: colors.text }]}>
+        📐 Boyut: {dimensionParts.join(' × ')} cm
+      </Text>
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Image source={{ uri: productData.imageUrl }} style={styles.image} />
@@ -153,6 +175,7 @@ const ProductDetailScreen = () => {
       <Text style={[styles.detail, { color: colors.text }]}>
         💰 Fiyat: {productData.price ? `${productData.price} ₺` : 'Belirtilmemiş'}
       </Text>
+      {renderDimensions()}
       {productData.createdAt && (
         <Text style={[styles.detail, { color: colors.text }]}>
           📅 Eklenme Tarihi: {formatDate(productData.createdAt)}

@@ -67,10 +67,58 @@ const HomeScreen = () => {
     return array;
   };
 
-  const filteredProducts = products.filter(product =>
-    product.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const parseDimensions = (text: string) => {
+    const patterns = [
+      /(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/,
+      /(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/,
+    ];
+
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match) {
+        return {
+          height: parseFloat(match[1]),
+          width: parseFloat(match[2]),
+          depth: match[3] ? parseFloat(match[3]) : null,
+        };
+      }
+    }
+    return null;
+  };
+
+  const matchesDimensions = (product: any, searchDimensions: any) => {
+    if (!product.dimensions) return false;
+
+    const { height, width, depth } = product.dimensions;
+    const tolerance = 5;
+
+    const heightMatch = searchDimensions.height
+      ? height && Math.abs(height - searchDimensions.height) <= tolerance
+      : true;
+    const widthMatch = searchDimensions.width
+      ? width && Math.abs(width - searchDimensions.width) <= tolerance
+      : true;
+    const depthMatch = searchDimensions.depth
+      ? depth && Math.abs(depth - searchDimensions.depth) <= tolerance
+      : true;
+
+    return heightMatch && widthMatch && depthMatch;
+  };
+
+  const searchDimensions = parseDimensions(searchQuery.toLowerCase().trim());
+
+  const filteredProducts = products.filter(product => {
+    if (searchDimensions) {
+      return matchesDimensions(product, searchDimensions);
+    }
+
+    const search = searchQuery.toLowerCase();
+    const titleMatch = product.title?.toLowerCase().includes(search);
+    const descriptionMatch = product.description?.toLowerCase().includes(search);
+    const categoryMatch = product.category?.toLowerCase().includes(search);
+
+    return titleMatch || descriptionMatch || categoryMatch;
+  });
 
   const filteredUsers = users.filter(user => {
     const queryLower = searchQuery.toLowerCase();
@@ -78,6 +126,10 @@ const HomeScreen = () => {
     const fullNameMatch = user.fullName?.toLowerCase().includes(queryLower);
     return usernameMatch || fullNameMatch;
   });
+
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
 
   const renderItem = ({ item }: { item: any }) => {
     const isFavorite = favorites.some(fav => fav.id === item.id);
@@ -97,6 +149,23 @@ const HomeScreen = () => {
           )}
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
           <Text style={[styles.desc, { color: colors.text }]} numberOfLines={2}>{item.description}</Text>
+          {item.category && (
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryBadgeText}>{item.category}</Text>
+            </View>
+          )}
+          {item.dimensions && (item.dimensions.height || item.dimensions.width || item.dimensions.depth) && (
+            <Text style={styles.dimensionText}>
+              {[
+                item.dimensions.height && `Y:${item.dimensions.height}`,
+                item.dimensions.width && `G:${item.dimensions.width}`,
+                item.dimensions.depth && `K:${item.dimensions.depth}`,
+              ]
+                .filter(Boolean)
+                .join(' × ')}{' '}
+              cm
+            </Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -138,14 +207,23 @@ const HomeScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <TextInput
-        style={[styles.searchBox, { backgroundColor: '#eee', color: colors.text }]}  // Sabit arka plan rengi koyduk
-        placeholder="Ürün veya kullanıcı ara..."
-        placeholderTextColor="#888" // Sabit placeholder rengi koyduk
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        clearButtonMode="while-editing"
-      />
+      <View style={styles.searchWrapper}>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Ara..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity style={styles.clearButton} onPress={clearSearch}>
+              <Ionicons name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -166,7 +244,7 @@ const HomeScreen = () => {
             </View>
           )}
 
-          {filteredProducts.length === 0 ? (
+          {filteredProducts.length === 0 && searchQuery.length > 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={{ color: colors.text }}>Aradığınız ürün bulunamadı.</Text>
             </View>
@@ -191,10 +269,35 @@ export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  searchBox: {
-    margin: 10,
-    padding: 10,
-    borderRadius: 8,
+  searchWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 48,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 8,
   },
   row: {
     justifyContent: 'space-between',
@@ -213,7 +316,25 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: { fontSize: 14, fontWeight: 'bold' },
-  desc: { fontSize: 12 },
+  desc: { fontSize: 12, marginTop: 2 },
+  categoryBadge: {
+    backgroundColor: '#e3f2fd',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  categoryBadgeText: {
+    fontSize: 10,
+    color: '#1976d2',
+    fontWeight: '500',
+  },
+  dimensionText: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 3,
+  },
   favoriteButton: {
     position: 'absolute',
     top: 10,

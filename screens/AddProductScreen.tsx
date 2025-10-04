@@ -9,6 +9,8 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
+  Modal,
+  FlatList,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
@@ -28,8 +30,27 @@ const AddProductScreen = () => {
   const [uploading, setUploading] = useState(false);
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [height, setHeight] = useState('');
+  const [width, setWidth] = useState('');
+  const [depth, setDepth] = useState('');
 
   const navigation = useNavigation();
+
+  // Sanat kategorileri
+  const categories = [
+    { label: 'Yağlı Boya', value: 'yagliبoya' },
+    { label: 'Suluboya', value: 'suluboya' },
+    { label: 'Akrilik', value: 'akrilik' },
+    { label: 'Heykel', value: 'heykel' },
+    { label: 'Fotoğraf', value: 'fotograf' },
+    { label: 'Dijital Sanat', value: 'dijital' },
+    { label: 'Çizim', value: 'cizim' },
+    { label: 'Grafik Tasarım', value: 'grafik' },
+    { label: 'Seramik', value: 'seramik' },
+    { label: 'Kolaj', value: 'kolaj' },
+    { label: 'Diğer', value: 'diger' },
+  ];
 
   // Galeriden resim seçme
   const pickImage = async () => {
@@ -92,7 +113,7 @@ const AddProductScreen = () => {
 
   const handleAddProduct = async () => {
     if (!title.trim() || !description.trim() || !price.trim() || !category.trim()) {
-      Alert.alert('Uyarı', 'Lütfen tüm alanları doldurun.');
+      Alert.alert('Uyarı', 'Lütfen tüm zorunlu alanları doldurun.');
       return;
     }
 
@@ -108,13 +129,20 @@ const AddProductScreen = () => {
       const userData = userSnap.data();
 
       const username = userData?.username || 'Bilinmeyen';
-      const userProfileImage = userData?.photoURL || ''; // profileImageUrl yerine photoURL kullandım
+      const userProfileImage = userData?.photoURL || '';
 
       let imageUrl = '';
       if (image) {
         imageUrl = await uploadImageAsync(image);
         if (!imageUrl) return;
       }
+
+      // Boyut bilgilerini obje olarak hazırlama
+      const dimensions = {
+        height: height ? parseFloat(height) : null,
+        width: width ? parseFloat(width) : null,
+        depth: depth ? parseFloat(depth) : null,
+      };
 
       await addDoc(collection(db, 'products'), {
         title,
@@ -124,6 +152,7 @@ const AddProductScreen = () => {
         userProfileImage,
         price: parseFloat(price),
         category,
+        dimensions,
         isSold: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -135,12 +164,25 @@ const AddProductScreen = () => {
       setDescription('');
       setPrice('');
       setCategory('');
+      setHeight('');
+      setWidth('');
+      setDepth('');
       setImage(null);
       navigation.goBack();
     } catch (error) {
       console.error('Ürün eklenirken hata:', error);
       Alert.alert('Hata', 'Ürün eklenirken bir sorun oluştu.');
     }
+  };
+
+  const selectCategory = (value: string) => {
+    setCategory(value);
+    setModalVisible(false);
+  };
+
+  const getCategoryLabel = (value: string) => {
+    const cat = categories.find((c) => c.value === value);
+    return cat ? cat.label : 'Kategori Seçin';
   };
 
   return (
@@ -175,13 +217,82 @@ const AddProductScreen = () => {
       />
 
       <Text style={styles.label}>Kategori</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Kategori girin"
-        placeholderTextColor={isDarkTheme ? '#999' : '#999'}
-        value={category}
-        onChangeText={setCategory}
-      />
+      <TouchableOpacity
+        style={styles.categorySelector}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={[styles.categorySelectorText, !category && styles.placeholder]}>
+          {category ? getCategoryLabel(category) : 'Kategori Seçin'}
+        </Text>
+      </TouchableOpacity>
+
+      <Text style={styles.label}>Boyut (cm)</Text>
+      <View style={styles.dimensionsContainer}>
+        <View style={styles.dimensionInputWrapper}>
+          <Text style={styles.dimensionLabel}>Yükseklik</Text>
+          <TextInput
+            style={styles.dimensionInput}
+            placeholder="0"
+            placeholderTextColor={isDarkTheme ? '#999' : '#999'}
+            keyboardType="numeric"
+            value={height}
+            onChangeText={setHeight}
+          />
+        </View>
+        <View style={styles.dimensionInputWrapper}>
+          <Text style={styles.dimensionLabel}>Genişlik</Text>
+          <TextInput
+            style={styles.dimensionInput}
+            placeholder="0"
+            placeholderTextColor={isDarkTheme ? '#999' : '#999'}
+            keyboardType="numeric"
+            value={width}
+            onChangeText={setWidth}
+          />
+        </View>
+        <View style={styles.dimensionInputWrapper}>
+          <Text style={styles.dimensionLabel}>Kalınlık</Text>
+          <TextInput
+            style={styles.dimensionInput}
+            placeholder="0"
+            placeholderTextColor={isDarkTheme ? '#999' : '#999'}
+            keyboardType="numeric"
+            value={depth}
+            onChangeText={setDepth}
+          />
+        </View>
+      </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Kategori Seçin</Text>
+            <FlatList
+              data={categories}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.categoryItem}
+                  onPress={() => selectCategory(item.value)}
+                >
+                  <Text style={styles.categoryItemText}>{item.label}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>İptal</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 15 }}>
         <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
@@ -224,6 +335,86 @@ const getStyles = (isDarkTheme: boolean) =>
       marginBottom: 5,
       fontWeight: 'bold',
       color: isDarkTheme ? '#eee' : '#111',
+    },
+    categorySelector: {
+      borderWidth: 1,
+      borderColor: isDarkTheme ? '#444' : '#ccc',
+      backgroundColor: isDarkTheme ? '#1e1e1e' : '#fff',
+      padding: 15,
+      marginBottom: 15,
+      borderRadius: 5,
+    },
+    categorySelectorText: {
+      color: isDarkTheme ? '#fff' : '#000',
+      fontSize: 16,
+    },
+    placeholder: {
+      color: '#999',
+    },
+    dimensionsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 15,
+    },
+    dimensionInputWrapper: {
+      flex: 1,
+      marginHorizontal: 4,
+    },
+    dimensionLabel: {
+      fontSize: 12,
+      color: isDarkTheme ? '#bbb' : '#666',
+      marginBottom: 5,
+      textAlign: 'center',
+    },
+    dimensionInput: {
+      borderWidth: 1,
+      borderColor: isDarkTheme ? '#444' : '#ccc',
+      backgroundColor: isDarkTheme ? '#1e1e1e' : '#fff',
+      color: isDarkTheme ? '#fff' : '#000',
+      padding: 10,
+      borderRadius: 5,
+      textAlign: 'center',
+    },
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+      backgroundColor: isDarkTheme ? '#1e1e1e' : '#fff',
+      borderRadius: 10,
+      padding: 20,
+      width: '85%',
+      maxHeight: '70%',
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginBottom: 15,
+      textAlign: 'center',
+      color: isDarkTheme ? '#fff' : '#000',
+    },
+    categoryItem: {
+      padding: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: isDarkTheme ? '#333' : '#eee',
+    },
+    categoryItemText: {
+      fontSize: 16,
+      color: isDarkTheme ? '#fff' : '#000',
+    },
+    closeButton: {
+      marginTop: 15,
+      padding: 15,
+      backgroundColor: isDarkTheme ? '#333' : '#eee',
+      borderRadius: 5,
+      alignItems: 'center',
+    },
+    closeButtonText: {
+      color: isDarkTheme ? '#fff' : '#000',
+      fontSize: 16,
+      fontWeight: 'bold',
     },
     imagePicker: {
       backgroundColor: isDarkTheme ? '#333' : '#eee',
