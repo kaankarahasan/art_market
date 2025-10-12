@@ -2,13 +2,14 @@ import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  FlatList,
   StyleSheet,
   Dimensions,
   Image,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,47 +18,64 @@ import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, auth } from '../firebase';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext';
 
-const numColumns = 2;
-const itemSize = Dimensions.get('window').width / numColumns - 20;
+const screenWidth = Dimensions.get('window').width;
+const columnWidth = (screenWidth - 45) / 2;
 
 const HomeScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+  const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const insets = useSafeAreaInsets();
   const { colors } = useThemeContext();
 
+  const fetchData = async () => {
+    try {
+      const productSnap = await getDocs(
+        query(collection(db, 'products'), where('isSold', '==', false), limit(50))
+      );
+      const productList = productSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProducts(shuffleArray(productList));
+
+      const userSnap = await getDocs(collection(db, 'users'));
+      const userList = userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setUsers(userList);
+
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) setCurrentUserProfile(userDoc.data());
+      }
+    } catch (error) {
+      console.error('Veriler alınırken hata:', error);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
-      const fetchData = async () => {
-        try {
-          setLoading(true);
-          const productSnap = await getDocs(
-            query(collection(db, 'products'), where('isSold', '==', false), limit(50))
-          );
-          const productList = productSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setProducts(shuffleArray(productList));
-
-          const userSnap = await getDocs(collection(db, 'users'));
-          const userList = userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setUsers(userList);
-        } catch (error) {
-          console.error('Veriler alınırken hata:', error);
-        } finally {
-          setLoading(false);
-        }
+      const loadData = async () => {
+        setLoading(true);
+        await fetchData();
+        setLoading(false);
       };
-
-      fetchData();
+      loadData();
     }, [])
   );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
 
   const shuffleArray = (array: any[]) => {
     for (let i = array.length - 1; i > 0; i--) {
@@ -131,59 +149,101 @@ const HomeScreen = () => {
     setSearchQuery('');
   };
 
-  const renderItem = ({ item }: { item: any }) => {
+  const handleImageLoad = (productId: string, width: number, height: number) => {
+    const imageWidth = columnWidth - 20;
+    const aspectRatio = height / width;
+    const calculatedHeight = imageWidth * aspectRatio;
+    setImageHeights(prev => ({ ...prev, [productId]: calculatedHeight }));
+  };
+
+  const distributeProducts = () => {
+    const leftColumn: any[] = [];
+    const rightColumn: any[] = [];
+    let leftHeight = 0;
+    let rightHeight = 0;
+
+    filteredProducts.forEach((product) => {
+      const imageHeight = imageHeights[product.id] || 250;
+      const cardHeight = imageHeight + 110;
+
+      if (leftHeight <= rightHeight) {
+        leftColumn.push(product);
+        leftHeight += cardHeight;
+      } else {
+        rightColumn.push(product);
+        rightHeight += cardHeight;
+      }
+    });
+
+    return { leftColumn, rightColumn };
+  };
+
+  const { leftColumn, rightColumn } = distributeProducts();
+
+  const handleFavoriteToggle = (e: any, item: any, isFavorite: boolean) => {
+    e.stopPropagation();
+    isFavorite ? removeFromFavorites(item.id) : addToFavorites(item);
+  };
+
+  const renderProductCard = (item: any) => {
     const isFavorite = favorites.some(fav => fav.id === item.id);
+    const imageHeight = imageHeights[item.id] || 250;
+
+    const firstImage = item.imageUrls?.[0] || item.imageUrl;
 
     return (
-      <View style={[styles.card, { backgroundColor: colors.card }]}>
+      <View key={item.id} style={[styles.card, { width: columnWidth }]}>
         <TouchableOpacity
           onPress={() => navigation.navigate('ProductDetail', { product: item })}
           activeOpacity={0.7}
         >
-          {item.imageUrl ? (
-            <Image source={{ uri: item.imageUrl }} style={styles.image} />
-          ) : (
-            <View style={[styles.image, { justifyContent: 'center', alignItems: 'center' }]}>
-              <Text style={{ color: colors.text }}>Resim yok</Text>
-            </View>
-          )}
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
-          <Text style={[styles.desc, { color: colors.text }]} numberOfLines={2}>{item.description}</Text>
-          {item.category && (
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryBadgeText}>{item.category}</Text>
-            </View>
-          )}
-          {item.dimensions && (item.dimensions.height || item.dimensions.width || item.dimensions.depth) && (
-            <Text style={styles.dimensionText}>
-              {[
-                item.dimensions.height && `Y:${item.dimensions.height}`,
-                item.dimensions.width && `G:${item.dimensions.width}`,
-                item.dimensions.depth && `K:${item.dimensions.depth}`,
-              ]
-                .filter(Boolean)
-                .join(' × ')}{' '}
-              cm
-            </Text>
-          )}
-        </TouchableOpacity>
+          <View style={styles.imageContainer}>
+            {firstImage ? (
+              <Image
+                source={{ uri: firstImage }}
+                style={[styles.image, { height: imageHeight }]}
+                onLoad={(e) => {
+                  const { width, height } = e.nativeEvent.source;
+                  handleImageLoad(item.id, width, height);
+                }}
+              />
+            ) : (
+              <View style={[styles.image, styles.noImage, { height: 200 }]}>
+                <Text style={styles.noImageText}>Resim yok</Text>
+              </View>
+            )}
+          </View>
 
-        <TouchableOpacity
-          onPress={() => (isFavorite ? removeFromFavorites(item.id) : addToFavorites(item))}
-          style={styles.favoriteButton}
-        >
-          <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color="red" />
+          <View style={styles.infoContainer}>
+            <View style={styles.userRow}>
+              <Text style={styles.username} numberOfLines={1}>
+                {item.username || 'Bilinmeyen'}
+              </Text>
+              <TouchableOpacity
+                onPress={(e) => handleFavoriteToggle(e, item, isFavorite)}
+                style={styles.favoriteButton}
+              >
+                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color="#333333" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.title} numberOfLines={2}>
+              {item.title}{item.year ? `, ${item.year}` : ''}
+            </Text>
+
+            <Text style={styles.price}>
+              ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
     );
   };
 
-  const renderUser = ({ item }: { item: any }) => {
+  const renderUser = (item: any) => {
     const currentUser = auth.currentUser;
-
     const handlePress = () => {
       if (!currentUser) return;
-
       if (item.id === currentUser.uid) {
         navigation.navigate('Profile' as never);
       } else {
@@ -192,21 +252,21 @@ const HomeScreen = () => {
     };
 
     return (
-      <TouchableOpacity onPress={handlePress} style={[styles.userCard, { backgroundColor: colors.card }]}>
+      <TouchableOpacity key={item.id} onPress={handlePress} style={styles.userCard}>
         <Image
           source={item.profilePicture ? { uri: item.profilePicture } : require('../assets/default-avatar.png')}
           style={styles.userAvatar}
         />
         <View>
-          <Text style={[styles.username, { color: colors.text }]}>{item.username}</Text>
-          <Text style={[styles.fullName, { color: colors.text }]}>{item.fullName}</Text>
+          <Text style={styles.usernameText}>{item.username}</Text>
+          <Text style={styles.fullName}>{item.fullName}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.searchWrapper}>
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
@@ -223,43 +283,62 @@ const HomeScreen = () => {
             </TouchableOpacity>
           )}
         </View>
+
+        <TouchableOpacity
+          style={styles.profileButton}
+          onPress={() => navigation.navigate('Profile' as never)}
+        >
+          <Image
+            source={
+              currentUserProfile?.profilePicture
+                ? { uri: currentUserProfile.profilePicture }
+                : require('../assets/default-avatar.png')
+            }
+            style={styles.profileImage}
+          />
+        </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color="#0A0A0A" />
         </View>
       ) : (
-        <>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#0A0A0A"
+              colors={['#0A0A0A']}
+            />
+          }
+        >
           {searchQuery.length > 0 && filteredUsers.length > 0 && (
             <View style={styles.userListContainer}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Kullanıcılar</Text>
-              <FlatList
-                data={filteredUsers}
-                renderItem={renderUser}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-              />
+              <Text style={styles.sectionTitle}>Kullanıcılar</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {filteredUsers.map(renderUser)}
+              </ScrollView>
             </View>
           )}
 
           {filteredProducts.length === 0 && searchQuery.length > 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={{ color: colors.text }}>Aradığınız ürün bulunamadı.</Text>
+              <Text style={styles.emptyText}>Aradığınız ürün bulunamadı.</Text>
             </View>
           ) : (
-            <FlatList
-              data={filteredProducts}
-              renderItem={renderItem}
-              keyExtractor={item => item.id.toString()}
-              numColumns={numColumns}
-              columnWrapperStyle={styles.row}
-              contentContainerStyle={{ padding: 10, paddingBottom: 30 }}
-              showsVerticalScrollIndicator={false}
-            />
+            <View style={styles.masonryContainer}>
+              <View style={styles.column}>
+                {leftColumn.map(renderProductCard)}
+              </View>
+              <View style={styles.column}>
+                {rightColumn.map(renderProductCard)}
+              </View>
+            </View>
           )}
-        </>
+        </ScrollView>
       )}
     </View>
   );
@@ -268,91 +347,87 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 16,
+    backgroundColor: '#F4F4F4',
   },
   searchContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 48,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  searchIcon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 16, color: '#0A0A0A' },
+  clearButton: { padding: 4, marginLeft: 8 },
+  profileButton: {
+    marginLeft: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  searchIcon: {
-    marginRight: 10,
+  profileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#F4F4F4',
   },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
+  masonryContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 10,
+    paddingBottom: 30,
   },
-  clearButton: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  row: {
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
+  column: { flex: 1, paddingHorizontal: 5 },
   card: {
-    borderRadius: 10,
-    width: itemSize,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+    backgroundColor: '#F4F4F4',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  imageContainer: { padding: 10 },
+  image: { width: '100%', resizeMode: 'contain', borderRadius: 8 },
+  noImage: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8E8E8' },
+  noImageText: { color: '#6E6E6E' },
+  infoContainer: { padding: 12, paddingTop: 0, backgroundColor: '#F4F4F4' },
+  userRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
+    marginBottom: 6,
   },
-  image: {
-    width: itemSize - 20,
-    height: itemSize - 20,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  title: { fontSize: 14, fontWeight: 'bold' },
-  desc: { fontSize: 12, marginTop: 2 },
-  categoryBadge: {
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginTop: 4,
-    alignSelf: 'flex-start',
-  },
-  categoryBadgeText: {
-    fontSize: 10,
-    color: '#1976d2',
-    fontWeight: '500',
-  },
-  dimensionText: {
-    fontSize: 10,
-    color: '#666',
-    marginTop: 3,
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingTop: 50,
-  },
+  username: { fontSize: 13, color: '#0A0A0A', flex: 1 },
+  favoriteButton: { padding: 2 },
+  title: { fontSize: 15, color: '#6E6E6E', marginBottom: 8, lineHeight: 20 },
+  price: { fontSize: 17, fontWeight: 'bold', color: '#0A0A0A' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyContainer: { flex: 1, alignItems: 'center', paddingTop: 50 },
+  emptyText: { color: '#6E6E6E' },
   userListContainer: {
     paddingHorizontal: 10,
-    marginBottom: 10,
+    marginBottom: 15,
+    backgroundColor: '#F4F4F4',
+    paddingVertical: 12,
   },
   userCard: {
     flexDirection: 'row',
@@ -360,23 +435,16 @@ const styles = StyleSheet.create({
     padding: 10,
     marginRight: 10,
     borderRadius: 8,
+    backgroundColor: '#FFFFFF',
   },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  username: {
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  fullName: {
-    fontSize: 12,
-  },
+  userAvatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
+  usernameText: { fontSize: 14, fontWeight: 'bold', color: '#0A0A0A' },
+  fullName: { fontSize: 12, color: '#6E6E6E' },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5,
+    color: '#0A0A0A',
+    marginBottom: 8,
+    paddingHorizontal: 10,
   },
 });

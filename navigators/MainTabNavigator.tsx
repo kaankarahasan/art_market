@@ -10,64 +10,50 @@ import InboxScreen from '../screens/InboxScreen';
 import ChatScreen from '../screens/ChatScreen';
 import { RootStackParamList } from '../routes/types';
 import { Ionicons } from '@expo/vector-icons';
-import SearchScreen from '../screens/SearchScreen';
-
-import { auth } from '../firebase'; // Firebase auth import
+import { auth } from '../firebase';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator<RootStackParamList>();
+const FavoritesStack = createNativeStackNavigator<RootStackParamList>();
 const ProfileStack = createNativeStackNavigator<RootStackParamList>();
 const InboxStack = createNativeStackNavigator<RootStackParamList>();
 
+// HOME STACK
 function HomeStackNavigator() {
   return (
-    <HomeStack.Navigator>
-      <HomeStack.Screen
-        name="Main"
-        component={HomeScreen}
-        options={{ headerShown: false }}
-      />
-      <HomeStack.Screen
-        name="ProductDetail"
-        component={ProductDetailScreen}
-        options={{ headerShown: true }}
-      />
-      <HomeStack.Screen
-        name="OtherProfile"
-        component={OtherProfileScreen}
-        options={{ headerShown: true }}
-      />
-      <HomeStack.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ headerShown: true }}
-      />
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="Main" component={HomeScreen} />
+      <HomeStack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <HomeStack.Screen name="OtherProfile" component={OtherProfileScreen} />
+      <HomeStack.Screen name="Profile" component={ProfileScreen} />
     </HomeStack.Navigator>
   );
 }
 
+// FAVORITES STACK
+function FavoritesStackNavigator() {
+  return (
+    <FavoritesStack.Navigator screenOptions={{ headerShown: false }}>
+      {/* RootStackParamList'e eklediğimiz "Favorites" */}
+      <FavoritesStack.Screen name="Favorites" component={FavoritesScreen} />
+      <FavoritesStack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <FavoritesStack.Screen name="OtherProfile" component={OtherProfileScreen} />
+    </FavoritesStack.Navigator>
+  );
+}
+
+// PROFILE STACK
 function ProfileStackNavigator() {
   return (
-    <ProfileStack.Navigator>
-      <ProfileStack.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ headerShown: true }}
-      />
-      <ProfileStack.Screen
-        name="ProductDetail"
-        component={ProductDetailScreen}
-        options={{ headerShown: true }}
-      />
-      <ProfileStack.Screen
-        name="OtherProfile"
-        component={OtherProfileScreen}
-        options={{ headerShown: true }}
-      />
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+      <ProfileStack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <ProfileStack.Screen name="OtherProfile" component={OtherProfileScreen} />
     </ProfileStack.Navigator>
   );
 }
 
+// INBOX STACK
 function InboxStackNavigator() {
   return (
     <InboxStack.Navigator>
@@ -85,6 +71,7 @@ function InboxStackNavigator() {
   );
 }
 
+// MAIN TAB
 export default function MainTabNavigator() {
   const [currentUser, setCurrentUser] = useState(auth.currentUser);
   const [loading, setLoading] = useState(true);
@@ -97,15 +84,8 @@ export default function MainTabNavigator() {
     return unsubscribe;
   }, []);
 
-  if (loading) {
-    // Burada bir Loading spinner gösterilebilir
-    return null;
-  }
-
-  if (!currentUser) {
-    // Kullanıcı giriş yapmamışsa boş ekran ya da yönlendirme yapılabilir
-    return null;
-  }
+  if (loading) return null;
+  if (!currentUser) return null;
 
   return (
     <Tab.Navigator>
@@ -120,16 +100,19 @@ export default function MainTabNavigator() {
           ),
         }}
       />
+
       <Tab.Screen
-        name="Search"
-        component={SearchScreen}
+        name="FavoritesTab"
+        component={FavoritesStackNavigator}
         options={{
-          tabBarLabel: 'Ara',
+          headerShown: false,
+          tabBarLabel: 'Favorites',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search" color={color} size={size} />
+            <Ionicons name="heart-outline" size={size} color={color} />
           ),
         }}
       />
+
       <Tab.Screen
         name="InboxTab"
         component={InboxStackNavigator}
@@ -141,17 +124,8 @@ export default function MainTabNavigator() {
           ),
         }}
       />
-      <Tab.Screen
-        name="FavoritesTab"
-        component={FavoritesScreen}
-        options={{
-          headerShown: false,
-          tabBarLabel: 'Favorites',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="heart-outline" size={size} color={color} />
-          ),
-        }}
-      />
+
+      {/*
       <Tab.Screen
         name="ProfileTab"
         component={ProfileStackNavigator}
@@ -163,6 +137,7 @@ export default function MainTabNavigator() {
           ),
         }}
       />
+      */}
     </Tab.Navigator>
   );
 }

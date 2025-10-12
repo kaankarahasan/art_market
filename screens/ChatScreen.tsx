@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   TextInput,
-  Button,
+  TouchableOpacity,
   FlatList,
   Text,
+  Image,
   StyleSheet,
 } from 'react-native';
 import { db } from '../firebase';
@@ -19,6 +20,9 @@ import {
   setDoc,
   getDoc,
 } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../routes/types';
 
 type Message = {
   id: string;
@@ -40,13 +44,42 @@ export default function ChatScreen({ route }: Props) {
   const { currentUserId, otherUserId } = route.params;
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
+  const [otherUser, setOtherUser] = useState<{ displayName: string; photoURL?: string }>({ displayName: '', photoURL: undefined });
+
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const chatId = [currentUserId, otherUserId].sort().join('_');
 
   useEffect(() => {
+    // Kullanıcı bilgilerini al
+    const fetchOtherUser = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'users', otherUserId));
+        if (snap.exists()) {
+          const data = snap.data() as any;
+          // displayName veya fullName varsa al, yoksa "Bilinmeyen"
+          const name =
+            data.displayName ||
+            data.fullName ||
+            data.username ||
+            'Bilinmeyen';
+          setOtherUser({
+            displayName: name,
+            photoURL: data.photoURL,
+          });
+        } else {
+          setOtherUser({ displayName: 'Bilinmeyen', photoURL: undefined });
+        }
+      } catch (error) {
+        console.error('Kullanıcı bilgisi alınamadı:', error);
+        setOtherUser({ displayName: 'Bilinmeyen', photoURL: undefined });
+      }
+    };
+    fetchOtherUser();
+
+    // Mesajları dinle
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -63,21 +96,17 @@ export default function ChatScreen({ route }: Props) {
 
     const messagesRef = collection(db, 'chats', chatId, 'messages');
 
-    // Yeni mesajı gönder
     await addDoc(messagesRef, {
       text,
       senderId: currentUserId,
       createdAt: serverTimestamp(),
     });
 
-    // Her iki kullanıcının adını al
     const currentUserSnap = await getDoc(doc(db, 'users', currentUserId));
     const otherUserSnap = await getDoc(doc(db, 'users', otherUserId));
-
     const currentUserData = currentUserSnap.exists() ? currentUserSnap.data() : {};
     const otherUserData = otherUserSnap.exists() ? otherUserSnap.data() : {};
 
-    // Sohbet meta verisini güncelle
     const chatDocRef = doc(db, 'chats', chatId);
     await setDoc(
       chatDocRef,
@@ -103,63 +132,118 @@ export default function ChatScreen({ route }: Props) {
 
   return (
     <View style={styles.container}>
+      {/* Üst Bar */}
+      <TouchableOpacity
+        style={styles.header}
+        onPress={() => navigation.navigate('OtherProfile', { userId: otherUserId })}
+
+      >
+        <Image
+          source={
+            otherUser.photoURL
+              ? { uri: otherUser.photoURL }
+              : require('../assets/default-avatar.png')
+          }
+          style={styles.avatar}
+        />
+        <Text style={styles.username}>{otherUser.displayName}</Text>
+      </TouchableOpacity>
+
+      {/* Mesajlar */}
       <FlatList
         inverted
         data={[...messages].reverse()}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Text
+          <View
             style={[
-              styles.message,
-              item.senderId === currentUserId
-                ? styles.myMessage
-                : styles.otherMessage,
+              styles.messageBubble,
+              item.senderId === currentUserId ? styles.myMessage : styles.otherMessage,
             ]}
           >
-            {item.text}
-          </Text>
+            <Text style={styles.messageText}>{item.text}</Text>
+          </View>
         )}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingBottom: 10 }}
       />
 
+      {/* Mesaj Input */}
       <View style={styles.inputContainer}>
         <TextInput
           value={text}
           onChangeText={setText}
-          style={styles.input}
           placeholder="Mesaj..."
+          style={styles.input}
           multiline
         />
-        <Button title="Gönder" onPress={sendMessage} />
+        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+          <Text style={styles.sendButtonText}>Send</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center' },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    marginRight: 10,
-    height: 40,
+  container: { flex: 1, backgroundColor: '#FAFAFA' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#FFFFFF',
   },
-  message: {
-    padding: 8,
-    borderRadius: 8,
+  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12 },
+  username: { fontSize: 16, fontWeight: '600', color: '#111' },
+  messageBubble: {
+    padding: 12,
     marginVertical: 4,
+    marginHorizontal: 10,
+    borderRadius: 16,
     maxWidth: '70%',
   },
   myMessage: {
-    alignSelf: 'flex-end',
     backgroundColor: '#DCF8C5',
+    alignSelf: 'flex-end',
   },
   otherMessage: {
+    backgroundColor: '#FFFFFF',
     alignSelf: 'flex-start',
-    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  messageText: { fontSize: 14, color: '#111' },
+  inputContainer: {
+    flexDirection: 'row',
+    padding: 10,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 10,
+    fontSize: 14,
+    backgroundColor: '#FAFAFA',
+  },
+  sendButton: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  sendButtonText: {
+    color: '#333333',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

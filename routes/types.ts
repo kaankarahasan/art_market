@@ -4,12 +4,23 @@ export type Product = {
   id: string;
   title: string;
   description: string;
-  imageUrl: string;
+  imageUrls: string[]; // ✅ Birden fazla görsel için
+  mainImageUrl?: string; // ✅ Ana görsel (örneğin liste görünümünde kullanılır)
   ownerId: string;
+  username?: string;
+  userProfileImage?: string;
   seller?: string;
   price?: number;
   category?: string;
+  dimensions?: {
+    height?: number | null;
+    width?: number | null;
+    depth?: number | null;
+  };
+  year?: number | null; // ✅ Artık sayı olarak tutuluyor
+  isSold?: boolean;
   createdAt?: any;
+  updatedAt?: any;
 };
 
 export type RootStackParamList = {
@@ -19,6 +30,7 @@ export type RootStackParamList = {
   Profile: { userId?: string };
   Followers: { userId: string };
   Following: { userId: string };
+  Favorites: undefined;
   Sold: undefined;
   Settings: undefined;
   AddProduct: undefined;

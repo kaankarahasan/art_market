@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+} from 'react-native';
 import {
   collection,
   query,
   onSnapshot,
   orderBy,
-  DocumentData,
   doc as docRef,
   getDoc,
 } from 'firebase/firestore';
@@ -24,6 +30,8 @@ type ChatItem = {
   lastMessage: string;
   otherUserId: string;
   otherUserName: string;
+  otherUserPhoto?: string;
+  unreadCount?: number;
 };
 
 export default function InboxScreen() {
@@ -41,7 +49,7 @@ export default function InboxScreen() {
         doc.id.includes(currentUser.uid)
       );
 
-      const chatsWithName = await Promise.all(
+      const chatsWithDetails = await Promise.all(
         userChatsRaw.map(async (doc) => {
           const data = doc.data();
           const users = doc.id.split('_');
@@ -51,21 +59,27 @@ export default function InboxScreen() {
           const userDocSnap = await getDoc(userDocRef);
 
           let otherUserName = 'Bilinmeyen';
+          let otherUserPhoto = undefined;
           if (userDocSnap.exists()) {
-            const userData = userDocSnap.data() as { fullName?: string };
+            const userData = userDocSnap.data() as { fullName?: string; photoURL?: string };
             if (userData.fullName) otherUserName = userData.fullName;
+            if (userData.photoURL) otherUserPhoto = userData.photoURL;
           }
+
+          const unreadCount = data.unreadCounts?.[currentUser.uid] || 0;
 
           return {
             id: doc.id,
             lastMessage: data.lastMessage || '',
             otherUserId,
             otherUserName,
+            otherUserPhoto,
+            unreadCount,
           };
         })
       );
 
-      setChats(chatsWithName);
+      setChats(chatsWithDetails);
     });
 
     return () => unsubscribe();
@@ -73,33 +87,98 @@ export default function InboxScreen() {
 
   if (!currentUser) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.centered}>
         <Text>Kullanıcı bilgisi alınamadı, lütfen giriş yapınız.</Text>
       </View>
     );
   }
 
+  const renderChatItem = ({ item }: { item: ChatItem }) => (
+    <TouchableOpacity
+      onPress={() =>
+        navigation.navigate('ChatScreen', {
+          currentUserId: currentUser.uid,
+          otherUserId: item.otherUserId,
+        })
+      }
+      style={styles.chatCard}
+    >
+      <Image
+        source={
+          item.otherUserPhoto
+            ? { uri: item.otherUserPhoto }
+            : require('../assets/default-avatar.png')
+        }
+        style={styles.avatar}
+      />
+      <View style={styles.textContainer}>
+        <Text style={styles.name}>{item.otherUserName}</Text>
+        <View style={styles.messageRow}>
+          <Text style={styles.message} numberOfLines={1}>
+            {item.lastMessage}
+          </Text>
+          {item.unreadCount && item.unreadCount > 0 ? (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadText}>{item.unreadCount}</Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={{ flex: 1, padding: 10 }}>
+    <View style={styles.container}>
       <FlatList
         data={chats}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('ChatScreen', {
-                currentUserId: currentUser.uid,
-                otherUserId: item.otherUserId,
-              })
-            }
-            style={{ padding: 15, borderBottomWidth: 1, borderColor: '#ddd' }}
-          >
-            <Text style={{ fontWeight: 'bold' }}>{item.otherUserName}</Text>
-            <Text style={{ color: '#555', marginTop: 5 }}>{item.lastMessage}</Text>
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={<Text>Hiç sohbet yok.</Text>}
+        renderItem={renderChatItem}
+        ListEmptyComponent={
+          <View style={styles.centered}>
+            <Text>Hiç sohbet yok.</Text>
+          </View>
+        }
+        contentContainerStyle={chats.length === 0 ? { flex: 1 } : undefined}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#FAFAFA', padding: 10 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  chatCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginVertical: 6,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  avatar: {
+    width: 55,
+    height: 55,
+    borderRadius: 28,
+    marginRight: 12,
+  },
+  textContainer: { flex: 1 },
+  name: { fontWeight: '700', fontSize: 16, color: '#111', marginBottom: 4 },
+  messageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  message: { color: '#777', fontSize: 14, flex: 1 },
+  unreadBadge: {
+    backgroundColor: '#FF3B30',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    minWidth: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  unreadText: { color: '#FFF', fontSize: 12, fontWeight: '600' },
+});

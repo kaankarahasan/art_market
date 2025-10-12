@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useEffect, useContext } from 'react';
-import { getDocs } from 'firebase/firestore';
 import {
   View,
   Text,
@@ -7,42 +6,51 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  FlatList,
-  Alert,
+  Dimensions,
+  ScrollView,
   Modal,
-  TouchableWithoutFeedback,
 } from 'react-native';
-import {
-  useNavigation,
-  useRoute,
-  RouteProp,
-  NavigationProp,
-  useFocusEffect,
-} from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import { getAuth } from 'firebase/auth';
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  onSnapshot,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-} from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../routes/types';
-import { deleteProduct } from '../utils/deleteProduct';
-import { updateProduct } from '../utils/updateProduct';
-import { ThemeContext } from '../contexts/ThemeContext';  // ThemeContext importu
+import { ThemeContext } from '../contexts/ThemeContext';
+import ImageViewer from 'react-native-image-zoom-viewer';
 
 type ProfileRouteProp = RouteProp<RootStackParamList, 'Profile'>;
-type UserInfo = {
-  uid: string;
-  username: string;
+type UserInfo = { uid: string; username: string };
+
+const screenWidth = Dimensions.get('window').width;
+const columnWidth = (screenWidth - 45) / 2;
+
+const FullScreenImageModal = ({
+  visible,
+  onClose,
+  imageUrl,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  imageUrl: string;
+}) => {
+  return (
+    <Modal visible={visible} transparent={true} animationType="fade">
+      <View style={styles.modalBackground}>
+        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <MaterialIcon name="close" size={30} color="#333333" />
+        </TouchableOpacity>
+        <ImageViewer
+          imageUrls={[{ url: imageUrl }]}
+          enableSwipeDown
+          onSwipeDown={onClose}
+          backgroundColor="#FFFFFF"
+          renderIndicator={() => <View />} // 1/1 yazısını kaldırıyor
+        />
+      </View>
+    </Modal>
+  );
 };
 
 const ProfileScreen = () => {
@@ -51,36 +59,28 @@ const ProfileScreen = () => {
   const auth = getAuth();
   const firestore = getFirestore();
   const insets = useSafeAreaInsets();
-
   const { colors } = useContext(ThemeContext);
 
   const currentUser = auth.currentUser;
   const profileId = route.params?.userId ?? currentUser?.uid ?? '';
 
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [newTitle, setNewTitle] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [updateModalVisible, setUpdateModalVisible] = useState(false);
-
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
   const [followers, setFollowers] = useState<UserInfo[]>([]);
   const [following, setFollowing] = useState<UserInfo[]>([]);
-  const [isFollowing, setIsFollowing] = useState(false);
-
-  const [soldCount, setSoldCount] = useState(0);
   const [products, setProducts] = useState<any[]>([]);
-
-  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<'Artworks' | 'About'>('Artworks');
+  const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
 
   const isOwnProfile = profileId === currentUser?.uid;
 
-  // Realtime takipçiler
+  // Followers / Following
   useEffect(() => {
     if (!profileId) return;
+
     const followersRef = collection(firestore, 'users', profileId, 'followers');
-    const unsubscribe = onSnapshot(followersRef, async (snapshot) => {
+    const unsubscribeFollowers = onSnapshot(followersRef, async (snapshot) => {
       const followersData = await Promise.all(
         snapshot.docs.map(async (docSnap) => {
           const userSnap = await getDoc(doc(firestore, 'users', docSnap.id));
@@ -89,14 +89,9 @@ const ProfileScreen = () => {
       );
       setFollowers(followersData);
     });
-    return () => unsubscribe();
-  }, [profileId]);
 
-  // Realtime takip edilenler
-  useEffect(() => {
-    if (!profileId) return;
     const followingRef = collection(firestore, 'users', profileId, 'following');
-    const unsubscribe = onSnapshot(followingRef, async (snapshot) => {
+    const unsubscribeFollowing = onSnapshot(followingRef, async (snapshot) => {
       const followingData = await Promise.all(
         snapshot.docs.map(async (docSnap) => {
           const userSnap = await getDoc(doc(firestore, 'users', docSnap.id));
@@ -105,255 +100,202 @@ const ProfileScreen = () => {
       );
       setFollowing(followingData);
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribeFollowers();
+      unsubscribeFollowing();
+    };
   }, [profileId]);
 
-  // isFollowing kontrol
-  useEffect(() => {
-    if (!profileId || !currentUser) return;
-    const docRef = doc(firestore, 'users', profileId, 'followers', currentUser.uid);
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      setIsFollowing(docSnap.exists());
-    });
-    return () => unsubscribe();
-  }, [profileId, currentUser]);
-
+  // Kullanıcı verisi
   const fetchUserData = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const userSnap = await getDoc(doc(firestore, 'users', profileId));
-      if (userSnap.exists()) {
-        setUserData(userSnap.data());
-      }
-      const soldSnap = await getDocs(
-        query(
-          collection(firestore, 'products'),
-          where('ownerId', '==', profileId),
-          where('isSold', '==', true)
-        )
+      if (userSnap.exists()) setUserData(userSnap.data());
+
+      const productsSnap = await getDocs(
+        query(collection(firestore, 'products'), where('ownerId', '==', profileId))
       );
-      setSoldCount(soldSnap.size);
+      setProducts(productsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     } catch (e) {
-      console.error('Hata:', e);
+      console.error(e);
     } finally {
       setLoading(false);
     }
   }, [profileId]);
 
-  useEffect(() => {
-    const q = query(
-      collection(firestore, 'products'),
-      where('ownerId', '==', profileId),
-      where('isSold', '==', false)
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setProducts(data);
-    });
-    return () => unsubscribe();
-  }, [profileId]);
+  useFocusEffect(useCallback(() => { fetchUserData(); }, [fetchUserData]));
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchUserData();
-    }, [fetchUserData])
-  );
-
-  const handleFollow = async () => {
-    if (!currentUser || currentUser.uid === profileId) return;
-    const currentUserRef = doc(firestore, 'users', currentUser.uid);
-    const profileUserRef = doc(firestore, 'users', profileId);
-
-    try {
-      if (isFollowing) {
-        await updateDoc(currentUserRef, { following: arrayRemove(profileId) });
-        await updateDoc(profileUserRef, { followers: arrayRemove(currentUser.uid) });
-      } else {
-        await updateDoc(currentUserRef, { following: arrayUnion(profileId) });
-        await updateDoc(profileUserRef, { followers: arrayUnion(currentUser.uid) });
-      }
-    } catch (e) {
-      console.error('Takip işlemi hatası:', e);
-    }
+  const handleImageLoad = (productId: string, width: number, height: number) => {
+    const imageWidth = columnWidth - 20;
+    const aspectRatio = height / width;
+    const calculatedHeight = imageWidth * aspectRatio;
+    setImageHeights(prev => ({ ...prev, [productId]: calculatedHeight }));
   };
 
-  const confirmDelete = (productId: string, imageUrl: string, isSold: boolean) => {
-    Alert.alert(
-      'Ürünü Sil',
-      'Bu ürünü silmek istediğinizden emin misiniz?',
-      [
-        { text: 'İptal', style: 'cancel' },
-        {
-          text: 'Sil',
-          style: 'destructive',
-          onPress: () => deleteProduct(productId, imageUrl, isSold),
-        },
-      ],
-      { cancelable: true }
+  const distributeProducts = () => {
+    const leftColumn: any[] = [];
+    const rightColumn: any[] = [];
+    let leftHeight = 0;
+    let rightHeight = 0;
+
+    products.forEach((product) => {
+      const imageHeight = imageHeights[product.id] || 250;
+      const cardHeight = imageHeight + 110;
+
+      if (leftHeight <= rightHeight) {
+        leftColumn.push(product);
+        leftHeight += cardHeight;
+      } else {
+        rightColumn.push(product);
+        rightHeight += cardHeight;
+      }
+    });
+
+    return { leftColumn, rightColumn };
+  };
+
+  const { leftColumn, rightColumn } = distributeProducts();
+
+  const renderProductCard = (item: any) => {
+    const imageHeight = imageHeights[item.id] || 250;
+    const firstImage = item.imageUrls?.[0] || item.imageUrl;
+
+    return (
+      <View key={item.id} style={[styles.card, { width: columnWidth }]}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ProductDetail', { product: item })}
+          activeOpacity={0.7}
+        >
+          <View style={styles.imageContainer}>
+            {firstImage ? (
+              <Image
+                source={{ uri: firstImage }}
+                style={[styles.image, { height: imageHeight }]}
+                onLoad={(e) => {
+                  const { width, height } = e.nativeEvent.source;
+                  handleImageLoad(item.id, width, height);
+                }}
+              />
+            ) : (
+              <View style={[styles.image, styles.noImage, { height: 200 }]}>
+                <Text style={styles.noImageText}>Resim yok</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.infoContainer}>
+            <Text style={styles.title} numberOfLines={2}>
+              {item.title}{item.year ? `, ${item.year}` : ''}
+            </Text>
+            <Text style={styles.price}>
+              ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   };
 
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color="#333333" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <FlatList
-        data={products}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
-        ListHeaderComponent={
-          <>
-            {isOwnProfile && (
+    <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <TouchableOpacity onPress={() => setProfileModalVisible(true)}>
+            <Image
+              source={
+                userData?.photoURL ? { uri: userData.photoURL } : require('../assets/default-avatar.png')
+              }
+              style={styles.profileImage}
+            />
+          </TouchableOpacity>
+
+          <View style={styles.profileInfo}>
+            <View style={styles.usernameRow}>
+              <Text style={styles.usernameText}>@{userData?.username || 'kullaniciadi'}</Text>
               <TouchableOpacity
-                style={[styles.settingsIcon, { top: insets.top + 10 }]}
+                style={styles.settingsButton}
                 onPress={() => navigation.navigate('Settings')}
               >
-                <Icon name="settings-outline" size={28} color={colors.text} />
+                <MaterialIcon name="menu" size={24} color="#333333" />
               </TouchableOpacity>
-            )}
-
-            <View style={styles.headerSection}>
-              <TouchableOpacity onPress={() => setModalVisible(true)}>
-                <Image
-                  source={
-                    userData?.photoURL
-                      ? { uri: userData.photoURL }
-                      : require('../assets/default-avatar.png')
-                  }
-                  style={styles.avatar}
-                />
-              </TouchableOpacity>
-
-              <Text style={[styles.username, { color: colors.text }]}>
-                @{userData?.username || 'kullaniciadi'}
-              </Text>
-              <Text style={[styles.fullName, { color: colors.text }]}>
-                {userData?.fullName || 'Ad Soyad'}
-              </Text>
-              {userData?.bio ? (
-                <Text style={[styles.bio, { color: colors.text }]}>{userData.bio}</Text>
-              ) : null}
             </View>
-
-            <View style={styles.countBox}>
+            <Text style={styles.fullNameText}>{userData?.fullName || 'Ad Soyad'}</Text>
+            <View style={styles.followRow}>
               <TouchableOpacity
-                style={styles.countItem}
+                style={styles.followButtonCard}
                 onPress={() => navigation.navigate('Followers', { userId: profileId })}
               >
-                <Text style={[styles.countNumber, { color: colors.text }]}>{followers.length}</Text>
-                <Text style={[styles.countLabel, { color: colors.text }]}>Takipçi</Text>
+                <Text style={styles.followButtonText}>Followers: {followers.length}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.countItem}
+                style={styles.followButtonCard}
                 onPress={() => navigation.navigate('Following', { userId: profileId })}
               >
-                <Text style={[styles.countNumber, { color: colors.text }]}>{following.length}</Text>
-                <Text style={[styles.countLabel, { color: colors.text }]}>Takip</Text>
+                <Text style={styles.followButtonText}>Following: {following.length}</Text>
               </TouchableOpacity>
             </View>
-
-            {!isOwnProfile && (
-              <View style={styles.followButtonContainer}>
-                <TouchableOpacity
-                  style={[styles.followButton, { backgroundColor: colors.primary }]}
-                  onPress={handleFollow}
-                >
-                  <Text style={[styles.followButtonText, { color: colors.background }]}>
-                    {isFollowing ? 'Takipten Çık' : 'Takip Et'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
             <TouchableOpacity
-              style={[styles.soldBox, { backgroundColor: colors.card }]}
-              onPress={() => navigation.navigate('Sold')}
+              style={styles.addWordButton}
+              onPress={() => navigation.navigate('AddProduct')}
             >
-              <Text style={[styles.soldText, { color: colors.text }]}>Satılanlar: {soldCount}</Text>
+              <Text style={styles.addWordText}>Add</Text>
+              <Text style={styles.addWordText}>Work</Text>
             </TouchableOpacity>
-
-            {isOwnProfile && (
-              <TouchableOpacity
-                style={[styles.AddProductBox, { backgroundColor: colors.primary }]}
-                onPress={() => navigation.navigate('AddProduct')}
-              >
-                <Text style={[styles.soldText, { color: colors.background }]}>Ürün Ekle</Text>
-              </TouchableOpacity>
-            )}
-
-            <Text style={[styles.listTitle, { color: colors.text }]}>Ürünler</Text>
-          </>
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.productItem, { backgroundColor: colors.card }]}
-            onPress={() => navigation.navigate('ProductDetail', { product: item })}
-            activeOpacity={0.8}
-          >
-            {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.productImage} />}
-            <Text style={[styles.productTitle, { color: colors.text }]}>{item.title}</Text>
-            <Text style={[styles.productDesc, { color: colors.text }]}>{item.description}</Text>
-
-            {isOwnProfile && (
-              <>
-                <TouchableOpacity
-                  style={[styles.deleteButton, { backgroundColor: colors.notification }]}
-                  onPress={() => confirmDelete(item.id, item.imageUrl, item.isSold)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.deleteButtonText}>Sil</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.updateButton, { backgroundColor: colors.primary }]}
-                  onPress={() => {
-                    setSelectedProduct(item);
-                    setNewTitle(item.title);
-                    setNewDescription(item.description);
-                    setUpdateModalVisible(true);
-                    navigation.navigate('UpdateProduct', { product: item });
-                  }}
-                >
-                  <Text style={styles.updateButtonText}>Güncelle</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={
-          <Text style={{ textAlign: 'center', marginTop: 20, color: colors.text }}>
-            Henüz ürün yok.
-          </Text>
-        }
-      />
-
-      <Modal
-        visible={modalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-          <View style={styles.modalBackground}>
-            <TouchableWithoutFeedback>
-              <Image
-                source={
-                  userData?.photoURL
-                    ? { uri: userData.photoURL }
-                    : require('../assets/default-avatar.png')
-                }
-                style={styles.fullscreenImage}
-              />
-            </TouchableWithoutFeedback>
           </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabRow}>
+          <TouchableOpacity
+            style={[styles.tabItem, selectedTab === 'Artworks' && styles.activeTabLarge]}
+            onPress={() => setSelectedTab('Artworks')}
+          >
+            <Icon name="albums-outline" size={20} color={selectedTab === 'Artworks' ? '#0A0A0A' : '#6E6E6E'} />
+            <Text style={[styles.tabText, selectedTab === 'Artworks' && { color: '#0A0A0A' }]}>Artworks</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabItem, selectedTab === 'About' && styles.activeTabLarge]}
+            onPress={() => setSelectedTab('About')}
+          >
+            <Icon name="information-circle-outline" size={20} color={selectedTab === 'About' ? '#0A0A0A' : '#6E6E6E'} />
+            <Text style={[styles.tabText, selectedTab === 'About' && { color: '#0A0A0A' }]}>About</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Tab Content */}
+        {selectedTab === 'Artworks' ? (
+          <View style={[styles.masonryContainer, { paddingBottom: 50, paddingTop: 10 }]}>
+            <View style={styles.column}>
+              {leftColumn.map(renderProductCard)}
+            </View>
+            <View style={styles.column}>
+              {rightColumn.map(renderProductCard)}
+            </View>
+          </View>
+        ) : (
+          <View style={{ paddingHorizontal: 16, marginTop: 10, paddingBottom: 50 }}>
+            <Text style={{ color: '#6E6E6E', fontSize: 14 }}>{userData?.bio || 'No bio available.'}</Text>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Profile Image Modal */}
+      <FullScreenImageModal
+        visible={profileModalVisible}
+        onClose={() => setProfileModalVisible(false)}
+        imageUrl={userData?.photoURL || ''}
+      />
     </SafeAreaView>
   );
 };
@@ -363,110 +305,45 @@ export default ProfileScreen;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  settingsIcon: { position: 'absolute', right: 20, zIndex: 1 },
-  headerSection: { alignItems: 'center', marginTop: 15 },
-  avatar: { width: 100, height: 100, borderRadius: 60, marginBottom: 12 },
-  username: { fontSize: 20, fontWeight: 'bold', marginBottom: 4 },
-  fullName: { fontSize: 16 },
-  followButtonContainer: { marginTop: 20, alignItems: 'center' },
-  followButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 5,
-  },
-  followButtonText: { fontSize: 16, fontWeight: 'bold' },
-  soldBox: {
-    marginTop: 20,
-    alignSelf: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  AddProductBox: {
-    marginTop: 10,
-    alignSelf: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  soldText: { fontSize: 16, fontWeight: 'bold' },
-  listTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
-  productItem: {
-    marginBottom: 15,
-    padding: 10,
-    borderRadius: 5,
-  },
-  productTitle: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  productDesc: {
-    fontSize: 14,
-  },
-  productImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  countBox: {
+  profileCard: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 10,
-    gap: 30,
-  },
-  countItem: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    margin: 16,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
     alignItems: 'center',
+    position: 'relative',
   },
-  countNumber: {
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  countLabel: {
-    fontSize: 14,
-  },
-  deleteButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginTop: 5,
-    marginBottom: 5,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  updateButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 5,
-  },
-  updateButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  bio: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 4,
-    paddingHorizontal: 20,
-  },
-  modalBackground: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullscreenImage: {
-    width: '90%',
-    height: '70%',
-    borderRadius: 15,
-    resizeMode: 'contain',
-  },
+  profileImage: { width: 120, height: 120, borderRadius: 12 },
+  profileInfo: { flex: 1, marginLeft: 16, justifyContent: 'center' },
+  usernameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  usernameText: { fontSize: 18, fontWeight: 'bold', color: '#0A0A0A' },
+  fullNameText: { fontSize: 14, color: '#6E6E6E', marginBottom: 8 },
+  followRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, gap: 12 },
+  followButtonCard: { backgroundColor: '#333333', paddingVertical: 6, paddingHorizontal: 22, borderRadius: 5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  followButtonText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
+  addWordButton: { backgroundColor: '#333333', paddingVertical: 6, paddingHorizontal: 80, borderRadius: 5, alignSelf: 'flex-start', flexDirection: 'row', },
+  addWordText: { color: '#FFFFFF', fontWeight: 'bold', textAlign: 'center', fontSize: 10, marginRight: 4 },
+  settingsButton: { marginLeft: 10 },
+  tabRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
+  tabItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 6, justifyContent: 'center', flex: 1 },
+  activeTabLarge: { borderBottomWidth: 2, borderBottomColor: '#333333', width: '50%' },
+  tabText: { fontSize: 14, color: '#6E6E6E', fontWeight: '600' },
+  masonryContainer: { flexDirection: 'row', paddingHorizontal: 10 },
+  column: { flex: 1, paddingHorizontal: 5 },
+  card: { borderRadius: 12, overflow: 'hidden', marginBottom: 12, backgroundColor: '#F4F4F4', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  imageContainer: { padding: 10 },
+  image: { width: '100%', resizeMode: 'contain', borderRadius: 8 },
+  noImage: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8E8E8' },
+  noImageText: { color: '#6E6E6E' },
+  infoContainer: { padding: 12, paddingTop: 0, backgroundColor: '#F4F4F4' },
+  title: { fontSize: 15, color: '#6E6E6E', marginBottom: 8, lineHeight: 20 },
+  price: { fontSize: 17, fontWeight: 'bold', color: '#0A0A0A' },
+  modalBackground: { flex: 1, backgroundColor: '#FFFFFF' },
+  closeButton: { position: 'absolute', top: 40, right: 20, zIndex: 10 },
 });

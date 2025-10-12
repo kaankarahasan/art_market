@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import ProductDetailScreen from '@/screens/ProductDetailScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -32,8 +33,19 @@ const BottomTabNavigator = () => {
         name="Profile"
         component={ProfileScreen}
         options={{
+          headerShown: false, // 👈 Header'ı tamamen kaldırır
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="person" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ProductDetail"
+        component={ProductDetailScreen}
+        options={{
+          headerShown: false, // 👈 Header'ı tamamen kaldırır
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="home" color={color} size={size} />
           ),
         }}
       />

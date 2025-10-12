@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,21 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Animated,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  ScrollView,
 } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { useThemeContext } from '../contexts/ThemeContext';
+
+const { width, height } = Dimensions.get('window');
 
 type RootStackParamList = {
   Login: undefined;
@@ -23,12 +31,56 @@ type SignUpScreenProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 const SignUpScreen = () => {
   const navigation = useNavigation<SignUpScreenProp>();
-  const { colors } = useThemeContext();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
+
+  // 🔹 Arka plan animasyon değerleri
+  const moveAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1.1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(moveAnim, {
+            toValue: 1,
+            duration: 10000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1.3,
+            duration: 10000,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(moveAnim, {
+            toValue: 0,
+            duration: 10000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1.1,
+            duration: 10000,
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    ).start();
+  }, []);
+
+  const translateX = moveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-15, 15],
+  });
+
+  const translateY = moveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-10, 10],
+  });
 
   const handleSignUp = async () => {
     if (!email || !password || !fullName || !username) {
@@ -44,8 +96,8 @@ const SignUpScreen = () => {
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
-        fullName: fullName,
-        username: username,
+        fullName,
+        username,
         profilePicture: '',
         bio: '',
         followersCount: 0,
@@ -61,68 +113,97 @@ const SignUpScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.text }]}>Kayıt Ol</Text>
-      <Text style={[styles.titleLogin, { color: colors.text }]}>Yeni bir hesap oluşturun.</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        {/* 🔹 Dinamik arka plan */}
+        <Animated.Image
+          source={require('../assets/Edward_Hooper.png')}
+          style={[
+            styles.backgroundImage,
+            {
+              transform: [{ translateX }, { translateY }, { scale: scaleAnim }],
+            },
+          ]}
+          resizeMode="cover"
+        />
 
-      <View style={styles.inputContainer}>
-        <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-          <TextInput
-            style={[styles.textInput, { color: colors.text }]}
-            placeholder="Ad Soyad"
-            placeholderTextColor={colors.text + '99'}
-            onChangeText={setFullName}
-            value={fullName}
-          />
-        </View>
-        <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-          <TextInput
-            style={[styles.textInput, { color: colors.text }]}
-            placeholder="Kullanıcı Adı"
-            placeholderTextColor={colors.text + '99'}
-            autoCapitalize="none"
-            onChangeText={setUsername}
-            value={username}
-          />
-        </View>
-        <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-          <TextInput
-            style={[styles.textInput, { color: colors.text }]}
-            placeholder="E-posta"
-            placeholderTextColor={colors.text + '99'}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            onChangeText={setEmail}
-            value={email}
-          />
-        </View>
-        <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-          <TextInput
-            style={[styles.textInput, { color: colors.text }]}
-            placeholder="Şifre"
-            placeholderTextColor={colors.text + '99'}
-            secureTextEntry
-            onChangeText={setPassword}
-            value={password}
-          />
-        </View>
+        {/* 🔹 Karartma efekti */}
+        <View style={styles.overlay} />
+
+        {/* 🔹 Klavye dinamik yapısı */}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.cardContainer}>
+              <View style={styles.card}>
+                <Text style={styles.title}>Sign Up</Text>
+                <Text style={styles.subtitle}>Create a new account.</Text>
+
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Name Surname"
+                    placeholderTextColor="#999"
+                    onChangeText={setFullName}
+                    value={fullName}
+                    returnKeyType="next"
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="User Name"
+                    placeholderTextColor="#999"
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    value={username}
+                    returnKeyType="next"
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Email"
+                    placeholderTextColor="#999"
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    onChangeText={setEmail}
+                    value={email}
+                    returnKeyType="next"
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Password"
+                    placeholderTextColor="#999"
+                    secureTextEntry
+                    onChangeText={setPassword}
+                    value={password}
+                    returnKeyType="done"
+                  />
+                </View>
+
+                <TouchableOpacity onPress={handleSignUp}>
+                  <View style={styles.signUpButton}>
+                    <Text style={styles.signUpButtonText}>Sign Up</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <View style={styles.registerContainer}>
+                  <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                    <Text style={styles.registerText}>
+                      Do you already have an account?{' '}
+                      <Text style={styles.registerLink}>Login</Text>
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </View>
-
-      <TouchableOpacity onPress={handleSignUp}>
-        <View style={[styles.signUpButton, { backgroundColor: '#456FE8' }]}>
-          <Text style={styles.signUpButtonText}>Kayıt Ol</Text>
-        </View>
-      </TouchableOpacity>
-
-      <View style={styles.registerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={[styles.registerText, { color: colors.text }]}>
-            Zaten hesabınız var mı?{' '}
-            <Text style={styles.registerLink}>Giriş Yap</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -131,57 +212,90 @@ export default SignUpScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
+    backgroundColor: '#000',
+  },
+  backgroundImage: {
+    position: 'absolute',
+    width: width * 1.4,
+    height: height * 1.4,
+    top: -height * 0.2,
+    left: -width * 0.2,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  cardContainer: {
+    flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+  card: {
+    backgroundColor: '#F4F4F4',
+    borderRadius: 20,
+    padding: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
   },
   title: {
-    fontSize: 25,
-    fontWeight: '600',
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#0A0A0A',
+    textAlign: 'center',
+    marginBottom: 8,
   },
-  titleLogin: {
+  subtitle: {
     fontSize: 15,
-    marginTop: 10,
+    color: '#0A0A0A',
+    textAlign: 'center',
+    opacity: 0.7,
+    marginBottom: 25,
   },
   inputContainer: {
     width: '100%',
-    marginTop: 20,
-    gap: 20,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    paddingHorizontal: 10,
-    borderWidth: 0.8,
-    borderRadius: 5,
+    gap: 16,
   },
   textInput: {
-    flex: 1,
-    paddingVertical: 15,
-    paddingHorizontal: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    color: '#0A0A0A',
+    fontSize: 15,
   },
   signUpButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 5,
+    backgroundColor: '#333333',
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
     marginTop: 20,
   },
   signUpButtonText: {
-    color: '#fff',
-    fontSize: 15,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   registerContainer: {
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    marginTop: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 15,
   },
   registerText: {
-    fontWeight: '400',
+    fontSize: 14,
+    color: '#0A0A0A',
   },
   registerLink: {
-    color: '#456FE8',
-    fontWeight: '600',
+    fontWeight: 'bold',
+    color: '#333333',
   },
 });
