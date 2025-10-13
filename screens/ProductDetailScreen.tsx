@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   View,
   Dimensions,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import {
   NavigationProp,
@@ -21,7 +23,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { getDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageViewing from 'react-native-image-viewing';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
@@ -66,11 +67,7 @@ const ProductDetailScreen = () => {
   const isFavorite = favorites.some((fav) => fav.id === productData.id);
   const isOwner = productData.ownerId === currentUser?.uid;
 
-  const dynamicTopMargin = height * 0.05; // Eser fotoğrafının üstünde dinamik boşluk (cihazın %5'i kadar)
-
-  useEffect(() => {
-    navigation.setOptions({ tabBarStyle: { display: 'none' } });
-  }, [navigation]);
+  const dynamicTopMargin = height * 0.1;
 
   useEffect(() => {
     const fetchOwnerData = async () => {
@@ -212,7 +209,9 @@ const ProductDetailScreen = () => {
     : [];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+
       {/* Geri ve edit butonları */}
       <View style={styles.topButtonsContainer}>
         <TouchableOpacity
@@ -234,7 +233,7 @@ const ProductDetailScreen = () => {
         )}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
         {renderImages()}
 
         <View style={styles.content}>
@@ -315,7 +314,7 @@ const ProductDetailScreen = () => {
           </View>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -325,10 +324,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    marginBottom: 0,
+    paddingBottom: 0,
   },
   topButtonsContainer: {
     position: 'absolute',
-    top: 50,
+    top: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50,
     left: 0,
     right: 0,
     zIndex: 10,

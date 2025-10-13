@@ -45,6 +45,6 @@ export type RootStackParamList = {
   TermsOfService: undefined;
   PrivacyFollowerCommentSettings: undefined;
   InboxScreen: { currentUserId: string };
-  ChatScreen: { currentUserId: string; otherUserId: string };
+  Chat: { currentUserId: string; otherUserId: string };
   Search: undefined;
 };

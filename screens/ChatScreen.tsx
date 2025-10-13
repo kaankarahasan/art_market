@@ -7,7 +7,11 @@ import {
   Text,
   Image,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../firebase';
 import {
   collection,
@@ -20,7 +24,7 @@ import {
   setDoc,
   getDoc,
 } from 'firebase/firestore';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 
@@ -31,42 +35,43 @@ type Message = {
   createdAt: any;
 };
 
-type Props = {
-  route: {
-    params: {
-      currentUserId: string;
-      otherUserId: string;
-    };
-  };
-};
+type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
-export default function ChatScreen({ route }: Props) {
+export default function ChatScreen() {
+  const route = useRoute<ChatScreenRouteProp>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   const { currentUserId, otherUserId } = route.params;
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
-  const [otherUser, setOtherUser] = useState<{ displayName: string; photoURL?: string }>({ displayName: '', photoURL: undefined });
-
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [otherUser, setOtherUser] = useState<{ displayName: string; photoURL?: string }>({
+    displayName: '',
+    photoURL: undefined,
+  });
 
   const chatId = [currentUserId, otherUserId].sort().join('_');
 
+  const screenHeight = Dimensions.get('window').height;
+
+  // Navigator bar gizleme
+  useFocusEffect(
+    React.useCallback(() => {
+      navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+      return () => {
+        navigation.getParent()?.setOptions({ tabBarStyle: undefined });
+      };
+    }, [navigation])
+  );
+
   useEffect(() => {
-    // Kullanıcı bilgilerini al
     const fetchOtherUser = async () => {
       try {
         const snap = await getDoc(doc(db, 'users', otherUserId));
         if (snap.exists()) {
           const data = snap.data() as any;
-          // displayName veya fullName varsa al, yoksa "Bilinmeyen"
-          const name =
-            data.displayName ||
-            data.fullName ||
-            data.username ||
-            'Bilinmeyen';
-          setOtherUser({
-            displayName: name,
-            photoURL: data.photoURL,
-          });
+          const name = data.displayName || data.fullName || data.username || 'Bilinmeyen';
+          setOtherUser({ displayName: name, photoURL: data.photoURL });
         } else {
           setOtherUser({ displayName: 'Bilinmeyen', photoURL: undefined });
         }
@@ -77,7 +82,6 @@ export default function ChatScreen({ route }: Props) {
     };
     fetchOtherUser();
 
-    // Mesajları dinle
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -89,13 +93,12 @@ export default function ChatScreen({ route }: Props) {
     });
 
     return () => unsubscribe();
-  }, [chatId]);
+  }, [chatId, otherUserId]);
 
   const sendMessage = async () => {
     if (!text.trim()) return;
 
     const messagesRef = collection(db, 'chats', chatId, 'messages');
-
     await addDoc(messagesRef, {
       text,
       senderId: currentUserId,
@@ -131,56 +134,75 @@ export default function ChatScreen({ route }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Üst Bar */}
-      <TouchableOpacity
-        style={styles.header}
-        onPress={() => navigation.navigate('OtherProfile', { userId: otherUserId })}
-
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={90}
       >
-        <Image
-          source={
-            otherUser.photoURL
-              ? { uri: otherUser.photoURL }
-              : require('../assets/default-avatar.png')
-          }
-          style={styles.avatar}
-        />
-        <Text style={styles.username}>{otherUser.displayName}</Text>
-      </TouchableOpacity>
-
-      {/* Mesajlar */}
-      <FlatList
-        inverted
-        data={[...messages].reverse()}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.messageBubble,
-              item.senderId === currentUserId ? styles.myMessage : styles.otherMessage,
-            ]}
+        {/* Üst Bar */}
+        <View style={[styles.header, { paddingVertical: screenHeight * 0.015 }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backText}>‹</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.userInfo}
+            onPress={() => navigation.navigate('OtherProfile', { userId: otherUserId })}
           >
-            <Text style={styles.messageText}>{item.text}</Text>
-          </View>
-        )}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingBottom: 10 }}
-      />
+            <Image
+              source={
+                otherUser.photoURL
+                  ? { uri: otherUser.photoURL }
+                  : require('../assets/default-avatar.png')
+              }
+              style={styles.avatar}
+            />
+            <Text style={styles.username}>{otherUser.displayName}</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Mesaj Input */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder="Mesaj..."
-          style={styles.input}
-          multiline
+        {/* Mesajlar */}
+        <FlatList
+          inverted
+          data={[...messages].reverse()}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View
+              style={[
+                styles.messageBubble,
+                item.senderId === currentUserId
+                  ? styles.myMessage
+                  : styles.otherMessage,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.messageText,
+                  item.senderId !== currentUserId && { color: '#6E6E6E' },
+                ]}
+              >
+                {item.text}
+              </Text>
+            </View>
+          )}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingBottom: 10 }}
         />
-        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-          <Text style={styles.sendButtonText}>Send</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+
+        {/* Mesaj Input */}
+        <View style={styles.inputContainer}>
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder="Mesaj..."
+            style={styles.input}
+            multiline
+          />
+          <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+            <Text style={styles.sendButtonText}>Send</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -189,31 +211,47 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    paddingHorizontal: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
     backgroundColor: '#FFFFFF',
   },
-  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12 },
-  username: { fontSize: 16, fontWeight: '600', color: '#111' },
+  backButton: {
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  backText: { fontSize: 24, color: '#333333' },
+  userInfo: { flexDirection: 'row', alignItems: 'center' },
+  avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 12 },
+  username: { fontSize: 16, fontWeight: '600', color: '#333333' },
   messageBubble: {
-    padding: 12,
-    marginVertical: 4,
-    marginHorizontal: 10,
-    borderRadius: 16,
-    maxWidth: '70%',
+    padding: 14,
+    marginVertical: 6,
+    marginHorizontal: 12,
+    borderRadius: 20,
+    maxWidth: '75%',
   },
   myMessage: {
-    backgroundColor: '#DCF8C5',
+    backgroundColor: '#333333',
     alignSelf: 'flex-end',
+    borderBottomRightRadius: 4,
+    borderBottomLeftRadius: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   otherMessage: {
     backgroundColor: '#FFFFFF',
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: '#333333',
+    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 4,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
-  messageText: { fontSize: 14, color: '#111' },
+  messageText: { fontSize: 14, color: '#FFFFFF' },
   inputContainer: {
     flexDirection: 'row',
     padding: 10,
@@ -225,24 +263,25 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderColor: '#CCCCCC',
+    borderRadius: 22,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     marginRight: 10,
     fontSize: 14,
     backgroundColor: '#FAFAFA',
+    color: '#6E6E6E',
   },
   sendButton: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#333333',
+    backgroundColor: '#333333',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sendButtonText: {
-    color: '#333333',
+    color: '#6E6E6E',
     fontWeight: '600',
     fontSize: 14,
   },

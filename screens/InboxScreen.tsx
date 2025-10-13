@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  Dimensions,
 } from 'react-native';
 import {
   collection,
@@ -19,10 +20,12 @@ import { db, auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialIcons } from '@expo/vector-icons';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'ChatScreen'
+  'Chat'
 >;
 
 type ChatItem = {
@@ -38,6 +41,8 @@ export default function InboxScreen() {
   const currentUser = auth.currentUser;
   const navigation = useNavigation<ChatScreenNavigationProp>();
   const [chats, setChats] = useState<ChatItem[]>([]);
+
+  const screenHeight = Dimensions.get('window').height;
 
   useEffect(() => {
     if (!currentUser) return;
@@ -96,7 +101,7 @@ export default function InboxScreen() {
   const renderChatItem = ({ item }: { item: ChatItem }) => (
     <TouchableOpacity
       onPress={() =>
-        navigation.navigate('ChatScreen', {
+        navigation.navigate('Chat', {
           currentUserId: currentUser.uid,
           otherUserId: item.otherUserId,
         })
@@ -128,7 +133,18 @@ export default function InboxScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      {/* Geri Butonu */}
+      <TouchableOpacity
+        style={[
+          styles.backButton,
+          { marginTop: screenHeight * 0.02, marginBottom: screenHeight * 0.02 },
+        ]}
+        onPress={() => navigation.goBack()}
+      >
+        <MaterialIcons name="arrow-back-ios" size={24} color="#111" />
+      </TouchableOpacity>
+
       <FlatList
         data={chats}
         keyExtractor={(item) => item.id}
@@ -140,12 +156,18 @@ export default function InboxScreen() {
         }
         contentContainerStyle={chats.length === 0 ? { flex: 1 } : undefined}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA', padding: 10 },
+  container: { flex: 1, backgroundColor: '#FAFAFA', paddingHorizontal: 10 },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   chatCard: {
     flexDirection: 'row',

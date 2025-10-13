@@ -34,7 +34,6 @@ function HomeStackNavigator() {
 function FavoritesStackNavigator() {
   return (
     <FavoritesStack.Navigator screenOptions={{ headerShown: false }}>
-      {/* RootStackParamList'e eklediğimiz "Favorites" */}
       <FavoritesStack.Screen name="Favorites" component={FavoritesScreen} />
       <FavoritesStack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <FavoritesStack.Screen name="OtherProfile" component={OtherProfileScreen} />
@@ -56,17 +55,9 @@ function ProfileStackNavigator() {
 // INBOX STACK
 function InboxStackNavigator() {
   return (
-    <InboxStack.Navigator>
-      <InboxStack.Screen
-        name="InboxScreen"
-        component={InboxScreen}
-        options={{ headerShown: true, title: 'Inbox' }}
-      />
-      <InboxStack.Screen
-        name="ChatScreen"
-        component={ChatScreen}
-        options={{ headerShown: true, title: 'Sohbet' }}
-      />
+    <InboxStack.Navigator screenOptions={{ headerShown: false }}>
+      <InboxStack.Screen name="InboxScreen" component={InboxScreen} />
+      <InboxStack.Screen name="Chat" component={ChatScreen}   options={{ headerShown: false }} />
     </InboxStack.Navigator>
   );
 }
@@ -88,12 +79,21 @@ export default function MainTabNavigator() {
   if (!currentUser) return null;
 
   return (
-    <Tab.Navigator>
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopColor: 'transparent',
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+      }}
+    >
       <Tab.Screen
         name="HomeTab"
         component={HomeStackNavigator}
         options={{
-          headerShown: false,
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
@@ -105,7 +105,6 @@ export default function MainTabNavigator() {
         name="FavoritesTab"
         component={FavoritesStackNavigator}
         options={{
-          headerShown: false,
           tabBarLabel: 'Favorites',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart-outline" size={size} color={color} />
@@ -117,27 +116,12 @@ export default function MainTabNavigator() {
         name="InboxTab"
         component={InboxStackNavigator}
         options={{
-          headerShown: false,
           tabBarLabel: 'Inbox',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="mail-outline" size={size} color={color} />
           ),
         }}
       />
-
-      {/*
-      <Tab.Screen
-        name="ProfileTab"
-        component={ProfileStackNavigator}
-        options={{
-          headerShown: false,
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      */}
     </Tab.Navigator>
   );
 }
