@@ -17,9 +17,16 @@ const itemMargin = 10;
 const screenWidth = Dimensions.get('window').width;
 const itemWidth = (screenWidth - itemMargin * (numColumns + 1)) / numColumns;
 
+type SoldProduct = {
+  id?: string;
+  title: string;
+  imageUrl: string;
+  price?: number;
+};
+
 const SoldScreen = () => {
   const { colors } = useThemeContext();
-  const [soldProducts, setSoldProducts] = useState<any[]>([]);
+  const [soldProducts, setSoldProducts] = useState<SoldProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,20 +55,14 @@ const SoldScreen = () => {
     fetchSoldProducts();
   }, []);
 
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = ({ item }: { item: SoldProduct }) => (
     <View style={[styles.itemContainer, { backgroundColor: colors.card }]}>
-      <Image
-        source={{ uri: item.imageUrl }}
-        style={styles.image}
-        resizeMode="cover"
-      />
+      <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
       <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
         {item.title}
       </Text>
       {item.price && (
-        <Text style={[styles.price, { color: colors.text + 'cc' }]}>
-          {item.price} ₺
-        </Text>
+        <Text style={[styles.price, { color: colors.text + 'cc' }]}>{item.price} ₺</Text>
       )}
     </View>
   );
@@ -84,7 +85,7 @@ const SoldScreen = () => {
         <FlatList
           data={soldProducts}
           renderItem={renderItem}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item, index) => item.id ?? index.toString()}
           numColumns={numColumns}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
@@ -97,23 +98,10 @@ const SoldScreen = () => {
 export default SoldScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 10,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 30,
-    fontSize: 16,
-  },
-  listContent: {
-    paddingHorizontal: itemMargin,
-  },
+  container: { flex: 1, paddingTop: 10 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { textAlign: 'center', marginTop: 30, fontSize: 16 },
+  listContent: { paddingHorizontal: itemMargin },
   itemContainer: {
     width: itemWidth,
     margin: itemMargin,
@@ -122,18 +110,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
   },
-  image: {
-    width: itemWidth - 20,
-    height: itemWidth - 20,
-    borderRadius: 6,
-  },
-  title: {
-    marginTop: 8,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  price: {
-    marginTop: 4,
-    fontSize: 13,
-  },
+  image: { width: itemWidth - 20, height: itemWidth - 20, borderRadius: 6 },
+  title: { marginTop: 8, fontSize: 14, fontWeight: '600' },
+  price: { marginTop: 4, fontSize: 13 },
 });

@@ -9,32 +9,44 @@ import {
 } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../routes/types';
-import { useFavorites } from '../contexts/FavoritesContext';
+import { useFavoriteUsers, FavoriteUser } from '../contexts/FavoritesContext';
 import { useThemeContext } from '../contexts/ThemeContext';
 
 type UserProfileScreenRouteProp = RouteProp<RootStackParamList, 'UserProfile'>;
 
 const UserProfileScreen = () => {
   const { colors } = useThemeContext();
-
   const { params } = useRoute<UserProfileScreenRouteProp>();
   const { user } = params;
-  const [userData, setUserData] = useState<any>(user);
-  const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
 
-  const isFavorite = favorites.some((fav) => fav.id === userData.id);
+  const [userData, setUserData] = useState<FavoriteUser>({
+    id: user.id,
+    avatarUrl: user.avatarUrl,
+    name: user.name,
+    fullName: user.fullName,
+    bio: user.bio,
+  });
+
+  const { favoriteUsers, addToFavoriteUsers, removeFromFavoriteUsers } = useFavoriteUsers();
+  const isFavorite = favoriteUsers.some((fav) => fav.id === userData.id);
 
   useEffect(() => {
     if (user) {
-      setUserData(user);
+      setUserData({
+        id: user.id,
+        avatarUrl: user.avatarUrl,
+        name: user.name,
+        fullName: user.fullName,
+        bio: user.bio,
+      });
     }
   }, [user]);
 
   const handleFavoriteToggle = () => {
     if (isFavorite) {
-      removeFromFavorites(userData.id);
+      removeFromFavoriteUsers(userData.id);
     } else {
-      addToFavorites(userData);
+      addToFavoriteUsers(userData);
     }
   };
 
@@ -63,7 +75,7 @@ const UserProfileScreen = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* İstersen buraya kullanıcının artwork, post vs. bölümleri ekleyebilirsin */}
+      {/* Buraya kullanıcıya ait artworks, posts vs. eklenebilir */}
     </ScrollView>
   );
 };

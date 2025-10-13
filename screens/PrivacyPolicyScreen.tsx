@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useThemeContext } from '../contexts/ThemeContext';
+import { useThemeContext } from '../contexts/ThemeContext'; // Relative path
 
 const PrivacyPolicyScreen = () => {
   const { colors } = useThemeContext();

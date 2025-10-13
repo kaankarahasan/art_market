@@ -6,37 +6,44 @@ const TermsOfUseScreen = () => {
   const { colors } = useThemeContext();
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView
+      contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}
+    >
       <Text style={[styles.title, { color: colors.text }]}>Kullanım Şartları</Text>
 
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Bu kullanım şartları, uygulamamızı kullanırken uymanız gereken kuralları ve şartları belirler. 
-        Uygulamamızı kullanarak bu şartları kabul etmiş sayılırsınız.
+        Bu kullanım şartları, uygulamamızı kullanırken uymanız gereken kuralları ve şartları
+        belirler. Uygulamamızı kullanarak bu şartları kabul etmiş sayılırsınız.
       </Text>
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Kullanıcı Sorumlulukları</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Kullanıcılar, hizmetleri yasalara uygun şekilde kullanmayı taahhüt eder. Herhangi bir yasa dışı, zarar verici veya etik dışı davranış yasaktır.
+        Kullanıcılar, hizmetleri yasalara uygun şekilde kullanmayı taahhüt eder. Herhangi bir yasa
+        dışı, zarar verici veya etik dışı davranış yasaktır.
       </Text>
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Hesap Güvenliği</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Hesabınızın güvenliğini sağlamak sizin sorumluluğunuzdadır. Şifrenizi başkalarıyla paylaşmamanız ve düzenli olarak güncellemeniz önerilir.
+        Hesabınızın güvenliğini sağlamak sizin sorumluluğunuzdadır. Şifrenizi başkalarıyla
+        paylaşmamanız ve düzenli olarak güncellemeniz önerilir.
       </Text>
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Sorumluluğun Sınırlandırılması</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Uygulama, üçüncü taraf içeriklerinden veya hizmetlerinden doğabilecek zararlar için sorumluluk kabul etmez.
+        Uygulama, üçüncü taraf içeriklerinden veya hizmetlerinden doğabilecek zararlar için
+        sorumluluk kabul etmez.
       </Text>
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Değişiklikler</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Bu kullanım şartları zaman zaman güncellenebilir. Güncellemeler uygulandığında, kullanıcılar bilgilendirilecektir.
+        Bu kullanım şartları zaman zaman güncellenebilir. Güncellemeler uygulandığında,
+        kullanıcılar bilgilendirilecektir.
       </Text>
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>İletişim</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Kullanım şartları ile ilgili sorularınız için destek@ornekapp.com adresinden bize ulaşabilirsiniz.
+        Kullanım şartları ile ilgili sorularınız için destek@ornekapp.com adresinden bize
+        ulaşabilirsiniz.
       </Text>
     </ScrollView>
   );

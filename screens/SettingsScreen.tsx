@@ -9,12 +9,12 @@ import {
   Switch,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
-import { auth, db } from '../firebase';
+import { auth, db } from '../firebase'; // relative path
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../routes/types';
+import { RootStackParamList } from '../routes/types'; // relative path
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { useThemeContext } from '../contexts/ThemeContext';
+import { useThemeContext } from '../contexts/ThemeContext'; // relative path
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -69,12 +69,8 @@ const SettingsScreen = () => {
           text: 'Çıkış Yap',
           onPress: () => {
             signOut(auth)
-              .then(() => {
-                navigation.replace('Login');
-              })
-              .catch(error => {
-                Alert.alert('Hata', error.message);
-              });
+              .then(() => navigation.replace('Login'))
+              .catch(error => Alert.alert('Hata', error.message));
           },
         },
       ],
@@ -83,9 +79,7 @@ const SettingsScreen = () => {
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}
-    >
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
       <Text style={[styles.title, { color: colors.text }]}>Ayarlar</Text>
 
       {/* Hesap Bölümü */}
@@ -112,7 +106,7 @@ const SettingsScreen = () => {
               value={isPrivate}
               onValueChange={togglePrivacy}
               trackColor={{ false: '#ccc', true: '#1976d2' }}
-              thumbColor={isPrivate ? '#fff' : '#fff'}
+              thumbColor="#fff"
             />
           )}
         </View>
@@ -126,12 +120,14 @@ const SettingsScreen = () => {
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Görünüm</Text>
         <View style={styles.privacyRow}>
-          <Text style={[styles.item, { color: colors.text }]}>Tema: {isDarkTheme ? 'Karanlık' : 'Açık'}</Text>
+          <Text style={[styles.item, { color: colors.text }]}>
+            Tema: {isDarkTheme ? 'Karanlık' : 'Açık'}
+          </Text>
           <Switch
             value={isDarkTheme}
             onValueChange={onToggleTheme}
             trackColor={{ false: '#ccc', true: '#1976d2' }}
-            thumbColor={isDarkTheme ? '#fff' : '#fff'}
+            thumbColor="#fff"
           />
         </View>
       </View>
@@ -146,69 +142,37 @@ const SettingsScreen = () => {
       {/* Hakkında */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Hakkında</Text>
-
         <TouchableOpacity onPress={() => navigation.navigate('About')}>
           <Text style={[styles.item, { color: colors.text }]}>Hakkımızda</Text>
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => navigation.navigate('PrivacyPolicy')}>
           <Text style={[styles.item, { color: colors.text }]}>Gizlilik Politikası</Text>
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => navigation.navigate('TermsOfService')}>
           <Text style={[styles.item, { color: colors.text }]}>Kullanım Şartları</Text>
         </TouchableOpacity>
       </View>
 
       {/* Çıkış Yap */}
-      <TouchableOpacity style={[styles.signOutButton, { backgroundColor: '#ff5252' }]} onPress={handleSignOut}>
-        <Text style={[styles.signOutButtonText]}>Çıkış Yap</Text>
+      <TouchableOpacity
+        style={[styles.signOutButton, { backgroundColor: '#ff5252' }]}
+        onPress={handleSignOut}
+      >
+        <Text style={styles.signOutButtonText}>Çıkış Yap</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 30,
-    alignSelf: 'center',
-  },
-  section: {
-    marginBottom: 25,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  item: {
-    fontSize: 16,
-    paddingVertical: 6,
-    paddingLeft: 10,
-  },
-  privacyRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  signOutButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    alignSelf: 'center',
-    marginTop: 30,
-  },
-  signOutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  container: { padding: 20, paddingBottom: 40 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 30, alignSelf: 'center' },
+  section: { marginBottom: 25 },
+  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
+  item: { fontSize: 16, paddingVertical: 6, paddingLeft: 10 },
+  privacyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  signOutButton: { paddingVertical: 12, paddingHorizontal: 30, borderRadius: 10, alignSelf: 'center', marginTop: 30 },
+  signOutButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });
 
 export default SettingsScreen;

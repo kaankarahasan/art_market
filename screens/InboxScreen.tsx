@@ -25,7 +25,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'Chat'
+  'InboxScreen'
 >;
 
 type ChatItem = {

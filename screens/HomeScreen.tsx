@@ -14,12 +14,12 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
-import { useFavorites } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, auth } from '../firebase';
 import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
 
 const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 45) / 2;
@@ -34,9 +34,9 @@ const HomeScreen = () => {
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const insets = useSafeAreaInsets();
   const { colors } = useThemeContext();
+  const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
 
   const fetchData = async () => {
     try {
@@ -90,7 +90,6 @@ const HomeScreen = () => {
       /(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/,
       /(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/,
     ];
-
     for (const pattern of patterns) {
       const match = text.match(pattern);
       if (match) {
@@ -106,10 +105,8 @@ const HomeScreen = () => {
 
   const matchesDimensions = (product: any, searchDimensions: any) => {
     if (!product.dimensions) return false;
-
     const { height, width, depth } = product.dimensions;
     const tolerance = 5;
-
     const heightMatch = searchDimensions.height
       ? height && Math.abs(height - searchDimensions.height) <= tolerance
       : true;
@@ -119,22 +116,17 @@ const HomeScreen = () => {
     const depthMatch = searchDimensions.depth
       ? depth && Math.abs(depth - searchDimensions.depth) <= tolerance
       : true;
-
     return heightMatch && widthMatch && depthMatch;
   };
 
   const searchDimensions = parseDimensions(searchQuery.toLowerCase().trim());
 
   const filteredProducts = products.filter(product => {
-    if (searchDimensions) {
-      return matchesDimensions(product, searchDimensions);
-    }
-
+    if (searchDimensions) return matchesDimensions(product, searchDimensions);
     const search = searchQuery.toLowerCase();
     const titleMatch = product.title?.toLowerCase().includes(search);
     const descriptionMatch = product.description?.toLowerCase().includes(search);
     const categoryMatch = product.category?.toLowerCase().includes(search);
-
     return titleMatch || descriptionMatch || categoryMatch;
   });
 
@@ -145,9 +137,7 @@ const HomeScreen = () => {
     return usernameMatch || fullNameMatch;
   });
 
-  const clearSearch = () => {
-    setSearchQuery('');
-  };
+  const clearSearch = () => setSearchQuery('');
 
   const handleImageLoad = (productId: string, width: number, height: number) => {
     const imageWidth = columnWidth - 20;
@@ -161,11 +151,9 @@ const HomeScreen = () => {
     const rightColumn: any[] = [];
     let leftHeight = 0;
     let rightHeight = 0;
-
     filteredProducts.forEach((product) => {
       const imageHeight = imageHeights[product.id] || 250;
       const cardHeight = imageHeight + 110;
-
       if (leftHeight <= rightHeight) {
         leftColumn.push(product);
         leftHeight += cardHeight;
@@ -174,21 +162,28 @@ const HomeScreen = () => {
         rightHeight += cardHeight;
       }
     });
-
     return { leftColumn, rightColumn };
   };
 
   const { leftColumn, rightColumn } = distributeProducts();
 
-  const handleFavoriteToggle = (e: any, item: any, isFavorite: boolean) => {
-    e.stopPropagation();
-    isFavorite ? removeFromFavorites(item.id) : addToFavorites(item);
+  // FAVORİ BUTONU
+  const handleFavoriteToggle = (item: any) => {
+    const isFav = favoriteItems.some(fav => fav.id === item.id);
+    const favItem: FavoriteItem = {
+      id: item.id,
+      title: item.title,
+      username: item.username,
+      imageUrl: item.imageUrls?.[0] || item.imageUrl,
+      price: item.price,
+      year: item.year,
+    };
+    isFav ? removeFavorite(item.id) : addFavorite(favItem);
   };
 
   const renderProductCard = (item: any) => {
-    const isFavorite = favorites.some(fav => fav.id === item.id);
+    const isFavorite = favoriteItems.some(fav => fav.id === item.id);
     const imageHeight = imageHeights[item.id] || 250;
-
     const firstImage = item.imageUrls?.[0] || item.imageUrl;
 
     return (
@@ -220,7 +215,7 @@ const HomeScreen = () => {
                 {item.username || 'Bilinmeyen'}
               </Text>
               <TouchableOpacity
-                onPress={(e) => handleFavoriteToggle(e, item, isFavorite)}
+                onPress={() => handleFavoriteToggle(item)}
                 style={styles.favoriteButton}
               >
                 <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color="#333333" />
@@ -245,7 +240,7 @@ const HomeScreen = () => {
     const handlePress = () => {
       if (!currentUser) return;
       if (item.id === currentUser.uid) {
-        navigation.navigate('Profile' as never);
+        navigation.navigate('Profile', {});
       } else {
         navigation.navigate('OtherProfile', { userId: item.id });
       }
@@ -283,10 +278,9 @@ const HomeScreen = () => {
             </TouchableOpacity>
           )}
         </View>
-
         <TouchableOpacity
           style={styles.profileButton}
-          onPress={() => navigation.navigate('Profile' as never)}
+          onPress={() => navigation.navigate('Profile', {})}
         >
           <Image
             source={
@@ -346,6 +340,7 @@ const HomeScreen = () => {
 
 export default HomeScreen;
 
+// --- STYLES ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   searchWrapper: {
@@ -354,7 +349,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 16,
-    backgroundColor: '#F4F4F4',
+    backgroundColor: '#FFFFFF',
   },
   searchContainer: {
     flex: 1,
@@ -388,11 +383,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#F4F4F4',
   },
-  masonryContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingBottom: 30,
-  },
+  masonryContainer: { flexDirection: 'row', paddingHorizontal: 10, paddingBottom: 30 },
   column: { flex: 1, paddingHorizontal: 5 },
   card: {
     borderRadius: 12,
@@ -410,12 +401,7 @@ const styles = StyleSheet.create({
   noImage: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8E8E8' },
   noImageText: { color: '#6E6E6E' },
   infoContainer: { padding: 12, paddingTop: 0, backgroundColor: '#F4F4F4' },
-  userRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
+  userRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   username: { fontSize: 13, color: '#0A0A0A', flex: 1 },
   favoriteButton: { padding: 2 },
   title: { fontSize: 15, color: '#6E6E6E', marginBottom: 8, lineHeight: 20 },
@@ -423,28 +409,10 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyContainer: { flex: 1, alignItems: 'center', paddingTop: 50 },
   emptyText: { color: '#6E6E6E' },
-  userListContainer: {
-    paddingHorizontal: 10,
-    marginBottom: 15,
-    backgroundColor: '#F4F4F4',
-    paddingVertical: 12,
-  },
-  userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    marginRight: 10,
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-  },
+  userListContainer: { paddingHorizontal: 10, marginBottom: 15, backgroundColor: '#F4F4F4', paddingVertical: 12 },
+  userCard: { flexDirection: 'row', alignItems: 'center', padding: 10, marginRight: 10, borderRadius: 8, backgroundColor: '#FFFFFF' },
   userAvatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
   usernameText: { fontSize: 14, fontWeight: 'bold', color: '#0A0A0A' },
   fullName: { fontSize: 12, color: '#6E6E6E' },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0A0A0A',
-    marginBottom: 8,
-    paddingHorizontal: 10,
-  },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#0A0A0A', marginBottom: 8, paddingHorizontal: 10 },
 });

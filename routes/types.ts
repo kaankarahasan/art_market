@@ -1,11 +1,13 @@
+// UUID modülü TypeScript tarafından bilinmediği için declare ediyoruz
 declare module 'uuid';
 
+// Ürün tipi
 export type Product = {
   id: string;
   title: string;
   description: string;
-  imageUrls: string[]; // ✅ Birden fazla görsel için
-  mainImageUrl?: string; // ✅ Ana görsel (örneğin liste görünümünde kullanılır)
+  imageUrls: string[];          // Birden fazla görsel
+  mainImageUrl?: string;        // Ana görsel (liste görünümünde)
   ownerId: string;
   username?: string;
   userProfileImage?: string;
@@ -17,12 +19,13 @@ export type Product = {
     width?: number | null;
     depth?: number | null;
   };
-  year?: number | null; // ✅ Artık sayı olarak tutuluyor
+  year?: number | null;         // Yıl artık sayı olarak tutuluyor
   isSold?: boolean;
   createdAt?: any;
   updatedAt?: any;
 };
 
+// Root Stack Param Listesi
 export type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;

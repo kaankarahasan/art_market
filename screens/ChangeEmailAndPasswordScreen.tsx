@@ -31,18 +31,27 @@ const ChangeEmailAndPasswordScreen = () => {
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const reauthenticate = async (currentPassword: string) => {
+  const reauthenticate = async (password: string) => {
     if (!user || !user.email) throw new Error('Kullanıcı bulunamadı');
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    const credential = EmailAuthProvider.credential(user.email, password);
     await reauthenticateWithCredential(user, credential);
   };
 
   const handleUpdate = async () => {
-    if (!user) return;
+    if (!user) {
+      Alert.alert('Hata', 'Kullanıcı oturumu bulunamadı.');
+      return; // user null ise işlemi durdur
+    }
+
+    if (!currentPassword) {
+      Alert.alert('Hata', 'Mevcut şifrenizi girmeniz gerekiyor.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await reauthenticate(currentPassword);
+      await reauthenticate(currentPassword); // artık user null olamaz
 
       if (newEmail && newEmail !== user.email) {
         await updateEmail(user, newEmail);
@@ -57,10 +66,14 @@ const ChangeEmailAndPasswordScreen = () => {
         await updatePassword(user, newPassword);
       }
 
-      Alert.alert('Başarılı', 'Bilgileriniz güncellendi.');
+      Alert.alert('Başarılı', 'Bilgileriniz başarıyla güncellendi.');
       navigation.goBack();
     } catch (error: any) {
-      Alert.alert('Hata', error.message || 'Güncelleme başarısız.');
+      let message = 'Güncelleme başarısız.';
+      if (error.code === 'auth/wrong-password') message = 'Mevcut şifre yanlış.';
+      else if (error.code === 'auth/invalid-email') message = 'Geçersiz e-posta adresi.';
+      else if (error.code === 'auth/email-already-in-use') message = 'Bu e-posta zaten kullanılıyor.';
+      Alert.alert('Hata', message);
     } finally {
       setLoading(false);
     }
@@ -102,7 +115,11 @@ const ChangeEmailAndPasswordScreen = () => {
       />
 
       {loading ? (
-        <ActivityIndicator size="large" color={isDarkTheme ? '#90caf9' : '#1976d2'} style={{ marginTop: 20 }} />
+        <ActivityIndicator
+          size="large"
+          color={isDarkTheme ? '#90caf9' : '#1976d2'}
+          style={{ marginTop: 20 }}
+        />
       ) : (
         <TouchableOpacity style={styles.button} onPress={handleUpdate}>
           <Text style={styles.buttonText}>Güncelle</Text>

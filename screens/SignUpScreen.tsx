@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth, db } from '../firebase'; // relative path
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 
@@ -210,10 +210,7 @@ const SignUpScreen = () => {
 export default SignUpScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
+  container: { flex: 1, backgroundColor: '#000' },
   backgroundImage: {
     position: 'absolute',
     width: width * 1.4,
@@ -221,20 +218,9 @@ const styles = StyleSheet.create({
     top: -height * 0.2,
     left: -width * 0.2,
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  cardContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
-  },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.25)' },
+  scrollContent: { flexGrow: 1, justifyContent: 'center' },
+  cardContainer: { flex: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 40 },
   card: {
     backgroundColor: '#F4F4F4',
     borderRadius: 20,
@@ -245,24 +231,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
   },
-  title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#0A0A0A',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#0A0A0A',
-    textAlign: 'center',
-    opacity: 0.7,
-    marginBottom: 25,
-  },
-  inputContainer: {
-    width: '100%',
-    gap: 16,
-  },
+  title: { fontSize: 30, fontWeight: 'bold', color: '#0A0A0A', textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 15, color: '#0A0A0A', textAlign: 'center', opacity: 0.7, marginBottom: 25 },
+  inputContainer: { width: '100%', gap: 16 },
   textInput: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -273,29 +244,9 @@ const styles = StyleSheet.create({
     color: '#0A0A0A',
     fontSize: 15,
   },
-  signUpButton: {
-    backgroundColor: '#333333',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  signUpButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  registerContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 15,
-  },
-  registerText: {
-    fontSize: 14,
-    color: '#0A0A0A',
-  },
-  registerLink: {
-    fontWeight: 'bold',
-    color: '#333333',
-  },
+  signUpButton: { backgroundColor: '#333333', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 20 },
+  signUpButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  registerContainer: { justifyContent: 'center', alignItems: 'center', marginTop: 15 },
+  registerText: { fontSize: 14, color: '#0A0A0A' },
+  registerLink: { fontWeight: 'bold', color: '#333333' },
 });

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -17,6 +18,7 @@ import { storage } from '../firebase';
 import { RootStackParamList } from '../routes/types';
 import { v4 as uuidv4 } from 'uuid';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { Product } from '../routes/types';
 
 type UpdateProductRouteProp = RouteProp<RootStackParamList, 'UpdateProduct'>;
 
@@ -31,7 +33,7 @@ const UpdateProductScreen = () => {
   const [description, setDescription] = useState(product.description || '');
   const [price, setPrice] = useState(product.price ? String(product.price) : '');
   const [category, setCategory] = useState(product.category || '');
-  const [image, setImage] = useState<string | null>(product.imageUrl || null);
+  const [imageUrls, setImageUrls] = useState<string[]>(product.imageUrls || []);
   const [uploading, setUploading] = useState(false);
 
   const pickImage = async () => {
@@ -48,13 +50,12 @@ const UpdateProductScreen = () => {
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setImage(result.assets[0].uri);
+      setImageUrls((prev) => [...prev, result.assets[0].uri]);
     }
   };
 
   const uploadImageAsync = async (uri: string): Promise<string> => {
     try {
-      setUploading(true);
       const response = await fetch(uri);
       const blob = await response.blob();
       const imageId = uuidv4();
@@ -66,8 +67,6 @@ const UpdateProductScreen = () => {
       console.error('Resim yükleme hatası:', error);
       Alert.alert('Hata', 'Resim yüklenemedi.');
       return '';
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -77,10 +76,17 @@ const UpdateProductScreen = () => {
       return;
     }
 
-    let imageUrl = product.imageUrl;
-    if (image && image !== product.imageUrl) {
-      imageUrl = await uploadImageAsync(image);
-      if (!imageUrl) return;
+    setUploading(true);
+
+    // 🔹 Yeni yüklenen görselleri storage'a yükle
+    const uploadedUrls: string[] = [];
+    for (const img of imageUrls) {
+      if (!img.startsWith('https://')) {
+        const url = await uploadImageAsync(img);
+        if (url) uploadedUrls.push(url);
+      } else {
+        uploadedUrls.push(img); // zaten URL ise atla
+      }
     }
 
     await updateProduct(product.id, {
@@ -88,15 +94,21 @@ const UpdateProductScreen = () => {
       description,
       price: parseFloat(price),
       category,
-      imageUrl,
+      imageUrls: uploadedUrls,
+      mainImageUrl: uploadedUrls[0] || '', // ana görsel
     });
 
+    setUploading(false);
     Alert.alert('Başarılı', 'Ürün güncellendi.');
     navigation.goBack();
   };
 
+  const removeImage = (index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Text style={[styles.label, { color: colors.text }]}>Ürün Adı</Text>
       <TextInput
         style={[styles.input, { borderColor: colors.border, color: colors.text }]}
@@ -143,11 +155,24 @@ const UpdateProductScreen = () => {
         onPress={pickImage}
       >
         <Text style={[styles.imagePickerText, { color: colors.primary }]}>
-          Resim Seç
+          Resim Ekle
         </Text>
       </TouchableOpacity>
 
-      {image && <Image source={{ uri: image }} style={styles.previewImage} />}
+      {/* 🔹 Görseller preview ve silme */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 15 }}>
+        {imageUrls.map((img, index) => (
+          <View key={index} style={{ marginRight: 10, position: 'relative' }}>
+            <Image source={{ uri: img }} style={styles.previewImage} />
+            <TouchableOpacity
+              onPress={() => removeImage(index)}
+              style={styles.removeImageButton}
+            >
+              <Text style={styles.removeImageText}>X</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
 
       <TouchableOpacity
         style={[
@@ -163,7 +188,7 @@ const UpdateProductScreen = () => {
           <Text style={styles.updateButtonText}>Güncelle</Text>
         )}
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -186,12 +211,22 @@ const styles = StyleSheet.create({
   },
   imagePickerText: { fontWeight: '600' },
   previewImage: {
-    width: 150,
-    height: 150,
-    alignSelf: 'center',
-    marginBottom: 15,
+    width: 120,
+    height: 120,
     borderRadius: 8,
   },
+  removeImageButton: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#ff5252',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeImageText: { color: '#fff', fontWeight: 'bold' },
   updateButton: {
     paddingVertical: 15,
     borderRadius: 6,

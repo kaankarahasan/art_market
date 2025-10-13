@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { doc, getDoc, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -41,10 +48,11 @@ const FollowersScreen = () => {
           const followerId = docSnap.id;
           const userDoc = await getDoc(doc(db, 'users', followerId));
           if (userDoc.exists()) {
+            const data = userDoc.data();
             fetchedFollowers.push({
               uid: followerId,
-              username: userDoc.data().username,
-              email: userDoc.data().email,
+              username: data.username,
+              email: data.email,
             });
           }
         }
@@ -52,8 +60,8 @@ const FollowersScreen = () => {
         setFollowers(fetchedFollowers);
         setLoading(false);
       },
-      (error) => {
-        console.error('Takipçi verisi alınamadı:', error);
+      (err) => {
+        console.error('Takipçi verisi alınamadı:', err);
         setError('Takipçi verisi alınamadı');
         setLoading(false);
       }

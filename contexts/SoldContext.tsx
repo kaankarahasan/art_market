@@ -31,6 +31,8 @@ export const SoldProvider = ({ children }: SoldProviderProps) => {
 };
 
 // useSold Hook'u: SoldContext'i kullanmak için
-export const useSold = () => {
-  return useContext(SoldContext);
+export const useSold = (): SoldContextType => {
+  const context = useContext(SoldContext);
+  if (!context) throw new Error('useSold must be used within a SoldProvider');
+  return context;
 };

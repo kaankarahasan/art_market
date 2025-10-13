@@ -1,12 +1,13 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import {
-  initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
+import { 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager 
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
+// Firebase yapılandırması
 const firebaseConfig = {
   apiKey: "AIzaSyA0gtd502S2VxGr6EU3r-pYxoRNyBoz_PM",
   authDomain: "app-market-test-35f90.firebaseapp.com",
@@ -17,14 +18,16 @@ const firebaseConfig = {
   measurementId: "G-LFH1Z7XF7F"
 };
 
-// Uygulama örneğini başlat
+// Firebase uygulamasını başlat
 const app = initializeApp(firebaseConfig);
 
-// Firebase servisleri
+// Firebase servislerini dışa aktar
 export const auth = getAuth(app);
+
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
   }),
 });
+
 export const storage = getStorage(app);

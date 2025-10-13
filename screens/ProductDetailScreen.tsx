@@ -20,7 +20,7 @@ import {
 } from '@react-navigation/native';
 import { RootStackParamList, Product } from '../routes/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useFavorites } from '../contexts/FavoritesContext';
+import { useFavoriteUsers, FavoriteUser, useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
 import { getDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import ImageViewing from 'react-native-image-viewing';
@@ -44,19 +44,21 @@ const ProductDetailScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<ProductDetailRouteProp>();
   const { product } = route.params;
-  const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
+
+  const { favoriteUsers, addToFavoriteUsers, removeFromFavoriteUsers } = useFavoriteUsers();
+  const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
 
   const currentUser = auth.currentUser;
+
   const [productData, setProductData] = useState<Product>(() => {
     const pd: any = { ...product };
     Object.keys(pd).forEach((key) => {
       const value = pd[key];
-      if (value && typeof value.toDate === 'function') {
-        pd[key] = value.toDate();
-      }
+      if (value && typeof value.toDate === 'function') pd[key] = value.toDate();
     });
     return pd;
   });
+
   const [ownerData, setOwnerData] = useState<{ username?: string; email?: string; profilePicture?: string } | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -64,9 +66,9 @@ const ProductDetailScreen = () => {
 
   const scrollRef = useRef<ScrollView>(null);
 
-  const isFavorite = favorites.some((fav) => fav.id === productData.id);
+  const isFavoriteUser = favoriteUsers.some((fav: FavoriteUser) => fav.id === productData.id);
+  const isFavoriteItem = favoriteItems.some((fav: FavoriteItem) => fav.id === productData.id);
   const isOwner = productData.ownerId === currentUser?.uid;
-
   const dynamicTopMargin = height * 0.1;
 
   useEffect(() => {
@@ -102,9 +104,7 @@ const ProductDetailScreen = () => {
             const data: any = { id: docSnap.id, ...docSnap.data() };
             Object.keys(data).forEach((key) => {
               const value = data[key];
-              if (value && typeof value.toDate === 'function') {
-                data[key] = value.toDate();
-              }
+              if (value && typeof value.toDate === 'function') data[key] = value.toDate();
             });
             setProductData(data);
           }
@@ -131,8 +131,12 @@ const ProductDetailScreen = () => {
 
   const goToUserProfile = () => {
     if (!productData.ownerId) return;
-    if (isOwner) navigation.navigate('Profile', { userId: undefined });
-    else navigation.navigate('OtherProfile', { userId: productData.ownerId });
+
+    if (isOwner) {
+      navigation.navigate('Profile', {});
+    } else {
+      navigation.navigate('OtherProfile', { userId: productData.ownerId });
+    }
   };
 
   const handleScroll = (event: any) => {
@@ -191,17 +195,6 @@ const ProductDetailScreen = () => {
     );
   };
 
-  const renderDimensions = () => {
-    const dimensions = (productData as any).dimensions;
-    if (!dimensions) return null;
-    const { height, width, depth } = dimensions;
-    const parts = [];
-    if (height) parts.push(`Y: ${height}`);
-    if (width) parts.push(`G: ${width}`);
-    if (depth) parts.push(`K: ${depth}`);
-    return <Text style={styles.detail}>📐 Boyut: {parts.join(' × ')} cm</Text>;
-  };
-
   const imagesArray = Array.isArray(productData.imageUrls)
     ? productData.imageUrls.filter((url) => url && url.trim() !== '').map((uri) => ({ uri }))
     : productData.imageUrls
@@ -212,7 +205,6 @@ const ProductDetailScreen = () => {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
-      {/* Geri ve edit butonları */}
       <View style={styles.topButtonsContainer}>
         <TouchableOpacity
           style={styles.backButton}
@@ -253,14 +245,14 @@ const ProductDetailScreen = () => {
 
                 <TouchableOpacity
                   onPress={() =>
-                    isFavorite
-                      ? removeFromFavorites(productData.id)
-                      : addToFavorites(productData)
+                    isFavoriteItem
+                      ? removeFavorite(productData.id)
+                      : addFavorite(productData as FavoriteItem)
                   }
                   style={styles.favoriteButtonNew}
                 >
                   <Ionicons
-                    name={isFavorite ? 'heart' : 'heart-outline'}
+                    name={isFavoriteItem ? 'heart' : 'heart-outline'}
                     size={26}
                     color={COLORS.favoriteIcon}
                   />
@@ -284,7 +276,17 @@ const ProductDetailScreen = () => {
 
           <View style={styles.divider} />
 
-          {renderDimensions()}
+          {productData.dimensions && (
+            <Text style={styles.detail}>
+              📐 Boyut: {['height', 'width', 'depth']
+                .map((key) =>
+                  productData.dimensions ? productData.dimensions[key as keyof typeof productData.dimensions] : null
+                )
+                .filter(Boolean)
+                .join(' × ')} cm
+            </Text>
+          )}
+
           <Text style={styles.detail}>📦 Kategori: {productData.category || 'Bilinmiyor'}</Text>
           {productData.createdAt && (
             <Text style={styles.detail}>
@@ -321,12 +323,7 @@ const ProductDetailScreen = () => {
 export default ProductDetailScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginBottom: 0,
-    paddingBottom: 0,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
   topButtonsContainer: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50,
@@ -337,101 +334,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 15,
   },
-  backButton: {
-    padding: 6,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-  },
-  editButton: {
-    padding: 6,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-  },
-  imageContainer: {
-    height: height * 0.6,
-  },
-  image: {
-    width,
-    height: height * 0.6,
-  },
-  imagePlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.card,
-  },
-  squareIndicatorContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 8,
-    gap: 6,
-  },
-  squareIndicatorContainerFullScreen: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    paddingBottom: 20,
-  },
-  squareDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  ownerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  ownerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ownerImage: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    marginRight: 10,
-  },
-  ownerName: {
-    fontSize: 15,
-    color: COLORS.secondaryText,
-  },
-  favoriteButtonNew: {
-    backgroundColor: COLORS.card,
-    padding: 8,
-    borderRadius: 50,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: COLORS.primaryText,
-    marginBottom: 8,
-  },
-  price: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.primaryText,
-    marginBottom: 12,
-  },
-  description: {
-    fontSize: 16,
-    color: COLORS.primaryText,
-    lineHeight: 22,
-    marginBottom: 20,
-  },
-  detail: {
-    fontSize: 15,
-    color: COLORS.secondaryText,
-    marginBottom: 6,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.divider,
-    marginVertical: 16,
-    opacity: 0.2,
-  },
+  backButton: { padding: 6, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.8)' },
+  editButton: { padding: 6, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.8)' },
+  imageContainer: { height: height * 0.6 },
+  image: { width, height: height * 0.6 },
+  imagePlaceholder: { justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.card },
+  squareIndicatorContainer: { flexDirection: 'row', justifyContent: 'center', marginTop: 8, gap: 6 },
+  squareIndicatorContainerFullScreen: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingBottom: 20 },
+  squareDot: { width: 10, height: 10, borderRadius: 2 },
+  content: { paddingHorizontal: 20, paddingTop: 10 },
+  ownerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  ownerContainer: { flexDirection: 'row', alignItems: 'center' },
+  ownerImage: { width: 38, height: 38, borderRadius: 19, marginRight: 10 },
+  ownerName: { fontSize: 15, color: COLORS.secondaryText },
+  favoriteButtonNew: { backgroundColor: COLORS.card, padding: 8, borderRadius: 50 },
+  title: { fontSize: 22, fontWeight: '600', color: COLORS.primaryText, marginBottom: 8 },
+  price: { fontSize: 20, fontWeight: 'bold', color: COLORS.primaryText, marginBottom: 12 },
+  description: { fontSize: 16, color: COLORS.primaryText, lineHeight: 22, marginBottom: 20 },
+  detail: { fontSize: 15, color: COLORS.secondaryText, marginBottom: 6 },
+  divider: { height: 1, backgroundColor: COLORS.divider, marginVertical: 16, opacity: 0.2 },
 });

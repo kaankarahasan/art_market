@@ -20,16 +20,15 @@ import { ThemeContext } from '../contexts/ThemeContext';
 
 const EditProfileScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { isDarkTheme } = useContext(ThemeContext);
+  const styles = getStyles(isDarkTheme);
+
+  const userId = auth.currentUser?.uid;
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-
-  const { isDarkTheme } = useContext(ThemeContext);
-  const styles = getStyles(isDarkTheme);
-
-  const userId = auth.currentUser?.uid;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -48,9 +47,8 @@ const EditProfileScreen = () => {
         setLoading(false);
       }
     };
-
     fetchProfile();
-  }, []);
+  }, [userId]);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -59,9 +57,7 @@ const EditProfileScreen = () => {
       quality: 0.7,
     });
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-    }
+    if (!result.canceled) setImage(result.assets[0].uri);
   };
 
   const takePhoto = async () => {
@@ -76,24 +72,19 @@ const EditProfileScreen = () => {
       quality: 0.7,
     });
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-    }
+    if (!result.canceled) setImage(result.assets[0].uri);
   };
 
-  const uploadImage = async (uri: string): Promise<string | null> => {
+  const uploadImage = async (uri: string) => {
     if (!userId) return null;
     setUploading(true);
 
     try {
       const response = await fetch(uri);
       const blob = await response.blob();
-
       const storageRef = ref(storage, `profilePictures/${userId}.jpg`);
       await uploadBytes(storageRef, blob);
-
-      const downloadURL = await getDownloadURL(storageRef);
-      return downloadURL;
+      return await getDownloadURL(storageRef);
     } catch (error: any) {
       Alert.alert('Upload Error', error.message || 'Failed to upload image');
       return null;
@@ -104,7 +95,6 @@ const EditProfileScreen = () => {
 
   const removeImage = async () => {
     if (!userId) return;
-
     try {
       const storageRef = ref(storage, `profilePictures/${userId}.jpg`);
       await deleteObject(storageRef);
@@ -116,16 +106,11 @@ const EditProfileScreen = () => {
 
   const handleSave = async () => {
     if (!userId) return;
-
     try {
       let photoURL = image;
-
       if (image && !image.startsWith('https://')) {
         const uploadedURL = await uploadImage(image);
-        if (uploadedURL) {
-          photoURL = uploadedURL;
-          setImage(uploadedURL);
-        }
+        if (uploadedURL) photoURL = uploadedURL;
       }
 
       await updateDoc(doc(db, 'users', userId), {
@@ -167,12 +152,21 @@ const EditProfileScreen = () => {
         <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
           <Text style={styles.photoButtonText}>Kameradan Çek</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.photoButton, { backgroundColor: '#ccc' }]} onPress={removeImage}>
+        <TouchableOpacity
+          style={[styles.photoButton, { backgroundColor: '#ccc' }]}
+          onPress={removeImage}
+        >
           <Text style={[styles.photoButtonText, { color: '#333' }]}>Fotoğrafı Kaldır</Text>
         </TouchableOpacity>
       </View>
 
-      {uploading && <ActivityIndicator size="small" color={isDarkTheme ? '#90caf9' : '#1976d2'} style={{ marginBottom: 10 }} />}
+      {uploading && (
+        <ActivityIndicator
+          size="small"
+          color={isDarkTheme ? '#90caf9' : '#1976d2'}
+          style={{ marginBottom: 10 }}
+        />
+      )}
 
       <Text style={styles.label}>Username</Text>
       <TextInput
@@ -202,16 +196,8 @@ const EditProfileScreen = () => {
 
 const getStyles = (isDarkTheme: boolean) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      padding: 20,
-      backgroundColor: isDarkTheme ? '#121212' : '#fff',
-    },
-    centered: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
+    container: { flex: 1, padding: 20, backgroundColor: isDarkTheme ? '#121212' : '#fff' },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     title: {
       fontSize: 24,
       fontWeight: 'bold',
@@ -219,13 +205,7 @@ const getStyles = (isDarkTheme: boolean) =>
       alignSelf: 'center',
       color: isDarkTheme ? '#fff' : '#000',
     },
-    label: {
-      fontSize: 16,
-      fontWeight: '500',
-      marginTop: 10,
-      marginBottom: 5,
-      color: isDarkTheme ? '#ccc' : '#222',
-    },
+    label: { fontSize: 16, fontWeight: '500', marginTop: 10, marginBottom: 5, color: isDarkTheme ? '#ccc' : '#222' },
     input: {
       borderWidth: 1,
       borderColor: isDarkTheme ? '#444' : '#ccc',
@@ -235,13 +215,7 @@ const getStyles = (isDarkTheme: boolean) =>
       backgroundColor: isDarkTheme ? '#1e1e1e' : '#f9f9f9',
       color: isDarkTheme ? '#fff' : '#000',
     },
-    avatar: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      alignSelf: 'center',
-      marginBottom: 10,
-    },
+    avatar: { width: 100, height: 100, borderRadius: 50, alignSelf: 'center', marginBottom: 10 },
     avatarPlaceholder: {
       width: 100,
       height: 100,
@@ -252,38 +226,12 @@ const getStyles = (isDarkTheme: boolean) =>
       alignSelf: 'center',
       marginBottom: 10,
     },
-    avatarText: {
-      color: isDarkTheme ? '#bbb' : '#666',
-      fontSize: 14,
-    },
-    photoButtons: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: 10,
-      marginBottom: 20,
-    },
-    photoButton: {
-      backgroundColor: '#1976d2',
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 6,
-    },
-    photoButtonText: {
-      color: '#fff',
-      fontSize: 14,
-    },
-    saveButton: {
-      marginTop: 30,
-      backgroundColor: '#4caf50',
-      paddingVertical: 14,
-      borderRadius: 10,
-      alignItems: 'center',
-    },
-    saveButtonText: {
-      color: '#fff',
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
+    avatarText: { color: isDarkTheme ? '#bbb' : '#666', fontSize: 14 },
+    photoButtons: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 20 },
+    photoButton: { backgroundColor: '#1976d2', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 6 },
+    photoButtonText: { color: '#fff', fontSize: 14 },
+    saveButton: { marginTop: 30, backgroundColor: '#4caf50', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
+    saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   });
 
 export default EditProfileScreen;

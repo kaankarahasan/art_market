@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,25 +6,33 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  ActivityIndicator,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
-import { useFavorites } from '../contexts/FavoritesContext';
+import { Product } from '../routes/types';
+import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../routes/types';
-import { ThemeContext } from '../contexts/ThemeContext';
+import { useThemeContext } from '../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 70) / 2;
 
 const FavoritesScreen = () => {
-  const { favorites, removeFromFavorites } = useFavorites();
-  const { colors } = useContext(ThemeContext);
+  const { favoriteItems, removeFavorite } = useFavoriteItems();
+  const { colors } = useThemeContext();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // small delay to ensure AsyncStorage loaded items
+    const timer = setTimeout(() => setIsLoading(false), 200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleImageLoad = (productId: string, width: number, height: number) => {
     const imageWidth = columnWidth - 20;
@@ -34,12 +42,12 @@ const FavoritesScreen = () => {
   };
 
   const distributeProducts = () => {
-    const leftColumn: any[] = [];
-    const rightColumn: any[] = [];
+    const leftColumn: FavoriteItem[] = [];
+    const rightColumn: FavoriteItem[] = [];
     let leftHeight = 0;
     let rightHeight = 0;
 
-    favorites.forEach(product => {
+    favoriteItems.forEach(product => {
       const imageHeight = imageHeights[product.id] || 250;
       const cardHeight = imageHeight + 130;
       if (leftHeight <= rightHeight) {
@@ -56,19 +64,18 @@ const FavoritesScreen = () => {
 
   const { leftColumn, rightColumn } = distributeProducts();
 
-  const goToProductDetail = (product: any) => {
-    // Firestore Timestamp varsa Date objesine çevir
-    const productWithDates = { ...product };
-    Object.keys(productWithDates).forEach(key => {
-      const value = productWithDates[key];
-      if (value && typeof value.toDate === 'function') {
-        productWithDates[key] = value.toDate();
-      }
-    });
-    navigation.navigate('ProductDetail', { product: productWithDates });
+  const goToProductDetail = (product: FavoriteItem) => {
+    const productForDetail: Product = {
+      ...product,
+      description: product.description || '',
+      ownerId: product.ownerId || '',
+      imageUrls: product.imageUrls || [],
+      year: product.year ? Number(product.year) : null,
+    };
+    navigation.navigate('ProductDetail', { product: productForDetail });
   };
 
-  const renderProductCard = (item: any) => {
+  const renderProductCard = (item: FavoriteItem) => {
     const imageHeight = imageHeights[item.id] || 250;
     const firstImage = item.imageUrls?.[0] || item.imageUrl;
 
@@ -77,7 +84,7 @@ const FavoritesScreen = () => {
         key={item.id}
         activeOpacity={0.8}
         onPress={() => goToProductDetail(item)}
-        style={[styles.card, { width: columnWidth }]}
+        style={[styles.card, { width: columnWidth, backgroundColor: colors.card }]}
       >
         <View style={styles.imageContainer}>
           {firstImage ? (
@@ -98,19 +105,19 @@ const FavoritesScreen = () => {
 
         <View style={styles.infoContainer}>
           <View style={styles.userRow}>
-            <Text style={styles.username} numberOfLines={1}>
+            <Text style={[styles.username, { color: colors.text }]} numberOfLines={1}>
               {item.username || 'Bilinmeyen'}
             </Text>
-            <TouchableOpacity onPress={() => removeFromFavorites(item.id)} style={styles.removeButton}>
-              <Ionicons name="close" size={18} color="#333333" />
+            <TouchableOpacity onPress={() => removeFavorite(item.id)} style={styles.removeButton}>
+              <Ionicons name="close" size={18} color={colors.text} />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.title} numberOfLines={2}>
+          <Text style={[styles.title, { color: colors.secondaryText }]} numberOfLines={2}>
             {item.title}{item.year ? `, ${item.year}` : ''}
           </Text>
 
-          <Text style={styles.price}>
+          <Text style={[styles.price, { color: colors.text }]}>
             ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
           </Text>
         </View>
@@ -118,8 +125,7 @@ const FavoritesScreen = () => {
     );
   };
 
-  if (!favorites)
-    return <ActivityIndicator style={{ marginTop: 40 }} size="large" color={colors.primary} />;
+  if (isLoading) return <ActivityIndicator style={{ marginTop: 40 }} size="large" color={colors.primary} />;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -130,7 +136,7 @@ const FavoritesScreen = () => {
         <Ionicons name="chevron-back" size={24} color={colors.text} />
       </TouchableOpacity>
 
-      {favorites.length === 0 ? (
+      {favoriteItems.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.text }]}>Henüz favori ürün yok.</Text>
       ) : (
         <View style={[styles.masonryContainer, { paddingTop: insets.top + 70 }]}>
@@ -162,7 +168,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 12,
-    backgroundColor: '#F7F7F7',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -175,8 +180,8 @@ const styles = StyleSheet.create({
   noImageText: { color: '#6E6E6E' },
   infoContainer: { paddingHorizontal: 12, paddingBottom: 12, paddingTop: 2 },
   userRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  username: { fontSize: 13, color: '#0A0A0A', flex: 1 },
+  username: { fontSize: 13, flex: 1 },
   removeButton: { backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 20, padding: 4, marginLeft: 6 },
-  title: { fontSize: 15, color: '#6E6E6E', marginTop: 6, marginBottom: 6 },
-  price: { fontSize: 17, fontWeight: 'bold', color: '#0A0A0A' },
+  title: { fontSize: 15, marginTop: 6, marginBottom: 6 },
+  price: { fontSize: 17, fontWeight: 'bold' },
 });

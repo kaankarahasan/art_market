@@ -38,7 +38,7 @@ const AboutScreen = () => {
     >
       {/* Logo veya Görsel */}
       <Image
-        source={require('../assets/logo.png')} // Kendi logo veya görselinizi koyun
+        source={require('../assets/logo.png')}
         style={styles.logo}
         resizeMode="contain"
       />
@@ -70,7 +70,7 @@ const AboutScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.contactButton, { backgroundColor: '#C13584' }]} // Instagram renk
+          style={[styles.contactButton, { backgroundColor: '#C13584' }]}
           onPress={() => openLink(socialLinks.instagram)}
         >
           <FontAwesome name="instagram" size={20} color="#fff" />
@@ -78,7 +78,7 @@ const AboutScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.contactButton, { backgroundColor: '#3b5998' }]} // Facebook renk
+          style={[styles.contactButton, { backgroundColor: '#3b5998' }]}
           onPress={() => openLink(socialLinks.facebook)}
         >
           <FontAwesome name="facebook" size={20} color="#fff" />
@@ -86,7 +86,7 @@ const AboutScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.contactButton, { backgroundColor: '#1DA1F2' }]} // Twitter renk
+          style={[styles.contactButton, { backgroundColor: '#1DA1F2' }]}
           onPress={() => openLink(socialLinks.twitter)}
         >
           <FontAwesome name="twitter" size={20} color="#fff" />

@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// Firebase Console’dan aldığım ayarlar
+// Firebase Console'dan aldığın ayarlar
 export const firebaseConfig = {
   apiKey: 'AIzaSyBxqQGr9HYsDNdiv8BNjUwy8NDoD1ZQjEM',
   authDomain: 'loginscreenfirebase-55198.firebaseapp.com',
@@ -18,23 +18,25 @@ export const firebaseConfig = {
   appId: '1:63361277261:web:1478cb146aaa5147966b04',
 };
 
-// Uygulama örneğini hemen oluştur ve initialize et
+// Firebase uygulamasını başlat
 const app = initializeApp(firebaseConfig);
 
 // Authentication ve Firestore örneklerini oluştur
 export const auth: Auth = getAuth(app);
+
 export const db: Firestore = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
   }),
 });
 
+// Firebase Storage
+export const storage = getStorage(app);
+
 // Varsayılan export: initialize edilmiş Firebase app
 export default app;
 
-export const storage = getStorage(app);
-
-// named export: initializeFirebase fonksiyonu (mevcut app örneğini döner)
+// named export: mevcut app örneğini döndürür
 export function initializeFirebase(): typeof app {
   return app;
 }

@@ -114,15 +114,8 @@ const LoginScreen = () => {
     ).start();
   }, []);
 
-  const translateX = moveAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-15, 15],
-  });
-
-  const translateY = moveAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-10, 10],
-  });
+  const translateX = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 15] });
+  const translateY = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 10] });
 
   // 🔹 Klavye açılış/kapanış animasyonu
   useEffect(() => {
@@ -130,9 +123,8 @@ const LoginScreen = () => {
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (e) => {
         const keyboardHeight = e.endCoordinates?.height ?? 0;
-        const offset = keyboardHeight + 20; // 🔹 ekstra padding ile yukarı kaydır
         Animated.timing(translateYAnim, {
-          toValue: -offset,
+          toValue: -keyboardHeight - 20,
           duration: 250,
           easing: Easing.out(Easing.ease),
           useNativeDriver: true,
@@ -182,10 +174,7 @@ const LoginScreen = () => {
             showsVerticalScrollIndicator={false}
           >
             <Animated.View
-              style={[
-                styles.cardContainer,
-                { transform: [{ translateY: translateYAnim }] },
-              ]}
+              style={[styles.cardContainer, { transform: [{ translateY: translateYAnim }] }]}
             >
               <View style={styles.card}>
                 <Text style={styles.title}>Login</Text>
@@ -218,10 +207,7 @@ const LoginScreen = () => {
                       returnKeyType="done"
                       style={styles.textInput}
                     />
-                    <TouchableOpacity
-                      onPress={togglePasswordVisibility}
-                      style={styles.eyeButton}
-                    >
+                    <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeButton}>
                       <MaterialIcons
                         name={isPasswordVisible ? 'visibility' : 'visibility-off'}
                         size={20}
@@ -266,7 +252,6 @@ export default LoginScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-
   backgroundImage: {
     position: 'absolute',
     width: width * 1.4,
@@ -274,15 +259,8 @@ const styles = StyleSheet.create({
     top: -height * 0.2,
     left: -width * 0.2,
   },
-
   overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.25)' },
-
-  cardContainer: {
-    justifyContent: 'flex-end',
-    flex: 1,
-    padding: 20,
-  },
-
+  cardContainer: { justifyContent: 'flex-end', flex: 1, padding: 20 },
   card: {
     backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: 24,
@@ -293,13 +271,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
   },
-
   title: { fontSize: 30, fontWeight: 'bold', color: '#0A0A0A', marginBottom: 6, textAlign: 'center' },
-
   subtitle: { fontSize: 15, color: '#0A0A0A', marginBottom: 26, textAlign: 'center', opacity: 0.7 },
-
   inputContainer: { width: '100%', gap: 14 },
-
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -309,24 +283,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-
   textInput: { flex: 1, paddingVertical: 14, paddingHorizontal: 10, fontSize: 15, color: '#0A0A0A' },
-
   icon: { marginRight: 10 },
-
   eyeButton: { paddingHorizontal: 5 },
-
   loginButton: { backgroundColor: '#333333', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 10, elevation: 3 },
-
   loginButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-
   errorMessageContainer: { justifyContent: 'center', alignItems: 'center', marginTop: 5 },
-
   errorMessage: { color: '#FF3B30', fontSize: 13 },
-
   registerContainer: { justifyContent: 'center', alignItems: 'center', marginTop: 10 },
-
   registerText: { fontSize: 14, color: '#0A0A0A' },
-
   registerLink: { fontWeight: 'bold', color: '#333333' },
 });

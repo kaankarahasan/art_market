@@ -10,17 +10,19 @@ import {
   Modal,
   Dimensions,
   ScrollView,
+  StatusBar,
 } from 'react-native';
-import { RouteProp, useRoute, NavigationProp, useNavigation } from '@react-navigation/native';
-import { RootStackParamList } from '../routes/types';
+import { useRoute, useNavigation, NavigationProp, RouteProp } from '@react-navigation/native';
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 import { ThemeContext } from '../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useFavorites } from '../contexts/FavoritesContext';
 import ImageViewer from 'react-native-image-zoom-viewer';
+import { RootStackParamList } from '../routes/types';
+import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
 
 type OtherProfileRouteProp = RouteProp<RootStackParamList, 'OtherProfile'>;
+
 const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 70) / 2;
 
@@ -30,7 +32,7 @@ const OtherProfileScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { userId } = route.params;
   const currentUser = auth.currentUser!;
-  const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
+  const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
 
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,11 @@ const OtherProfileScreen = () => {
   const [activeTab, setActiveTab] = useState<'Artworks' | 'About'>('Artworks');
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
   const [modalVisible, setModalVisible] = useState(false);
+
+  // HEADER’I HER ZAMAN GİZLE
+  useEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   const fetchUserData = useCallback(async () => {
     setLoading(true);
@@ -109,7 +116,7 @@ const OtherProfileScreen = () => {
 
     products.forEach(product => {
       const imageHeight = imageHeights[product.id] || 250;
-      const cardHeight = imageHeight + 110 + 20;
+      const cardHeight = imageHeight + 130;
       if (leftHeight <= rightHeight) {
         leftColumn.push(product);
         leftHeight += cardHeight;
@@ -124,13 +131,21 @@ const OtherProfileScreen = () => {
 
   const { leftColumn, rightColumn } = distributeProducts();
 
-  const handleFavoriteToggle = (e: any, item: any, isFavorite: boolean) => {
-    e.stopPropagation();
-    isFavorite ? removeFromFavorites(item.id) : addToFavorites(item);
+  const handleFavoriteToggle = (item: any) => {
+    const isFav = favoriteItems.some(fav => fav.id === item.id);
+    const favItem: FavoriteItem = {
+      id: item.id,
+      title: item.title,
+      username: item.username,
+      imageUrl: item.imageUrls?.[0] || item.imageUrl,
+      price: item.price,
+      year: item.year,
+    };
+    isFav ? removeFavorite(item.id) : addFavorite(favItem);
   };
 
   const renderProductCard = (item: any) => {
-    const isFavorite = favorites.some(fav => fav.id === item.id);
+    const isFavorite = favoriteItems.some(fav => fav.id === item.id);
     const imageHeight = imageHeights[item.id] || 250;
     const firstImage = item.imageUrls?.[0] || item.imageUrl;
 
@@ -160,7 +175,7 @@ const OtherProfileScreen = () => {
                 {item.username || 'Bilinmeyen'}
               </Text>
               <TouchableOpacity
-                onPress={(e) => handleFavoriteToggle(e, item, isFavorite)}
+                onPress={() => handleFavoriteToggle(item)}
                 style={styles.favoriteButton}
               >
                 <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color="#333" />
@@ -185,7 +200,7 @@ const OtherProfileScreen = () => {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* Geri Butonu */}
+      <StatusBar barStyle="dark-content" />
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={28} color="#000" />
       </TouchableOpacity>
@@ -214,7 +229,7 @@ const OtherProfileScreen = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() =>
-                    navigation.navigate('ChatScreen', {
+                    navigation.navigate('Chat', {
                       currentUserId: currentUser.uid,
                       otherUserId: userId,
                     })
@@ -286,12 +301,7 @@ export default OtherProfileScreen;
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 16,
-    zIndex: 10,
-  },
+  backButton: { position: 'absolute', top: 50, left: 16, zIndex: 10 },
   container: { flex: 1, paddingHorizontal: 16, paddingTop: 24 },
   profileCard: {
     flexDirection: 'row',
@@ -343,13 +353,5 @@ const styles = StyleSheet.create({
   favoriteButton: { padding: 2 },
   title: { fontSize: 15, color: '#6E6E6E', marginBottom: 8, lineHeight: 20 },
   price: { fontSize: 17, fontWeight: 'bold', color: '#0A0A0A' },
-  closeButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 20,
-    padding: 4,
-    elevation: 5,
-  },
+  closeButton: { position: 'absolute', top: 40, right: 20, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 4, elevation: 5 },
 });

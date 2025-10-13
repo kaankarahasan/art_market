@@ -10,17 +10,18 @@ import {
   ScrollView,
 } from 'react-native';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../firebase'; // relative path
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { Ionicons } from '@expo/vector-icons';
 
-type Product = {
+// 🔹 Veri tipleri
+export type Product = {
   id: string;
   title: string;
   description: string;
-  imageUrl: string;
+  imageUrls: string[]; // Firestore'daki çoklu resim alanı
   ownerId: string;
   category?: string;
   dimensions?: {
@@ -30,14 +31,14 @@ type Product = {
   };
 };
 
-type User = {
+export type User = {
   id: string;
   fullName: string;
   username?: string;
   profileImage?: string;
 };
 
-type Category = {
+export type Category = {
   id: string;
   name: string;
 };
@@ -59,31 +60,36 @@ const SearchScreen = () => {
     { id: '4', label: 'Sanatçı' },
   ];
 
+  // 🔹 Firestore'dan verileri çek
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const productSnap = await getDocs(collection(db, 'products'));
-        const userSnap = await getDocs(collection(db, 'users'));
-        const categorySnap = await getDocs(collection(db, 'categories'));
+        const [productSnap, userSnap, categorySnap] = await Promise.all([
+          getDocs(collection(db, 'products')),
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'categories')),
+        ]);
 
-        const products: Product[] = productSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as Omit<Product, 'id'>),
-        }));
+        setAllProducts(
+          productSnap.docs.map((doc) => ({
+            id: doc.id,
+            ...(doc.data() as Omit<Product, 'id'>),
+          }))
+        );
 
-        const users: User[] = userSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as Omit<User, 'id'>),
-        }));
+        setAllUsers(
+          userSnap.docs.map((doc) => ({
+            id: doc.id,
+            ...(doc.data() as Omit<User, 'id'>),
+          }))
+        );
 
-        const cats: Category[] = categorySnap.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as Omit<Category, 'id'>),
-        }));
-
-        setAllProducts(products);
-        setAllUsers(users);
-        setCategories(cats);
+        setCategories(
+          categorySnap.docs.map((doc) => ({
+            id: doc.id,
+            ...(doc.data() as Omit<Category, 'id'>),
+          }))
+        );
       } catch (error) {
         console.error('Veri çekme hatası:', error);
       }
@@ -92,6 +98,7 @@ const SearchScreen = () => {
     fetchData();
   }, []);
 
+  // 🔹 Boyut arama metnini parse et
   const parseDimensions = (text: string) => {
     const patterns = [
       /(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/,
@@ -111,39 +118,32 @@ const SearchScreen = () => {
     return null;
   };
 
+  // 🔹 Boyut eşleşmesi kontrolü
   const matchesDimensions = (product: Product, searchDimensions: any) => {
     if (!product.dimensions) return false;
-
     const { height, width, depth } = product.dimensions;
     const tolerance = 5;
 
-    const heightMatch = searchDimensions.height
-      ? height && Math.abs(height - searchDimensions.height) <= tolerance
-      : true;
-    const widthMatch = searchDimensions.width
-      ? width && Math.abs(width - searchDimensions.width) <= tolerance
-      : true;
-    const depthMatch = searchDimensions.depth
-      ? depth && Math.abs(depth - searchDimensions.depth) <= tolerance
-      : true;
-
-    return heightMatch && widthMatch && depthMatch;
+    return (
+      (!searchDimensions.height ||
+        (height && Math.abs(height - searchDimensions.height) <= tolerance)) &&
+      (!searchDimensions.width ||
+        (width && Math.abs(width - searchDimensions.width) <= tolerance)) &&
+      (!searchDimensions.depth ||
+        (depth && Math.abs(depth - searchDimensions.depth) <= tolerance))
+    );
   };
 
+  // 🔹 Arama filtreleme işlemi
   useEffect(() => {
-    const search = (searchText ?? '').toLowerCase().trim();
-
+    const search = searchText.toLowerCase().trim();
     const searchDimensions = parseDimensions(search);
 
     const filteredP = allProducts.filter((item) => {
-      if (searchDimensions) {
-        return matchesDimensions(item, searchDimensions);
-      }
-
+      if (searchDimensions) return matchesDimensions(item, searchDimensions);
       const titleMatch = item.title.toLowerCase().includes(search);
       const descriptionMatch = item.description.toLowerCase().includes(search);
       const categoryMatch = item.category?.toLowerCase().includes(search) ?? false;
-
       return titleMatch || descriptionMatch || categoryMatch;
     });
 
@@ -157,16 +157,15 @@ const SearchScreen = () => {
     setFilteredUsers(filteredU);
   }, [searchText, allProducts, allUsers]);
 
-  const clearSearch = () => {
-    setSearchText('');
-  };
+  const clearSearch = () => setSearchText('');
 
+  // 🔹 Render metodları
   const renderProduct = ({ item }: { item: Product }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => navigation.navigate('ProductDetail', { product: item })}
     >
-      <Image source={{ uri: item.imageUrl }} style={styles.image} />
+      <Image source={{ uri: item.imageUrls[0] }} style={styles.image} />
       <View style={styles.cardContent}>
         <Text style={styles.title}>{item.title}</Text>
         <Text numberOfLines={2} style={styles.description}>
@@ -177,7 +176,7 @@ const SearchScreen = () => {
             <Text style={styles.productCategoryText}>{item.category}</Text>
           </View>
         )}
-        {item.dimensions && (item.dimensions.height || item.dimensions.width || item.dimensions.depth) && (
+        {item.dimensions && (
           <Text style={styles.dimensionText}>
             {[
               item.dimensions.height && `Y:${item.dimensions.height}`,
@@ -227,7 +226,7 @@ const SearchScreen = () => {
           <TextInput
             placeholder="Ara..."
             value={searchText}
-            onChangeText={(text) => setSearchText(text ?? '')}
+            onChangeText={(text) => setSearchText(text)}
             style={styles.input}
             placeholderTextColor="#999"
           />
@@ -239,7 +238,7 @@ const SearchScreen = () => {
         </View>
       </View>
 
-      {(searchText?.trim() ?? '') === '' ? (
+      {searchText.trim() === '' ? (
         <ScrollView showsVerticalScrollIndicator={false}>
           <Text style={styles.exploreTitle}>Kategorileri Keşfedin</Text>
           <FlatList
@@ -256,11 +255,7 @@ const SearchScreen = () => {
           {filteredUsers.length > 0 && (
             <>
               <Text style={styles.sectionTitle}>Kullanıcılar</Text>
-              <FlatList
-                data={filteredUsers}
-                keyExtractor={(item) => item.id}
-                renderItem={renderUser}
-              />
+              <FlatList data={filteredUsers} keyExtractor={(i) => i.id} renderItem={renderUser} />
             </>
           )}
 
@@ -269,7 +264,7 @@ const SearchScreen = () => {
               <Text style={styles.sectionTitle}>Ürünler</Text>
               <FlatList
                 data={filteredProducts}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(i) => i.id}
                 renderItem={renderProduct}
               />
             </>
@@ -287,14 +282,8 @@ const SearchScreen = () => {
 export default SearchScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 12,
-    backgroundColor: '#fff',
-  },
-  searchWrapper: {
-    marginBottom: 16,
-  },
+  container: { flex: 1, padding: 12, backgroundColor: '#fff' },
+  searchWrapper: { marginBottom: 16 },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -308,28 +297,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  searchIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  clearButton: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  exploreTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#111',
-  },
-  filterRow: {
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
+  searchIcon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 16, color: '#333' },
+  clearButton: { padding: 4, marginLeft: 8 },
+  exploreTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: '#111' },
+  filterRow: { justifyContent: 'space-between', marginBottom: 12 },
   filterBox: {
     flex: 1,
     backgroundColor: '#f8f8f8',
@@ -345,87 +317,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  filterBoxText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    position: 'absolute',
-    top: 12,
-    left: 16,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: 'hidden',
-    elevation: 2,
-  },
-  image: {
-    width: '100%',
-    height: 180,
-    resizeMode: 'cover',
-  },
-  cardContent: {
-    padding: 10,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  description: {
-    color: '#555',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  productCategoryBadge: {
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    marginTop: 6,
-  },
-  productCategoryText: {
-    fontSize: 12,
-    color: '#1976d2',
-    fontWeight: '500',
-  },
-  dimensionText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#eee',
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 10,
-    backgroundColor: '#ccc',
-  },
-  userName: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  userUsername: {
-    color: '#666',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginVertical: 8,
-  },
-  noResultText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: '#666',
-  },
+  filterBoxText: { fontSize: 16, fontWeight: '600', color: '#333', position: 'absolute', top: 12, left: 16 },
+  card: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 12, overflow: 'hidden', elevation: 2 },
+  image: { width: '100%', height: 180, resizeMode: 'cover' },
+  cardContent: { padding: 10 },
+  title: { fontSize: 16, fontWeight: 'bold' },
+  description: { color: '#555', fontSize: 14, marginTop: 4 },
+  productCategoryBadge: { backgroundColor: '#e3f2fd', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start', marginTop: 6 },
+  productCategoryText: { fontSize: 12, color: '#1976d2', fontWeight: '500' },
+  dimensionText: { fontSize: 12, color: '#666', marginTop: 4 },
+  userCard: { flexDirection: 'row', alignItems: 'center', padding: 10, backgroundColor: '#eee', borderRadius: 10, marginBottom: 10 },
+  avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 10, backgroundColor: '#ccc' },
+  userName: { fontWeight: 'bold', fontSize: 16 },
+  userUsername: { color: '#666' },
+  sectionTitle: { fontSize: 18, fontWeight: '600', marginVertical: 8 },
+  noResultText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#666' },
 });

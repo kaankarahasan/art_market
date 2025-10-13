@@ -10,12 +10,28 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp, NavigationProp, useFocusEffect } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  RouteProp,
+  NavigationProp,
+  useFocusEffect,
+} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  onSnapshot,
+  getDocs,
+} from 'firebase/firestore';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { RootStackParamList } from '../routes/types';
 import { ThemeContext } from '../contexts/ThemeContext';
 import ImageViewer from 'react-native-image-zoom-viewer';
@@ -24,6 +40,7 @@ type ProfileRouteProp = RouteProp<RootStackParamList, 'Profile'>;
 type UserInfo = { uid: string; username: string };
 
 const screenWidth = Dimensions.get('window').width;
+const screenHeight = Dimensions.get('window').height;
 const columnWidth = (screenWidth - 45) / 2;
 
 const FullScreenImageModal = ({
@@ -36,7 +53,7 @@ const FullScreenImageModal = ({
   imageUrl: string;
 }) => {
   return (
-    <Modal visible={visible} transparent={true} animationType="fade">
+    <Modal visible={visible} transparent animationType="fade">
       <View style={styles.modalBackground}>
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
           <MaterialIcon name="close" size={30} color="#333333" />
@@ -46,7 +63,7 @@ const FullScreenImageModal = ({
           enableSwipeDown
           onSwipeDown={onClose}
           backgroundColor="#FFFFFF"
-          renderIndicator={() => <View />} // 1/1 yazısını kaldırıyor
+          renderIndicator={() => <View />}
         />
       </View>
     </Modal>
@@ -75,7 +92,6 @@ const ProfileScreen = () => {
 
   const isOwnProfile = profileId === currentUser?.uid;
 
-  // Followers / Following
   useEffect(() => {
     if (!profileId) return;
 
@@ -107,7 +123,6 @@ const ProfileScreen = () => {
     };
   }, [profileId]);
 
-  // Kullanıcı verisi
   const fetchUserData = useCallback(async () => {
     setLoading(true);
     try {
@@ -117,9 +132,9 @@ const ProfileScreen = () => {
       const productsSnap = await getDocs(
         query(collection(firestore, 'products'), where('ownerId', '==', profileId))
       );
-      setProducts(productsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      setProducts(productsSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
     } catch (e) {
-      console.error(e);
+      console.error('Kullanıcı verisi alınamadı:', e);
     } finally {
       setLoading(false);
     }
@@ -131,7 +146,7 @@ const ProfileScreen = () => {
     const imageWidth = columnWidth - 20;
     const aspectRatio = height / width;
     const calculatedHeight = imageWidth * aspectRatio;
-    setImageHeights(prev => ({ ...prev, [productId]: calculatedHeight }));
+    setImageHeights((prev) => ({ ...prev, [productId]: calculatedHeight }));
   };
 
   const distributeProducts = () => {
@@ -187,7 +202,8 @@ const ProfileScreen = () => {
 
           <View style={styles.infoContainer}>
             <Text style={styles.title} numberOfLines={2}>
-              {item.title}{item.year ? `, ${item.year}` : ''}
+              {item.title}
+              {item.year ? `, ${item.year}` : ''}
             </Text>
             <Text style={styles.price}>
               ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
@@ -208,13 +224,30 @@ const ProfileScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
+      {/* Geri Butonu */}
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          top: insets.top + 10,
+          left: 16,
+          zIndex: 10,
+          padding: 8,
+          marginBottom: insets.bottom + 10,
+        }}
+        onPress={() => navigation.goBack()}
+      >
+        <Icon name="chevron-back" size={28} color="#000" />
+      </TouchableOpacity>
+
+      <ScrollView contentContainerStyle={{ paddingBottom: 50, paddingTop: 60 }}>
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <TouchableOpacity onPress={() => setProfileModalVisible(true)}>
             <Image
               source={
-                userData?.photoURL ? { uri: userData.photoURL } : require('../assets/default-avatar.png')
+                userData?.photoURL
+                  ? { uri: userData.photoURL }
+                  : require('../assets/default-avatar.png')
               }
               style={styles.profileImage}
             />
@@ -230,7 +263,9 @@ const ProfileScreen = () => {
                 <MaterialIcon name="menu" size={24} color="#333333" />
               </TouchableOpacity>
             </View>
+
             <Text style={styles.fullNameText}>{userData?.fullName || 'Ad Soyad'}</Text>
+
             <View style={styles.followRow}>
               <TouchableOpacity
                 style={styles.followButtonCard}
@@ -238,6 +273,7 @@ const ProfileScreen = () => {
               >
                 <Text style={styles.followButtonText}>Followers: {followers.length}</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.followButtonCard}
                 onPress={() => navigation.navigate('Following', { userId: profileId })}
@@ -245,6 +281,7 @@ const ProfileScreen = () => {
                 <Text style={styles.followButtonText}>Following: {following.length}</Text>
               </TouchableOpacity>
             </View>
+
             <TouchableOpacity
               style={styles.addWordButton}
               onPress={() => navigation.navigate('AddProduct')}
@@ -261,31 +298,44 @@ const ProfileScreen = () => {
             style={[styles.tabItem, selectedTab === 'Artworks' && styles.activeTabLarge]}
             onPress={() => setSelectedTab('Artworks')}
           >
-            <Icon name="albums-outline" size={20} color={selectedTab === 'Artworks' ? '#0A0A0A' : '#6E6E6E'} />
-            <Text style={[styles.tabText, selectedTab === 'Artworks' && { color: '#0A0A0A' }]}>Artworks</Text>
+            <Icon
+              name="albums-outline"
+              size={20}
+              color={selectedTab === 'Artworks' ? '#0A0A0A' : '#6E6E6E'}
+            />
+            <Text
+              style={[styles.tabText, selectedTab === 'Artworks' && { color: '#0A0A0A' }]}
+            >
+              Artworks
+            </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.tabItem, selectedTab === 'About' && styles.activeTabLarge]}
             onPress={() => setSelectedTab('About')}
           >
-            <Icon name="information-circle-outline" size={20} color={selectedTab === 'About' ? '#0A0A0A' : '#6E6E6E'} />
-            <Text style={[styles.tabText, selectedTab === 'About' && { color: '#0A0A0A' }]}>About</Text>
+            <Icon
+              name="information-circle-outline"
+              size={20}
+              color={selectedTab === 'About' ? '#0A0A0A' : '#6E6E6E'}
+            />
+            <Text style={[styles.tabText, selectedTab === 'About' && { color: '#0A0A0A' }]}>
+              About
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* Tab Content */}
         {selectedTab === 'Artworks' ? (
           <View style={[styles.masonryContainer, { paddingBottom: 50, paddingTop: 10 }]}>
-            <View style={styles.column}>
-              {leftColumn.map(renderProductCard)}
-            </View>
-            <View style={styles.column}>
-              {rightColumn.map(renderProductCard)}
-            </View>
+            <View style={styles.column}>{leftColumn.map(renderProductCard)}</View>
+            <View style={styles.column}>{rightColumn.map(renderProductCard)}</View>
           </View>
         ) : (
           <View style={{ paddingHorizontal: 16, marginTop: 10, paddingBottom: 50 }}>
-            <Text style={{ color: '#6E6E6E', fontSize: 14 }}>{userData?.bio || 'No bio available.'}</Text>
+            <Text style={{ color: '#6E6E6E', fontSize: 14 }}>
+              {userData?.bio || 'No bio available.'}
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -317,31 +367,59 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
     alignItems: 'center',
-    position: 'relative',
   },
   profileImage: { width: 120, height: 120, borderRadius: 12 },
-  profileInfo: { flex: 1, marginLeft: 16, justifyContent: 'center' },
-  usernameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  profileInfo: { flex: 1, marginLeft: 16 },
+  usernameRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   usernameText: { fontSize: 18, fontWeight: 'bold', color: '#0A0A0A' },
   fullNameText: { fontSize: 14, color: '#6E6E6E', marginBottom: 8 },
   followRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, gap: 12 },
-  followButtonCard: { backgroundColor: '#333333', paddingVertical: 6, paddingHorizontal: 22, borderRadius: 5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  followButtonCard: {
+    backgroundColor: '#333333',
+    paddingVertical: 6,
+    paddingHorizontal: 22,
+    borderRadius: 5,
+  },
   followButtonText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
-  addWordButton: { backgroundColor: '#333333', paddingVertical: 6, paddingHorizontal: 80, borderRadius: 5, alignSelf: 'flex-start', flexDirection: 'row', },
-  addWordText: { color: '#FFFFFF', fontWeight: 'bold', textAlign: 'center', fontSize: 10, marginRight: 4 },
+  addWordButton: {
+    backgroundColor: '#333333',
+    paddingVertical: 6,
+    paddingHorizontal: 80,
+    borderRadius: 5,
+  },
+  addWordText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 10, marginRight: 4 },
   settingsButton: { marginLeft: 10 },
-  tabRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
-  tabItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 6, justifyContent: 'center', flex: 1 },
-  activeTabLarge: { borderBottomWidth: 2, borderBottomColor: '#333333', width: '50%' },
+  tabRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  tabItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    gap: 6,
+    justifyContent: 'center',
+    flex: 1,
+  },
+  activeTabLarge: { borderBottomWidth: 2, borderBottomColor: '#333333' },
   tabText: { fontSize: 14, color: '#6E6E6E', fontWeight: '600' },
   masonryContainer: { flexDirection: 'row', paddingHorizontal: 10 },
   column: { flex: 1, paddingHorizontal: 5 },
-  card: { borderRadius: 12, overflow: 'hidden', marginBottom: 12, backgroundColor: '#F4F4F4', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  card: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+    backgroundColor: '#F4F4F4',
+    elevation: 2,
+  },
   imageContainer: { padding: 10 },
   image: { width: '100%', resizeMode: 'contain', borderRadius: 8 },
   noImage: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8E8E8' },
   noImageText: { color: '#6E6E6E' },
-  infoContainer: { padding: 12, paddingTop: 0, backgroundColor: '#F4F4F4' },
+  infoContainer: { padding: 12, paddingTop: 0 },
   title: { fontSize: 15, color: '#6E6E6E', marginBottom: 8, lineHeight: 20 },
   price: { fontSize: 17, fontWeight: 'bold', color: '#0A0A0A' },
   modalBackground: { flex: 1, backgroundColor: '#FFFFFF' },

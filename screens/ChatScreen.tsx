@@ -25,8 +25,6 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../routes/types';
 
 type Message = {
   id: string;
@@ -35,11 +33,16 @@ type Message = {
   createdAt: any;
 };
 
+type RootStackParamList = {
+  Chat: { currentUserId: string; otherUserId: string };
+  OtherProfile: { userId: string };
+};
+
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
 export default function ChatScreen() {
   const route = useRoute<ChatScreenRouteProp>();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<any>();
 
   const { currentUserId, otherUserId } = route.params;
 
@@ -51,10 +54,9 @@ export default function ChatScreen() {
   });
 
   const chatId = [currentUserId, otherUserId].sort().join('_');
-
   const screenHeight = Dimensions.get('window').height;
 
-  // Navigator bar gizleme
+  // Tab bar gizleme
   useFocusEffect(
     React.useCallback(() => {
       navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
@@ -65,6 +67,7 @@ export default function ChatScreen() {
   );
 
   useEffect(() => {
+    // Diğer kullanıcı bilgilerini çek
     const fetchOtherUser = async () => {
       try {
         const snap = await getDoc(doc(db, 'users', otherUserId));
@@ -73,15 +76,16 @@ export default function ChatScreen() {
           const name = data.displayName || data.fullName || data.username || 'Bilinmeyen';
           setOtherUser({ displayName: name, photoURL: data.photoURL });
         } else {
-          setOtherUser({ displayName: 'Bilinmeyen', photoURL: undefined });
+          setOtherUser({ displayName: 'Bilinmeyen' });
         }
       } catch (error) {
         console.error('Kullanıcı bilgisi alınamadı:', error);
-        setOtherUser({ displayName: 'Bilinmeyen', photoURL: undefined });
+        setOtherUser({ displayName: 'Bilinmeyen' });
       }
     };
     fetchOtherUser();
 
+    // Mesajları dinle
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -105,6 +109,7 @@ export default function ChatScreen() {
       createdAt: serverTimestamp(),
     });
 
+    // Chat özetini güncelle
     const currentUserSnap = await getDoc(doc(db, 'users', currentUserId));
     const otherUserSnap = await getDoc(doc(db, 'users', otherUserId));
     const currentUserData = currentUserSnap.exists() ? currentUserSnap.data() : {};
@@ -170,15 +175,13 @@ export default function ChatScreen() {
             <View
               style={[
                 styles.messageBubble,
-                item.senderId === currentUserId
-                  ? styles.myMessage
-                  : styles.otherMessage,
+                item.senderId === currentUserId ? styles.myMessage : styles.otherMessage,
               ]}
             >
               <Text
                 style={[
                   styles.messageText,
-                  item.senderId !== currentUserId && { color: '#6E6E6E' },
+                  item.senderId !== currentUserId && { color: '#333333' },
                 ]}
               >
                 {item.text}
@@ -198,7 +201,7 @@ export default function ChatScreen() {
             multiline
           />
           <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-            <Text style={styles.sendButtonText}>Send</Text>
+            <Text style={styles.sendButtonText}>Gönder</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -281,7 +284,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonText: {
-    color: '#6E6E6E',
+    color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 14,
   },

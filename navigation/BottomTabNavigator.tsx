@@ -2,9 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import ProductDetailScreen from '../screens/ProductDetailScreen';
+import ChatScreen from '../screens/ChatScreen';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import ProductDetailScreen from '@/screens/ProductDetailScreen';
-import ChatScreen from '@/screens/ChatScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -34,7 +34,6 @@ const BottomTabNavigator = () => {
         name="Profile"
         component={ProfileScreen}
         options={{
-          headerShown: false, // 👈 Header'ı tamamen kaldırır
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="person" color={color} size={size} />
           ),
@@ -44,7 +43,6 @@ const BottomTabNavigator = () => {
         name="ProductDetail"
         component={ProductDetailScreen}
         options={{
-          headerShown: false, // 👈 Header'ı tamamen kaldırır
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="home" color={color} size={size} />
           ),
@@ -54,7 +52,6 @@ const BottomTabNavigator = () => {
         name="ChatScreen"
         component={ChatScreen}
         options={{
-          headerShown: false, // ✅ Üstteki header bar'ı tamamen kaldırır
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="chat" color={color} size={size} />
           ),

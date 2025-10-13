@@ -130,7 +130,6 @@ const AddProductScreen = () => {
       const username = userData?.username || 'Bilinmeyen';
       const userProfileImage = userData?.photoURL || '';
 
-      // 🔹 Görselleri yükle ve array olarak kaydet
       const imageUrls: string[] = [];
       for (const uri of images) {
         const url = await uploadImageAsync(uri);
@@ -143,7 +142,6 @@ const AddProductScreen = () => {
         depth: depth ? parseFloat(depth) : null,
       };
 
-      // 🔹 Firestore’a kaydet
       await addDoc(collection(db, 'products'), {
         title,
         description,
@@ -157,8 +155,8 @@ const AddProductScreen = () => {
         isSold: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        imageUrls, // array olarak
-        mainImageUrl: imageUrls[0] || '', // ana görsel
+        imageUrls,
+        mainImageUrl: imageUrls[0] || '',
       });
 
       Alert.alert('Başarılı', 'Ürün başarıyla eklendi.');
@@ -298,7 +296,6 @@ const AddProductScreen = () => {
         {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Kaydet</Text>}
       </TouchableOpacity>
 
-      {/* Kategori Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
