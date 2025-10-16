@@ -283,11 +283,10 @@ const ProfileScreen = () => {
             </View>
 
             <TouchableOpacity
-              style={styles.addWordButton}
+              style={styles.addWorkButton}
               onPress={() => navigation.navigate('AddProduct')}
             >
-              <Text style={styles.addWordText}>Add</Text>
-              <Text style={styles.addWordText}>Work</Text>
+              <Text style={styles.addWorkText}>Add Work</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -381,13 +380,13 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   followButtonText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
-  addWordButton: {
+  addWorkButton: {
     backgroundColor: '#333333',
-    paddingVertical: 6,
+    paddingVertical: 10,
     paddingHorizontal: 80,
     borderRadius: 5,
   },
-  addWordText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 10, marginRight: 4 },
+  addWorkText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 10, marginRight: 4 },
   settingsButton: { marginLeft: 10 },
   tabRow: {
     flexDirection: 'row',

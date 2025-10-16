@@ -77,7 +77,6 @@ const LoginScreen = () => {
   // 🔹 Arka plan animasyonu
   const moveAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const translateYAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.loop(
@@ -117,39 +116,48 @@ const LoginScreen = () => {
   const translateX = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 15] });
   const translateY = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 10] });
 
-  // 🔹 Klavye açılış/kapanış animasyonu
-  useEffect(() => {
-    const keyboardShow = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => {
-        const keyboardHeight = e.endCoordinates?.height ?? 0;
-        Animated.timing(translateYAnim, {
-          toValue: -keyboardHeight - 20,
-          duration: 250,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }).start();
-      }
-    );
+  // Platform kontrolü
+  if (Platform.OS === 'ios') {
+    return <IOSLoginScreen 
+      email={email}
+      setEmail={setEmail}
+      password={password}
+      setPassword={setPassword}
+      isPasswordVisible={isPasswordVisible}
+      togglePasswordVisibility={togglePasswordVisibility}
+      handleLogin={handleLogin}
+      isLoading={isLoading}
+      errorMessage={errorMessage}
+      navigation={navigation}
+      translateX={translateX}
+      translateY={translateY}
+      scaleAnim={scaleAnim}
+    />;
+  }
 
-    const keyboardHide = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        Animated.timing(translateYAnim, {
-          toValue: 0,
-          duration: 250,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }).start();
-      }
-    );
+  return <AndroidLoginScreen 
+    email={email}
+    setEmail={setEmail}
+    password={password}
+    setPassword={setPassword}
+    isPasswordVisible={isPasswordVisible}
+    togglePasswordVisibility={togglePasswordVisibility}
+    handleLogin={handleLogin}
+    isLoading={isLoading}
+    errorMessage={errorMessage}
+    navigation={navigation}
+    translateX={translateX}
+    translateY={translateY}
+    scaleAnim={scaleAnim}
+  />;
+};
 
-    return () => {
-      keyboardShow.remove();
-      keyboardHide.remove();
-    };
-  }, []);
-
+// 🍎 iOS Login Screen
+const IOSLoginScreen = ({ 
+  email, setEmail, password, setPassword, isPasswordVisible, 
+  togglePasswordVisibility, handleLogin, isLoading, errorMessage, 
+  navigation, translateX, translateY, scaleAnim 
+}: any) => {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
@@ -165,17 +173,15 @@ const LoginScreen = () => {
 
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+          behavior="padding"
+          keyboardVerticalOffset={0}
         >
           <ScrollView
             contentContainerStyle={{ flexGrow: 1 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Animated.View
-              style={[styles.cardContainer, { transform: [{ translateY: translateYAnim }] }]}
-            >
+            <View style={styles.cardContainer}>
               <View style={styles.card}>
                 <Text style={styles.title}>Login</Text>
                 <Text style={styles.subtitle}>Please login to continue.</Text>
@@ -240,9 +246,137 @@ const LoginScreen = () => {
                   </View>
                 </View>
               </View>
-            </Animated.View>
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
+      </View>
+    </TouchableWithoutFeedback>
+  );
+};
+
+// 🤖 Android Login Screen
+const AndroidLoginScreen = ({ 
+  email, setEmail, password, setPassword, isPasswordVisible, 
+  togglePasswordVisibility, handleLogin, isLoading, errorMessage, 
+  navigation, translateX, translateY, scaleAnim 
+}: any) => {
+  const translateYAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const keyboardShow = Keyboard.addListener('keyboardDidShow', (e) => {
+      Animated.timing(translateYAnim, {
+        toValue: -e.endCoordinates.height * 1.1,
+        duration: 250,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    });
+
+    const keyboardHide = Keyboard.addListener('keyboardDidHide', () => {
+      Animated.timing(translateYAnim, {
+        toValue: 0,
+        duration: 250,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => {
+      keyboardShow.remove();
+      keyboardHide.remove();
+    };
+  }, []);
+
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <Animated.Image
+          source={require('../assets/Edward_Hooper.png')}
+          style={[
+            styles.backgroundImage,
+            { transform: [{ translateX }, { translateY }, { scale: scaleAnim }] },
+          ]}
+          resizeMode="cover"
+        />
+        <View style={styles.overlay} />
+
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View 
+            style={[
+              styles.cardContainer, 
+              { transform: [{ translateY: translateYAnim }] }
+            ]}
+          >
+            <View style={styles.card}>
+              <Text style={styles.title}>Login</Text>
+              <Text style={styles.subtitle}>Please login to continue.</Text>
+
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <MaterialIcons name="mail" size={20} color="#0A0A0A" style={styles.icon} />
+                  <TextInput
+                    placeholder="Email"
+                    placeholderTextColor="#999"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    returnKeyType="next"
+                    style={styles.textInput}
+                  />
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <MaterialIcons name="lock" size={20} color="#0A0A0A" style={styles.icon} />
+                  <TextInput
+                    placeholder="Password"
+                    placeholderTextColor="#999"
+                    value={password}
+                    onChangeText={setPassword}
+                    onSubmitEditing={handleLogin}
+                    secureTextEntry={!isPasswordVisible}
+                    returnKeyType="done"
+                    style={styles.textInput}
+                  />
+                  <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeButton}>
+                    <MaterialIcons
+                      name={isPasswordVisible ? 'visibility' : 'visibility-off'}
+                      size={20}
+                      color="#0A0A0A"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
+                  <View style={styles.loginButton}>
+                    <Text style={styles.loginButtonText}>
+                      {isLoading ? 'Logging in...' : 'Login'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {errorMessage ? (
+                  <View style={styles.errorMessageContainer}>
+                    <Text style={styles.errorMessage}>{errorMessage}</Text>
+                  </View>
+                ) : null}
+
+                <View style={styles.registerContainer}>
+                  <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+                    <Text style={styles.registerText}>
+                      Don't have an account?{' '}
+                      <Text style={styles.registerLink}>Sign Up</Text>
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Animated.View>
+        </ScrollView>
       </View>
     </TouchableWithoutFeedback>
   );

@@ -260,6 +260,15 @@ const HomeScreen = () => {
     );
   };
 
+    // SADECE BU KISIM GÜNCELLENDİ
+  const getProfileImageSource = () => {
+    if (currentUserProfile?.profilePicture)
+      return { uri: currentUserProfile.profilePicture };
+    if (currentUserProfile?.photoURL)
+      return { uri: currentUserProfile.photoURL };
+    return require('../assets/default-avatar.png');
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.searchWrapper}>
@@ -282,14 +291,7 @@ const HomeScreen = () => {
           style={styles.profileButton}
           onPress={() => navigation.navigate('Profile', {})}
         >
-          <Image
-            source={
-              currentUserProfile?.profilePicture
-                ? { uri: currentUserProfile.profilePicture }
-                : require('../assets/default-avatar.png')
-            }
-            style={styles.profileImage}
-          />
+          <Image source={getProfileImageSource()} style={styles.profileImage} />
         </TouchableOpacity>
       </View>
 
