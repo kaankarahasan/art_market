@@ -6,7 +6,6 @@ import {
   Dimensions,
   Image,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   ScrollView,
   RefreshControl,
@@ -25,13 +24,12 @@ const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 45) / 2;
 
 const HomeScreen = () => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
+  const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
@@ -40,16 +38,24 @@ const HomeScreen = () => {
 
   const fetchData = async () => {
     try {
+      // Ürünleri getir
       const productSnap = await getDocs(
         query(collection(db, 'products'), where('isSold', '==', false), limit(50))
       );
       const productList = productSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setProducts(shuffleArray(productList));
 
-      const userSnap = await getDocs(collection(db, 'users'));
-      const userList = userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setUsers(userList);
+      // Tüm kullanıcıları getir ve fullName'leri cache'le
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const userNamesMap: { [key: string]: string } = {};
+      usersSnap.docs.forEach(userDoc => {
+        const userData = userDoc.data();
+        // fullName varsa kullan, yoksa username kullan
+        userNamesMap[userData.username] = userData.fullName || userData.username;
+      });
+      setUserNames(userNamesMap);
 
+      // Mevcut kullanıcının profilini getir
       const currentUser = auth.currentUser;
       if (currentUser) {
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
@@ -85,60 +91,6 @@ const HomeScreen = () => {
     return array;
   };
 
-  const parseDimensions = (text: string) => {
-    const patterns = [
-      /(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/,
-      /(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/,
-    ];
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      if (match) {
-        return {
-          height: parseFloat(match[1]),
-          width: parseFloat(match[2]),
-          depth: match[3] ? parseFloat(match[3]) : null,
-        };
-      }
-    }
-    return null;
-  };
-
-  const matchesDimensions = (product: any, searchDimensions: any) => {
-    if (!product.dimensions) return false;
-    const { height, width, depth } = product.dimensions;
-    const tolerance = 5;
-    const heightMatch = searchDimensions.height
-      ? height && Math.abs(height - searchDimensions.height) <= tolerance
-      : true;
-    const widthMatch = searchDimensions.width
-      ? width && Math.abs(width - searchDimensions.width) <= tolerance
-      : true;
-    const depthMatch = searchDimensions.depth
-      ? depth && Math.abs(depth - searchDimensions.depth) <= tolerance
-      : true;
-    return heightMatch && widthMatch && depthMatch;
-  };
-
-  const searchDimensions = parseDimensions(searchQuery.toLowerCase().trim());
-
-  const filteredProducts = products.filter(product => {
-    if (searchDimensions) return matchesDimensions(product, searchDimensions);
-    const search = searchQuery.toLowerCase();
-    const titleMatch = product.title?.toLowerCase().includes(search);
-    const descriptionMatch = product.description?.toLowerCase().includes(search);
-    const categoryMatch = product.category?.toLowerCase().includes(search);
-    return titleMatch || descriptionMatch || categoryMatch;
-  });
-
-  const filteredUsers = users.filter(user => {
-    const queryLower = searchQuery.toLowerCase();
-    const usernameMatch = user.username?.toLowerCase().includes(queryLower);
-    const fullNameMatch = user.fullName?.toLowerCase().includes(queryLower);
-    return usernameMatch || fullNameMatch;
-  });
-
-  const clearSearch = () => setSearchQuery('');
-
   const handleImageLoad = (productId: string, width: number, height: number) => {
     const imageWidth = columnWidth - 20;
     const aspectRatio = height / width;
@@ -151,7 +103,7 @@ const HomeScreen = () => {
     const rightColumn: any[] = [];
     let leftHeight = 0;
     let rightHeight = 0;
-    filteredProducts.forEach((product) => {
+    products.forEach((product) => {
       const imageHeight = imageHeights[product.id] || 250;
       const cardHeight = imageHeight + 110;
       if (leftHeight <= rightHeight) {
@@ -167,7 +119,6 @@ const HomeScreen = () => {
 
   const { leftColumn, rightColumn } = distributeProducts();
 
-  // FAVORİ BUTONU
   const handleFavoriteToggle = (item: any) => {
     const isFav = favoriteItems.some(fav => fav.id === item.id);
     const favItem: FavoriteItem = {
@@ -185,6 +136,9 @@ const HomeScreen = () => {
     const isFavorite = favoriteItems.some(fav => fav.id === item.id);
     const imageHeight = imageHeights[item.id] || 250;
     const firstImage = item.imageUrls?.[0] || item.imageUrl;
+    
+    // Username'den fullName'i cache'den al
+    const displayName = userNames[item.username] || item.username || 'Bilinmeyen';
 
     return (
       <View key={item.id} style={[styles.card, { width: columnWidth }]}>
@@ -212,7 +166,7 @@ const HomeScreen = () => {
           <View style={styles.infoContainer}>
             <View style={styles.userRow}>
               <Text style={styles.username} numberOfLines={1}>
-                {item.username || 'Bilinmeyen'}
+                {displayName}
               </Text>
               <TouchableOpacity
                 onPress={() => handleFavoriteToggle(item)}
@@ -235,32 +189,6 @@ const HomeScreen = () => {
     );
   };
 
-  const renderUser = (item: any) => {
-    const currentUser = auth.currentUser;
-    const handlePress = () => {
-      if (!currentUser) return;
-      if (item.id === currentUser.uid) {
-        navigation.navigate('Profile', {});
-      } else {
-        navigation.navigate('OtherProfile', { userId: item.id });
-      }
-    };
-
-    return (
-      <TouchableOpacity key={item.id} onPress={handlePress} style={styles.userCard}>
-        <Image
-          source={item.profilePicture ? { uri: item.profilePicture } : require('../assets/default-avatar.png')}
-          style={styles.userAvatar}
-        />
-        <View>
-          <Text style={styles.usernameText}>{item.username}</Text>
-          <Text style={styles.fullName}>{item.fullName}</Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-    // SADECE BU KISIM GÜNCELLENDİ
   const getProfileImageSource = () => {
     if (currentUserProfile?.profilePicture)
       return { uri: currentUserProfile.profilePicture };
@@ -272,21 +200,15 @@ const HomeScreen = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.searchWrapper}>
-        <View style={styles.searchContainer}>
+        <TouchableOpacity
+          style={styles.searchContainer}
+          onPress={() => navigation.navigate('Search')}
+          activeOpacity={0.7}
+        >
           <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Ara..."
-            placeholderTextColor="#999"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity style={styles.clearButton} onPress={clearSearch}>
-              <Ionicons name="close-circle" size={20} color="#999" />
-            </TouchableOpacity>
-          )}
-        </View>
+          <Text style={styles.searchPlaceholder}>Ara...</Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity
           style={styles.profileButton}
           onPress={() => navigation.navigate('Profile', {})}
@@ -311,29 +233,14 @@ const HomeScreen = () => {
             />
           }
         >
-          {searchQuery.length > 0 && filteredUsers.length > 0 && (
-            <View style={styles.userListContainer}>
-              <Text style={styles.sectionTitle}>Kullanıcılar</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {filteredUsers.map(renderUser)}
-              </ScrollView>
+          <View style={styles.masonryContainer}>
+            <View style={styles.column}>
+              {leftColumn.map(renderProductCard)}
             </View>
-          )}
-
-          {filteredProducts.length === 0 && searchQuery.length > 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Aradığınız ürün bulunamadı.</Text>
+            <View style={styles.column}>
+              {rightColumn.map(renderProductCard)}
             </View>
-          ) : (
-            <View style={styles.masonryContainer}>
-              <View style={styles.column}>
-                {leftColumn.map(renderProductCard)}
-              </View>
-              <View style={styles.column}>
-                {rightColumn.map(renderProductCard)}
-              </View>
-            </View>
-          )}
+          </View>
         </ScrollView>
       )}
     </View>
@@ -342,7 +249,6 @@ const HomeScreen = () => {
 
 export default HomeScreen;
 
-// --- STYLES ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   searchWrapper: {
@@ -368,8 +274,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   searchIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 16, color: '#0A0A0A' },
-  clearButton: { padding: 4, marginLeft: 8 },
+  searchPlaceholder: { 
+    fontSize: 16, 
+    color: '#999',
+  },
   profileButton: {
     marginLeft: 12,
     shadowColor: '#000',
@@ -409,12 +317,4 @@ const styles = StyleSheet.create({
   title: { fontSize: 15, color: '#6E6E6E', marginBottom: 8, lineHeight: 20 },
   price: { fontSize: 17, fontWeight: 'bold', color: '#0A0A0A' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyContainer: { flex: 1, alignItems: 'center', paddingTop: 50 },
-  emptyText: { color: '#6E6E6E' },
-  userListContainer: { paddingHorizontal: 10, marginBottom: 15, backgroundColor: '#F4F4F4', paddingVertical: 12 },
-  userCard: { flexDirection: 'row', alignItems: 'center', padding: 10, marginRight: 10, borderRadius: 8, backgroundColor: '#FFFFFF' },
-  userAvatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
-  usernameText: { fontSize: 14, fontWeight: 'bold', color: '#0A0A0A' },
-  fullName: { fontSize: 12, color: '#6E6E6E' },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#0A0A0A', marginBottom: 8, paddingHorizontal: 10 },
 });

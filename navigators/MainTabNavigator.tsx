@@ -1,12 +1,13 @@
-// MainTabNavigator.tsx
 import React, { useEffect, useState } from 'react';
-import { Text, Platform, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { Text, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth } from '../firebase';
 
 import HomeScreen from '../screens/HomeScreen';
+import SearchScreen from '../screens/SearchScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -24,6 +25,15 @@ function HomeStackNavigator() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="Home" component={HomeScreen} />
+      <HomeStack.Screen 
+        name="Search" 
+        component={SearchScreen}
+        options={{
+          animation: 'slide_from_right',
+          animationTypeForReplace: 'push',
+          presentation: 'card',
+        }}
+      />
       <HomeStack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <HomeStack.Screen name="Profile" component={ProfileScreen} />
       <HomeStack.Screen name="OtherProfile" component={OtherProfileScreen} />
@@ -53,6 +63,104 @@ function InboxStackNavigator() {
   );
 }
 
+// MAIN TAB WITH SAFE AREA
+function MainTabNavigatorContent() {
+  const insets = useSafeAreaInsets();
+  const iconColor = '#333333';
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopColor: '#E8E8E8',
+          borderTopWidth: 1,
+          // Güçlü gölgelendirme
+          elevation: 20,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 12,
+          // Otomatik margin ve yükseklik
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: iconColor,
+        tabBarInactiveTintColor: iconColor,
+      }}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeStackNavigator}
+        options={{
+          tabBarLabel: ({ focused }) => (
+            <Text style={{ 
+              fontSize: 12, 
+              marginTop: 4, 
+              fontWeight: focused ? '800' : 'normal',
+              color: iconColor 
+            }}>
+              Home
+            </Text>
+          ),
+          tabBarIcon: ({ focused, size }) =>
+            focused ? (
+              <Ionicons name="home" size={size} color={iconColor} />
+            ) : (
+              <Ionicons name="home-outline" size={size} color={iconColor} />
+            ),
+        }}
+      />
+      <Tab.Screen
+        name="FavoritesTab"
+        component={FavoritesStackNavigator}
+        options={{
+          tabBarLabel: ({ focused }) => (
+            <Text style={{ 
+              fontSize: 12, 
+              marginTop: 4, 
+              fontWeight: focused ? '800' : 'normal',
+              color: iconColor 
+            }}>
+              Favorites
+            </Text>
+          ),
+          tabBarIcon: ({ focused, size }) =>
+            focused ? (
+              <Ionicons name="heart" size={size} color={iconColor} />
+            ) : (
+              <Ionicons name="heart-outline" size={size} color={iconColor} />
+            ),
+        }}
+      />
+      <Tab.Screen
+        name="InboxTab"
+        component={InboxStackNavigator}
+        options={{
+          tabBarLabel: ({ focused }) => (
+            <Text style={{ 
+              fontSize: 12, 
+              marginTop: 4, 
+              fontWeight: focused ? '800' : 'normal',
+              color: iconColor 
+            }}>
+              Inbox
+            </Text>
+          ),
+          tabBarIcon: ({ focused, size }) =>
+            focused ? (
+              <Ionicons name="mail" size={size} color={iconColor} />
+            ) : (
+              <Ionicons name="mail-outline" size={size} color={iconColor} />
+            ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
 // MAIN TAB
 export default function MainTabNavigator() {
   const [currentUser, setCurrentUser] = useState(auth.currentUser);
@@ -69,80 +177,5 @@ export default function MainTabNavigator() {
   if (loading) return null;
   if (!currentUser) return null;
 
-  const iconColor = '#333333';
-
-  return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: [
-          styles.tabBar,
-          {
-            borderTopColor: '#F4F4F4',
-            borderTopWidth: StyleSheet.hairlineWidth,
-            elevation: 5,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 3,
-          },
-        ],
-        tabBarActiveTintColor: iconColor,
-        tabBarInactiveTintColor: iconColor,
-      }}
-    >
-      <Tab.Screen
-        name="HomeTab"
-        component={HomeStackNavigator}
-        options={{
-          tabBarIcon: ({ focused, size }) =>
-            focused ? <Ionicons name="home" size={size} color={iconColor} /> : <Ionicons name="home-outline" size={size} color={iconColor} />,
-          tabBarLabel: ({ focused }) => (
-            <Text style={{ color: iconColor, fontWeight: focused ? 'bold' : 'normal' }}>Home</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="FavoritesTab"
-        component={FavoritesStackNavigator}
-        options={{
-          tabBarIcon: ({ focused, size }) =>
-            focused ? <Ionicons name="heart" size={size} color={iconColor} /> : <Ionicons name="heart-outline" size={size} color={iconColor} />,
-          tabBarLabel: ({ focused }) => (
-            <Text style={{ color: iconColor, fontWeight: focused ? 'bold' : 'normal' }}>Favorites</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="InboxTab"
-        component={InboxStackNavigator}
-        options={{
-          tabBarIcon: ({ focused, size }) =>
-            focused ? <Ionicons name="mail" size={size} color={iconColor} /> : <Ionicons name="mail-outline" size={size} color={iconColor} />,
-          tabBarLabel: ({ focused }) => (
-            <Text style={{ color: iconColor, fontWeight: focused ? 'bold' : 'normal' }}>Inbox</Text>
-          ),
-        }}
-      />
-    </Tab.Navigator>
-  );
+  return <MainTabNavigatorContent />;
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: '#fff',
-    borderTopColor: '#F4F4F4',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
-  },
-});
