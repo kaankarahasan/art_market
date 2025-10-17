@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { View, Text, Image } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Text, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
@@ -25,15 +26,7 @@ function HomeStackNavigator() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="Home" component={HomeScreen} />
-      <HomeStack.Screen 
-        name="Search" 
-        component={SearchScreen}
-        options={{
-          animation: 'slide_from_right',
-          animationTypeForReplace: 'push',
-          presentation: 'card',
-        }}
-      />
+      <HomeStack.Screen name="Search" component={SearchScreen} />
       <HomeStack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <HomeStack.Screen name="Profile" component={ProfileScreen} />
       <HomeStack.Screen name="OtherProfile" component={OtherProfileScreen} />
@@ -63,8 +56,8 @@ function InboxStackNavigator() {
   );
 }
 
-// MAIN TAB WITH SAFE AREA
-function MainTabNavigatorContent() {
+// MAIN TAB
+function MainTabNavigatorContent({ userData }: { userData: any }) {
   const insets = useSafeAreaInsets();
   const iconColor = '#333333';
 
@@ -72,17 +65,17 @@ function MainTabNavigatorContent() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        tabBarBackground: () => <View style={{ backgroundColor: '#FFFFFF', flex: 1 }} />,
         tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopColor: '#E8E8E8',
+          position: 'absolute',
+          backgroundColor: '#FFFFFF',
+          borderTopColor: '#F4F4F4',
           borderTopWidth: 1,
-          // Güçlü gölgelendirme
-          elevation: 20,
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 12,
-          // Otomatik margin ve yükseklik
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 6,
+          elevation: 6,
           height: 60 + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
@@ -96,21 +89,11 @@ function MainTabNavigatorContent() {
         component={HomeStackNavigator}
         options={{
           tabBarLabel: ({ focused }) => (
-            <Text style={{ 
-              fontSize: 12, 
-              marginTop: 4, 
-              fontWeight: focused ? '800' : 'normal',
-              color: iconColor 
-            }}>
-              Home
-            </Text>
+            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Home</Text>
           ),
           tabBarIcon: ({ focused, size }) =>
-            focused ? (
-              <Ionicons name="home" size={size} color={iconColor} />
-            ) : (
-              <Ionicons name="home-outline" size={size} color={iconColor} />
-            ),
+            focused ? <Ionicons name="home" size={size} color={iconColor} />
+            : <Ionicons name="home-outline" size={size} color={iconColor} />,
         }}
       />
       <Tab.Screen
@@ -118,21 +101,11 @@ function MainTabNavigatorContent() {
         component={FavoritesStackNavigator}
         options={{
           tabBarLabel: ({ focused }) => (
-            <Text style={{ 
-              fontSize: 12, 
-              marginTop: 4, 
-              fontWeight: focused ? '800' : 'normal',
-              color: iconColor 
-            }}>
-              Favorites
-            </Text>
+            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Favorites</Text>
           ),
           tabBarIcon: ({ focused, size }) =>
-            focused ? (
-              <Ionicons name="heart" size={size} color={iconColor} />
-            ) : (
-              <Ionicons name="heart-outline" size={size} color={iconColor} />
-            ),
+            focused ? <Ionicons name="heart" size={size} color={iconColor} />
+            : <Ionicons name="heart-outline" size={size} color={iconColor} />,
         }}
       />
       <Tab.Screen
@@ -140,42 +113,75 @@ function MainTabNavigatorContent() {
         component={InboxStackNavigator}
         options={{
           tabBarLabel: ({ focused }) => (
-            <Text style={{ 
-              fontSize: 12, 
-              marginTop: 4, 
-              fontWeight: focused ? '800' : 'normal',
-              color: iconColor 
-            }}>
-              Inbox
-            </Text>
+            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Inbox</Text>
           ),
           tabBarIcon: ({ focused, size }) =>
-            focused ? (
-              <Ionicons name="mail" size={size} color={iconColor} />
-            ) : (
-              <Ionicons name="mail-outline" size={size} color={iconColor} />
-            ),
+            focused ? <Ionicons name="mail" size={size} color={iconColor} />
+            : <Ionicons name="mail-outline" size={size} color={iconColor} />,
+        }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: ({ focused }) => (
+            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Profile</Text>
+          ),
+          tabBarIcon: ({ focused, size }) => {
+            const borderWidth = focused ? 2 : 0;
+            const iconSize = size - borderWidth * 2; // border içeriye doğru
+            return (
+              <View
+                style={{
+                  width: size,
+                  height: size,
+                  borderRadius: size / 2,
+                  overflow: 'hidden',
+                  borderWidth: borderWidth,
+                  borderColor: '#333333',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Image
+                  source={userData?.photoURL ? { uri: userData.photoURL } : require('../assets/default-avatar.png')}
+                  style={{ width: iconSize, height: iconSize, borderRadius: iconSize / 2 }}
+                />
+              </View>
+            );
+          },
         }}
       />
     </Tab.Navigator>
   );
 }
 
-// MAIN TAB
+// MAIN TAB EXPORT
 export default function MainTabNavigator() {
-  const [currentUser, setCurrentUser] = useState(auth.currentUser);
+  const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      setCurrentUser(user);
-      setLoading(false);
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        setUserData(null);
+        setLoading(false);
+        return;
+      }
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        setUserData(userDoc.exists() ? userDoc.data() : null);
+      } catch (e) {
+        console.error('Kullanıcı verisi alınamadı:', e);
+      } finally {
+        setLoading(false);
+      }
     });
     return unsubscribe;
   }, []);
 
   if (loading) return null;
-  if (!currentUser) return null;
+  if (!userData) return null;
 
-  return <MainTabNavigatorContent />;
+  return <MainTabNavigatorContent userData={userData} />;
 }

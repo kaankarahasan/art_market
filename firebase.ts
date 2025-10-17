@@ -1,14 +1,11 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { 
-  initializeFirestore, 
-  persistentLocalCache, 
-  persistentMultipleTabManager 
-} from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
-// Firebase yapılandırması
+// Firebase yapılandırması - HANGİ PROJEYİ KULLANIYORSANIZ O CONFIG'İ AÇIN
 const firebaseConfig = {
+  // AKTIF PROJE: app-market-test
   apiKey: "AIzaSyA0gtd502S2VxGr6EU3r-pYxoRNyBoz_PM",
   authDomain: "app-market-test-35f90.firebaseapp.com",
   projectId: "app-market-test-35f90",
@@ -18,16 +15,37 @@ const firebaseConfig = {
   measurementId: "G-LFH1Z7XF7F"
 };
 
+// DİĞER PROJE CONFIG'İ (Gerekirse yukarıdakiyle değiştirin)
+// const firebaseConfig = {
+//   apiKey: 'AIzaSyBxqQGr9HYsDNdiv8BNjUwy8NDoD1ZQjEM',
+//   authDomain: 'loginscreenfirebase-55198.firebaseapp.com',
+//   projectId: 'loginscreenfirebase-55198',
+//   storageBucket: 'loginscreenfirebase-55198.appspot.com',
+//   messagingSenderId: '63361277261',
+//   appId: '1:63361277261:web:1478cb146aaa5147966b04',
+// };
+
 // Firebase uygulamasını başlat
-const app = initializeApp(firebaseConfig);
+const app: FirebaseApp = initializeApp(firebaseConfig);
 
-// Firebase servislerini dışa aktar
-export const auth = getAuth(app);
+// Authentication - React Native otomatik olarak AsyncStorage kullanır
+export const auth: Auth = getAuth(app);
 
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
-});
+// Firestore - React Native için BASİT yapılandırma
+// persistentLocalCache ve persistentMultipleTabManager KULLANMAYIN!
+// Bunlar React Native'de "client is offline" hatasına neden oluyor
+export const db: Firestore = getFirestore(app);
 
-export const storage = getStorage(app);
+// Firebase Storage
+export const storage: FirebaseStorage = getStorage(app);
+
+// Varsayılan export
+export default app;
+
+// Named export - gerekirse kullanılabilir
+export function initializeFirebase(): FirebaseApp {
+  return app;
+}
+
+// Config'i export et (ihtiyaç duyulursa)
+export { firebaseConfig };

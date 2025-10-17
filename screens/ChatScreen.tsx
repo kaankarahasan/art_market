@@ -43,7 +43,6 @@ type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 export default function ChatScreen() {
   const route = useRoute<ChatScreenRouteProp>();
   const navigation = useNavigation<any>();
-
   const { currentUserId, otherUserId } = route.params;
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -54,20 +53,17 @@ export default function ChatScreen() {
   });
 
   const chatId = [currentUserId, otherUserId].sort().join('_');
-  const screenHeight = Dimensions.get('window').height;
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
   // Tab bar gizleme
   useFocusEffect(
     React.useCallback(() => {
       navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
-      return () => {
-        navigation.getParent()?.setOptions({ tabBarStyle: undefined });
-      };
+      return () => navigation.getParent()?.setOptions({ tabBarStyle: undefined });
     }, [navigation])
   );
 
   useEffect(() => {
-    // Diğer kullanıcı bilgilerini çek
     const fetchOtherUser = async () => {
       try {
         const snap = await getDoc(doc(db, 'users', otherUserId));
@@ -85,7 +81,6 @@ export default function ChatScreen() {
     };
     fetchOtherUser();
 
-    // Mesajları dinle
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -109,7 +104,6 @@ export default function ChatScreen() {
       createdAt: serverTimestamp(),
     });
 
-    // Chat özetini güncelle
     const currentUserSnap = await getDoc(doc(db, 'users', currentUserId));
     const otherUserSnap = await getDoc(doc(db, 'users', otherUserId));
     const currentUserData = currentUserSnap.exists() ? currentUserSnap.data() : {};
@@ -138,6 +132,15 @@ export default function ChatScreen() {
     setText('');
   };
 
+  // Dinamik boyutlar (makul sınırlar ile)
+  const avatarSize = Math.min(Math.max(screenHeight * 0.06, 40), 60);
+  const usernameFont = Math.min(Math.max(screenHeight * 0.022, 14), 18);
+  const messageFont = Math.min(Math.max(screenHeight * 0.018, 12), 16);
+  const inputFont = Math.min(Math.max(screenHeight * 0.018, 12), 16);
+  const buttonFont = Math.min(Math.max(screenHeight * 0.018, 12), 16);
+  const inputPaddingVertical = Math.min(Math.max(screenHeight * 0.012, 8), 12);
+  const sendButtonPaddingVertical = Math.min(Math.max(screenHeight * 0.012, 8), 12);
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -146,9 +149,9 @@ export default function ChatScreen() {
         keyboardVerticalOffset={90}
       >
         {/* Üst Bar */}
-        <View style={[styles.header, { paddingVertical: screenHeight * 0.015 }]}>
+        <View style={[styles.header, { paddingVertical: avatarSize / 4 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backText}>‹</Text>
+            <Text style={[styles.backText, { fontSize: avatarSize * 0.7 }]}>‹</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.userInfo}
@@ -160,48 +163,75 @@ export default function ChatScreen() {
                   ? { uri: otherUser.photoURL }
                   : require('../assets/default-avatar.png')
               }
-              style={styles.avatar}
+              style={[
+                styles.avatar,
+                {
+                  width: avatarSize,
+                  height: avatarSize,
+                  borderRadius: avatarSize / 2,
+                },
+              ]}
             />
-            <Text style={styles.username}>{otherUser.displayName}</Text>
+            <Text style={[styles.username, { fontSize: usernameFont }]}>{otherUser.displayName}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Mesajlar */}
-        <FlatList
-          inverted
-          data={[...messages].reverse()}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View
-              style={[
-                styles.messageBubble,
-                item.senderId === currentUserId ? styles.myMessage : styles.otherMessage,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.messageText,
-                  item.senderId !== currentUserId && { color: '#333333' },
-                ]}
-              >
-                {item.text}
-              </Text>
-            </View>
-          )}
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingBottom: 10 }}
-        />
+        <View style={{ flex: 1, backgroundColor: '#F4F4F4' }}>
+          <FlatList
+            inverted
+            data={[...messages].reverse()}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => {
+              const bubbleWidth = Math.min(screenWidth * 0.75, Math.max(100, item.text.length * 7));
+              return (
+                <View
+                  style={[
+                    styles.messageBubble,
+                    item.senderId === currentUserId ? styles.myMessage : styles.otherMessage,
+                    { maxWidth: bubbleWidth },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.messageText,
+                      item.senderId !== currentUserId && { color: '#333333' },
+                      { fontSize: messageFont },
+                    ]}
+                  >
+                    {item.text}
+                  </Text>
+                </View>
+              );
+            }}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingBottom: 10 }}
+          />
+        </View>
 
         {/* Mesaj Input */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { paddingVertical: inputPaddingVertical }]}>
           <TextInput
             value={text}
             onChangeText={setText}
             placeholder="Mesaj..."
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                fontSize: inputFont,
+                paddingHorizontal: 14,
+                paddingVertical: inputPaddingVertical,
+              },
+            ]}
             multiline
           />
-          <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-            <Text style={styles.sendButtonText}>Gönder</Text>
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              { paddingHorizontal: 18, paddingVertical: sendButtonPaddingVertical },
+            ]}
+            onPress={sendMessage}
+          >
+            <Text style={[styles.sendButtonText, { fontSize: buttonFont }]}>Gönder</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -210,7 +240,7 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
+  container: { flex: 1, backgroundColor: '#F4F4F4' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,16 +255,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 8,
   },
-  backText: { fontSize: 24, color: '#333333' },
+  backText: { color: '#333333' },
   userInfo: { flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 12 },
-  username: { fontSize: 16, fontWeight: '600', color: '#333333' },
+  avatar: { marginRight: 12 },
+  username: { fontWeight: '600', color: '#333333' },
   messageBubble: {
     padding: 14,
     marginVertical: 6,
     marginHorizontal: 12,
     borderRadius: 20,
-    maxWidth: '75%',
   },
   myMessage: {
     backgroundColor: '#333333',
@@ -254,10 +283,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
-  messageText: { fontSize: 14, color: '#FFFFFF' },
+  messageText: { color: '#FFFFFF' },
   inputContainer: {
     flexDirection: 'row',
-    padding: 10,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     borderTopWidth: 1,
@@ -268,24 +296,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CCCCCC',
     borderRadius: 22,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
     marginRight: 10,
-    fontSize: 14,
     backgroundColor: '#FAFAFA',
     color: '#6E6E6E',
   },
   sendButton: {
     backgroundColor: '#333333',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sendButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
-  },
+  sendButtonText: { color: '#FFFFFF', fontWeight: '600' },
 });

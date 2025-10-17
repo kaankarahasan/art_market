@@ -27,7 +27,6 @@ const HomeScreen = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
   const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
 
@@ -38,29 +37,19 @@ const HomeScreen = () => {
 
   const fetchData = async () => {
     try {
-      // Ürünleri getir
       const productSnap = await getDocs(
         query(collection(db, 'products'), where('isSold', '==', false), limit(50))
       );
       const productList = productSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setProducts(shuffleArray(productList));
 
-      // Tüm kullanıcıları getir ve fullName'leri cache'le
       const usersSnap = await getDocs(collection(db, 'users'));
       const userNamesMap: { [key: string]: string } = {};
       usersSnap.docs.forEach(userDoc => {
         const userData = userDoc.data();
-        // fullName varsa kullan, yoksa username kullan
         userNamesMap[userData.username] = userData.fullName || userData.username;
       });
       setUserNames(userNamesMap);
-
-      // Mevcut kullanıcının profilini getir
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        if (userDoc.exists()) setCurrentUserProfile(userDoc.data());
-      }
     } catch (error) {
       console.error('Veriler alınırken hata:', error);
     }
@@ -136,8 +125,7 @@ const HomeScreen = () => {
     const isFavorite = favoriteItems.some(fav => fav.id === item.id);
     const imageHeight = imageHeights[item.id] || 250;
     const firstImage = item.imageUrls?.[0] || item.imageUrl;
-    
-    // Username'den fullName'i cache'den al
+
     const displayName = userNames[item.username] || item.username || 'Bilinmeyen';
 
     return (
@@ -189,14 +177,6 @@ const HomeScreen = () => {
     );
   };
 
-  const getProfileImageSource = () => {
-    if (currentUserProfile?.profilePicture)
-      return { uri: currentUserProfile.profilePicture };
-    if (currentUserProfile?.photoURL)
-      return { uri: currentUserProfile.photoURL };
-    return require('../assets/default-avatar.png');
-  };
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.searchWrapper}>
@@ -207,13 +187,6 @@ const HomeScreen = () => {
         >
           <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
           <Text style={styles.searchPlaceholder}>Ara...</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.profileButton}
-          onPress={() => navigation.navigate('Profile', {})}
-        >
-          <Image source={getProfileImageSource()} style={styles.profileImage} />
         </TouchableOpacity>
       </View>
 
@@ -268,30 +241,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 48,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
   },
   searchIcon: { marginRight: 10 },
   searchPlaceholder: { 
     fontSize: 16, 
     color: '#999',
-  },
-  profileButton: {
-    marginLeft: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  profileImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#F4F4F4',
   },
   masonryContainer: { flexDirection: 'row', paddingHorizontal: 10, paddingBottom: 30 },
   column: { flex: 1, paddingHorizontal: 5 },
