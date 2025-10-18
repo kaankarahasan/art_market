@@ -214,52 +214,41 @@ const ProfileScreen = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
-      {/* Back Button */}
-      <TouchableOpacity
+    <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
+      {/* Header with username and buttons */}
+      <View
         style={{
-          position: 'absolute',
-          top: insets.top + 5,
-          left: 16,
-          zIndex: 10,
-          padding: 8,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: 16,
+          paddingTop: insets.top + 10,
+          paddingBottom: 12,
         }}
-        onPress={() => navigation.goBack()}
       >
-        <Ionicons name="chevron-back" size={28} color="#000" />
-      </TouchableOpacity>
+        <Text style={styles.headerUsername}>@{userData?.username || 'kullaniciadi'}</Text>
+        
+        {isOwnProfile && (
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            <TouchableOpacity onPress={() => navigation.navigate('AddProduct')}>
+              <Ionicons name="add-outline" size={32} color="#333333" />
+            </TouchableOpacity>
 
-      {/* Add Work & Menu Buttons */}
-      {isOwnProfile && (
-        <View
-          style={{
-            position: 'absolute',
-            top: insets.top + 5,
-            right: 16,
-            flexDirection: 'row',
-            gap: 14,
-            zIndex: 10,
-          }}
-        >
-          <TouchableOpacity onPress={() => navigation.navigate('AddProduct')}>
-            <Ionicons name="add-outline" size={28} color="#333333" />
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-            <Feather name="menu" size={28} color="#333333" />
-          </TouchableOpacity>
-        </View>
-      )}
+            <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+              <Feather name="menu" size={32} color="#333333" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: 60,
-          paddingTop: insets.top + 10,
         }}
       >
-        {/* Compact Profile Card */}
-        <View style={[styles.profileCard, { marginTop: 0 }]}>
+        {/* Profile Card */}
+        <View style={[styles.profileCard, { marginTop: 8 }]}>
           <TouchableOpacity onPress={() => setProfileModalVisible(true)}>
             <Image
               source={
@@ -272,24 +261,29 @@ const ProfileScreen = () => {
           </TouchableOpacity>
 
           <View style={styles.profileInfo}>
-            <Text style={styles.usernameText}>@{userData?.username || 'kullaniciadi'}</Text>
-            <Text style={styles.fullNameText}>{userData?.fullName || 'Ad Soyad'}</Text>
+            {/* Full Name */}
+            <Text style={styles.fullNameText} numberOfLines={1}>
+              {userData?.fullName || 'Ad Soyad'}
+            </Text>
 
             {/* Followers / Following */}
-            <View style={styles.followStatsRow}>
+            <View style={styles.followStatsContainer}>
               <TouchableOpacity
                 onPress={() => navigation.navigate('Followers', { userId: profileId })}
                 style={styles.followStatItemRow}
               >
-                <Text style={styles.followNumber}>{followers.length}</Text>
-                <Text style={styles.followLabel}>Followers</Text>
+                <Text style={styles.followLabel}>
+                  Followers: <Text style={styles.followNumber}>{followers.length}</Text>
+                </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={() => navigation.navigate('Following', { userId: profileId })}
                 style={styles.followStatItemRow}
               >
-                <Text style={styles.followNumber}>{following.length}</Text>
-                <Text style={styles.followLabel}>Following</Text>
+                <Text style={styles.followLabel}>
+                  Following: <Text style={styles.followNumber}>{following.length}</Text>
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -345,7 +339,7 @@ const ProfileScreen = () => {
         onClose={() => setProfileModalVisible(false)}
         imageUrl={userData?.photoURL || ''}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -354,6 +348,12 @@ export default ProfileScreen;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  headerUsername: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#0A0A0A',
+  },
 
   profileCard: {
     flexDirection: 'row',
@@ -370,20 +370,62 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  profileImage: { width: 90, height: 90, borderRadius: 12 },
-  profileInfo: { flex: 1, marginLeft: 14 },
-  usernameText: { fontSize: 17, fontWeight: 'bold', color: '#0A0A0A' },
-  fullNameText: { fontSize: 13, color: '#6E6E6E', marginBottom: 6 },
+  profileImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+  },
+
+  profileInfo: {
+    flex: 1,
+    marginLeft: 14,
+    justifyContent: 'center',
+    alignItems: 'flex-start', // Sola yaslı
+  },
+
+  nameAndStatsWrapper: {
+    flex: 1,
+    alignItems: 'center', // FullName ve stats hizalansın
+    justifyContent: 'center',
+  },
+
+  fullNameText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0A0A0A',
+    marginBottom: 8,
+    textAlign: 'left', // Sola hizala
+    width: '100%',
+  },
 
   followStatsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '70%',
+    gap: 24,
     marginTop: 4,
   },
-  followStatItemRow: { alignItems: 'center' },
-  followNumber: { fontSize: 15, fontWeight: 'bold', color: '#0A0A0A' },
-  followLabel: { fontSize: 12, color: '#6E6E6E', marginTop: 2 },
+
+  followStatItemRow: {
+    alignItems: 'center',
+  },
+
+  followNumber: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#0A0A0A',
+  },
+
+  followLabel: {
+    fontSize: 14,
+    color: '#6E6E6E',
+    textAlign: 'center',
+  },
+
+  followStatsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start', // Sola yaslı
+    gap: 24, // İki öğe arası boşluk
+    width: '80%', // hizalamayı dengeler
+  },
 
   tabRow: {
     flexDirection: 'row',

@@ -18,6 +18,7 @@ import {
   useRoute,
   useFocusEffect,
 } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, Product } from '../routes/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavoriteUsers, FavoriteUser, useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
@@ -70,6 +71,22 @@ const ProductDetailScreen = () => {
   const isFavoriteItem = favoriteItems.some((fav: FavoriteItem) => fav.id === productData.id);
   const isOwner = productData.ownerId === currentUser?.uid;
   const dynamicTopMargin = height * 0.1;
+
+  // Sadece ProductDetailScreen açıldığında tabBar'ı gizle
+  useFocusEffect(
+    useCallback(() => {
+      const parent = navigation.getParent<BottomTabNavigationProp<any>>();
+      const defaultStyle = parent?.getState()?.routes[0]?.params?.tabBarStyle;
+
+      // TabBar'ı gizle
+      parent?.setOptions?.({ tabBarStyle: { display: 'none' } });
+
+      // Ekran kapanınca geri aç
+      return () => {
+        parent?.setOptions?.({ tabBarStyle: defaultStyle });
+      };
+    }, [navigation])
+  );
 
   useEffect(() => {
     const fetchOwnerData = async () => {
@@ -131,12 +148,8 @@ const ProductDetailScreen = () => {
 
   const goToUserProfile = () => {
     if (!productData.ownerId) return;
-
-    if (isOwner) {
-      navigation.navigate('Profile', {});
-    } else {
-      navigation.navigate('OtherProfile', { userId: productData.ownerId });
-    }
+    if (isOwner) navigation.navigate('Profile', {});
+    else navigation.navigate('OtherProfile', { userId: productData.ownerId });
   };
 
   const handleScroll = (event: any) => {
