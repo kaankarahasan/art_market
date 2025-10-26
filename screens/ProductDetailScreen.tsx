@@ -10,6 +10,7 @@ import {
   Dimensions,
   StatusBar,
   Platform,
+  FlatList,
 } from 'react-native';
 import {
   NavigationProp,
@@ -18,13 +19,29 @@ import {
   useRoute,
   useFocusEffect,
 } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, Product } from '../routes/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useFavoriteUsers, FavoriteUser, useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
-import { getDoc, doc } from 'firebase/firestore';
+import {
+  useFavoriteUsers,
+  FavoriteUser,
+  useFavoriteItems,
+  FavoriteItem,
+} from '../contexts/FavoritesContext';
+import {
+  getDoc,
+  doc,
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+} from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import ImageViewing from 'react-native-image-viewing';
+// YENİ EKLENDİ: Güvenli alan için
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
@@ -41,14 +58,19 @@ const COLORS = {
   inactiveDot: '#C4C4C4',
 };
 
+const cardWidth = width * 0.45;
+
 const ProductDetailScreen = () => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList, 'ProductDetail'>>();
   const route = useRoute<ProductDetailRouteProp>();
   const { product } = route.params;
 
-  const { favoriteUsers, addToFavoriteUsers, removeFromFavoriteUsers } = useFavoriteUsers();
+  const { favoriteUsers, addToFavoriteUsers, removeFromFavoriteUsers } =
+    useFavoriteUsers();
   const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
 
+  const insets = useSafeAreaInsets(); // YENİ EKLENDİ
   const currentUser = auth.currentUser;
 
   const [productData, setProductData] = useState<Product>(() => {
@@ -60,28 +82,34 @@ const ProductDetailScreen = () => {
     return pd;
   });
 
-  const [ownerData, setOwnerData] = useState<{ username?: string; email?: string; profilePicture?: string } | null>(null);
+  const [ownerData, setOwnerData] = useState<{
+    username?: string;
+    email?: string;
+    profilePicture?: string;
+    fullName?: string;
+  } | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
+
+  const [otherProducts, setOtherProducts] = useState<Product[]>([]);
+  const [loadingOtherProducts, setLoadingOtherProducts] = useState(false);
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
 
   const scrollRef = useRef<ScrollView>(null);
 
-  const isFavoriteUser = favoriteUsers.some((fav: FavoriteUser) => fav.id === productData.id);
-  const isFavoriteItem = favoriteItems.some((fav: FavoriteItem) => fav.id === productData.id);
   const isOwner = productData.ownerId === currentUser?.uid;
   const dynamicTopMargin = height * 0.1;
 
-  // Sadece ProductDetailScreen açıldığında tabBar'ı gizle
+  const isFavoriteItem = favoriteItems.some(
+    (fav: FavoriteItem) => fav.id === productData.id
+  );
+
   useFocusEffect(
     useCallback(() => {
       const parent = navigation.getParent<BottomTabNavigationProp<any>>();
       const defaultStyle = parent?.getState()?.routes[0]?.params?.tabBarStyle;
-
-      // TabBar'ı gizle
       parent?.setOptions?.({ tabBarStyle: { display: 'none' } });
-
-      // Ekran kapanınca geri aç
       return () => {
         parent?.setOptions?.({ tabBarStyle: defaultStyle });
       };
@@ -89,9 +117,10 @@ const ProductDetailScreen = () => {
   );
 
   useEffect(() => {
-    const fetchOwnerData = async () => {
+    const fetchOwnerAndOtherProducts = async () => {
       if (!productData.ownerId) return;
       setLoadingOwner(true);
+      setLoadingOtherProducts(true);
       try {
         const userDoc = await getDoc(doc(db, 'users', productData.ownerId));
         if (userDoc.exists()) {
@@ -100,16 +129,37 @@ const ProductDetailScreen = () => {
             username: data.username,
             email: data.email,
             profilePicture: data.photoURL || '',
+            fullName: data.fullName,
           });
         }
+        const productsQuery = query(
+          collection(db, 'products'),
+          where('ownerId', '==', productData.ownerId),
+          limit(10)
+        );
+        const querySnapshot = await getDocs(productsQuery);
+        const fetchedProducts: Product[] = [];
+        querySnapshot.forEach((doc) => {
+          if (doc.id !== productData.id) {
+            const data: any = { id: doc.id, ...doc.data() };
+            Object.keys(data).forEach((key) => {
+              const value = data[key];
+              if (value && typeof value.toDate === 'function')
+                data[key] = value.toDate();
+            });
+            fetchedProducts.push(data as Product);
+          }
+        });
+        setOtherProducts(fetchedProducts);
       } catch (error) {
-        console.error('Kullanıcı verisi alınırken hata:', error);
+        console.error('Kullanıcı veya diğer ürünler alınırken hata:', error);
       } finally {
         setLoadingOwner(false);
+        setLoadingOtherProducts(false);
       }
     };
-    fetchOwnerData();
-  }, [productData.ownerId]);
+    fetchOwnerAndOtherProducts();
+  }, [productData.ownerId, productData.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -121,7 +171,8 @@ const ProductDetailScreen = () => {
             const data: any = { id: docSnap.id, ...docSnap.data() };
             Object.keys(data).forEach((key) => {
               const value = data[key];
-              if (value && typeof value.toDate === 'function') data[key] = value.toDate();
+              if (value && typeof value.toDate === 'function')
+                data[key] = value.toDate();
             });
             setProductData(data);
           }
@@ -152,6 +203,17 @@ const ProductDetailScreen = () => {
     else navigation.navigate('OtherProfile', { userId: productData.ownerId });
   };
 
+  // YENİ EKLENDİ: Mesaj gönderme navigasyonu
+  const handleSendMessage = () => {
+    if (!currentUser || !productData.ownerId || isOwner) {
+      return;
+    }
+    navigation.navigate('Chat', {
+      currentUserId: currentUser.uid,
+      otherUserId: productData.ownerId,
+    });
+  };
+
   const handleScroll = (event: any) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / width);
     setActiveIndex(index);
@@ -166,9 +228,15 @@ const ProductDetailScreen = () => {
 
     if (images.length === 0) {
       return (
-        <View style={[styles.imageContainer, styles.imagePlaceholder]}>
-          <Ionicons name="image-outline" size={64} color={COLORS.secondaryText} />
-          <Text style={{ color: COLORS.secondaryText, marginTop: 8 }}>Görsel bulunamadı</Text>
+        <View style={[styles.mainImageContainer, styles.imagePlaceholder]}>
+          <Ionicons
+            name="image-outline"
+            size={64}
+            color={COLORS.secondaryText}
+          />
+          <Text style={{ color: COLORS.secondaryText, marginTop: 8 }}>
+            Görsel bulunamadı
+          </Text>
         </View>
       );
     }
@@ -182,11 +250,18 @@ const ProductDetailScreen = () => {
           showsHorizontalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16}
-          style={styles.imageContainer}
+          style={styles.mainImageContainer} 
         >
           {images.map((uri, index) => (
-            <TouchableOpacity key={index} onPress={() => setIsImageViewVisible(true)}>
-              <Image source={{ uri }} style={styles.image} resizeMode="contain" />
+            <TouchableOpacity
+              key={index}
+              onPress={() => setIsImageViewVisible(true)}
+            >
+              <Image
+                source={{ uri }}
+                style={styles.mainImage}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -197,7 +272,12 @@ const ProductDetailScreen = () => {
               key={index}
               style={[
                 styles.squareDot,
-                { backgroundColor: activeIndex === index ? COLORS.activeDot : COLORS.inactiveDot },
+                {
+                  backgroundColor:
+                    activeIndex === index
+                      ? COLORS.activeDot
+                      : COLORS.inactiveDot,
+                },
               ]}
             />
           ))}
@@ -209,14 +289,99 @@ const ProductDetailScreen = () => {
   };
 
   const imagesArray = Array.isArray(productData.imageUrls)
-    ? productData.imageUrls.filter((url) => url && url.trim() !== '').map((uri) => ({ uri }))
+    ? productData.imageUrls
+        .filter((url) => url && url.trim() !== '')
+        .map((uri) => ({ uri }))
     : productData.imageUrls
     ? [{ uri: productData.imageUrls }]
     : [];
 
+  const handleFavoriteToggle = (item: Product) => {
+    const isFav = favoriteItems.some(fav => fav.id === item.id);
+    const imageUrl = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls;
+
+    const favItem: FavoriteItem = {
+      id: item.id,
+      title: item.title || 'Başlık Yok',
+      username: ownerData?.username || 'Bilinmeyen',
+      imageUrl: imageUrl || undefined, 
+      price: item.price || 0,
+      year: item.year || '',
+    };
+    isFav ? removeFavorite(item.id) : addFavorite(favItem);
+  };
+
+  const renderOtherProductItem = ({ item }: { item: Product }) => {
+    const isFavorite = favoriteItems.some(fav => fav.id === item.id);
+    const firstImage = Array.isArray(item.imageUrls)
+      ? item.imageUrls[0]
+      : item.imageUrls;
+
+    const imageHeight = cardWidth * 1.1;
+
+    const handlePress = () => {
+      const serializableProduct = {
+        ...item,
+        createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString(),
+      };
+      navigation.push('ProductDetail', { product: serializableProduct });
+    };
+
+    return (
+      <TouchableOpacity 
+        style={styles.card} 
+        onPress={handlePress}
+        activeOpacity={0.7}
+      >
+        <View style={styles.imageContainer}> 
+          {firstImage ? (
+            <Image
+              source={{ uri: firstImage || undefined }} 
+              style={[styles.image, { height: imageHeight }]} 
+            />
+          ) : (
+            <View style={[styles.noImage, { height: imageHeight }]}>
+              <Text style={styles.noImageText}>Resim yok</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.infoContainer}>
+          <View style={styles.userRow}>
+            <Text style={styles.username} numberOfLines={1}>
+              {ownerData?.fullName || 'Satıcı'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => handleFavoriteToggle(item)}
+              style={styles.favoriteButton}
+            >
+              <Ionicons 
+                name={isFavorite ? 'heart' : 'heart-outline'} 
+                size={20} 
+                color={COLORS.favoriteIcon} 
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={styles.title} numberOfLines={2}>
+            {item.title}{item.year ? `, ${item.year}` : ''}
+          </Text>
+
+          <Text style={styles.price}>
+            ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <StatusBar
+        barStyle="dark-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
       <View style={styles.topButtonsContainer}>
         <TouchableOpacity
@@ -230,7 +395,9 @@ const ProductDetailScreen = () => {
         {isOwner && (
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => navigation.navigate('UpdateProduct', { product: productData })}
+            onPress={() =>
+              navigation.navigate('UpdateProduct', { product: productData })
+            }
             activeOpacity={0.7}
           >
             <Ionicons name="create-outline" size={26} color="#333333" />
@@ -238,7 +405,12 @@ const ProductDetailScreen = () => {
         )}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        // YENİ: Butonun yer kaplaması için contentContainer'a paddingBottom eklendi
+        // 80 (buton yüksekliği) + 20 (boşluk)
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {renderImages()}
 
         <View style={styles.content}>
@@ -247,12 +419,20 @@ const ProductDetailScreen = () => {
           ) : (
             ownerData && (
               <View style={styles.ownerHeader}>
-                <TouchableOpacity onPress={goToUserProfile} style={styles.ownerContainer}>
+                <TouchableOpacity
+                  onPress={goToUserProfile}
+                  style={styles.ownerContainer}
+                >
                   {ownerData.profilePicture && (
-                    <Image source={{ uri: ownerData.profilePicture }} style={styles.ownerImage} />
+                    <Image
+                      source={{ uri: ownerData.profilePicture }}
+                      style={styles.ownerImage}
+                    />
                   )}
                   <Text style={styles.ownerName}>
-                    {ownerData.username || ownerData.email || 'Bilinmiyor'}
+                    {ownerData.fullName ||
+                      ownerData.email ||
+                      'Bilinmiyor'}
                   </Text>
                 </TouchableOpacity>
 
@@ -274,40 +454,95 @@ const ProductDetailScreen = () => {
             )
           )}
 
-          <Text style={styles.title}>
+          <Text style={styles.mainTitle}>
             {productData.title}
             {productData.year && `, ${productData.year}`}
           </Text>
 
-          <Text style={styles.price}>
+          <Text style={styles.mainPrice}>
             {productData.price ? `${productData.price} ₺` : 'Belirtilmemiş'}
           </Text>
 
           <Text style={styles.description}>
-            {productData.description || 'Bu ürün hakkında detaylı bilgi bulunmamaktadır.'}
+            {productData.description ||
+              'Bu ürün hakkında detaylı bilgi bulunmamaktadır.'}
           </Text>
 
           <View style={styles.divider} />
 
           {productData.dimensions && (
             <Text style={styles.detail}>
-              📐 Boyut: {['height', 'width', 'depth']
+              📐 Boyut:{' '}
+              {['height', 'width', 'depth']
                 .map((key) =>
-                  productData.dimensions ? productData.dimensions[key as keyof typeof productData.dimensions] : null
+                  productData.dimensions
+                    ? productData.dimensions[
+                        key as keyof typeof productData.dimensions
+                      ]
+                    : null
                 )
                 .filter(Boolean)
-                .join(' × ')} cm
+                .join(' × ')}{' '}
+              cm
             </Text>
           )}
 
-          <Text style={styles.detail}>📦 Kategori: {productData.category || 'Bilinmiyor'}</Text>
+          <Text style={styles.detail}>
+            📦 Kategori: {productData.category || 'Bilinmiyor'}
+          </Text>
           {productData.createdAt && (
             <Text style={styles.detail}>
               📅 Eklenme Tarihi: {formatDate(productData.createdAt)}
             </Text>
           )}
         </View>
+
+        {/* --- Diğer Ürünler Bölümü --- */}
+        {loadingOtherProducts ? (
+          <ActivityIndicator style={{ marginTop: 20 }} />
+        ) : (
+          <View style={styles.otherProductsContainer}>
+            <Text style={styles.otherProductsTitle}>
+              {ownerData?.fullName || 'Satıcının'} Diğer Ürünleri
+            </Text>
+
+            {otherProducts.length > 0 ? (
+              <FlatList
+                data={otherProducts}
+                renderItem={renderOtherProductItem}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 15 }}
+              />
+            ) : (
+              <Text style={styles.noOtherProductsText}>
+                Bu satıcının başka bir ürünü bulunmamaktadır.
+              </Text>
+            )}
+          </View>
+        )}
       </ScrollView>
+
+      {/* --- YENİ EKLENDİ: Sabit Mesaj Butonu --- */}
+      {!isOwner && productData.ownerId && currentUser && (
+        <View style={[
+          styles.messageButtonContainer, 
+          // Güvenli alan (çentik vs.) için alttan boşluk
+          { paddingBottom: insets.bottom > 0 ? insets.bottom + 6 : 12 }
+        ]}>
+          <TouchableOpacity 
+            style={styles.messageButton} 
+            onPress={handleSendMessage}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color={COLORS.background} />
+            <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {/* --- YENİ BÖLÜM SONU --- */}
+
 
       <ImageViewing
         images={imagesArray}
@@ -322,7 +557,12 @@ const ProductDetailScreen = () => {
                 key={idx}
                 style={[
                   styles.squareDot,
-                  { backgroundColor: imageIndex === idx ? COLORS.activeDot : COLORS.inactiveDot },
+                  {
+                    backgroundColor:
+                      imageIndex === idx
+                        ? COLORS.activeDot
+                        : COLORS.inactiveDot,
+                  },
                 ]}
               />
             ))}
@@ -339,7 +579,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   topButtonsContainer: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50,
+    top:
+      Platform.OS === 'ios'
+        ? 50
+        : StatusBar.currentHeight
+        ? StatusBar.currentHeight + 10
+        : 50,
     left: 0,
     right: 0,
     zIndex: 10,
@@ -347,23 +592,191 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 15,
   },
-  backButton: { padding: 6, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.8)' },
-  editButton: { padding: 6, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.8)' },
-  imageContainer: { height: height * 0.6 },
-  image: { width, height: height * 0.6 },
-  imagePlaceholder: { justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.card },
-  squareIndicatorContainer: { flexDirection: 'row', justifyContent: 'center', marginTop: 8, gap: 6 },
-  squareIndicatorContainerFullScreen: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingBottom: 20 },
+  backButton: {
+    padding: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+  },
+  editButton: {
+    padding: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+  },
+  mainImageContainer: { height: height * 0.6 },
+  mainImage: { width, height: height * 0.6 },
+  imagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+  },
+  squareIndicatorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  squareIndicatorContainerFullScreen: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+    paddingBottom: 20,
+  },
   squareDot: { width: 10, height: 10, borderRadius: 2 },
   content: { paddingHorizontal: 20, paddingTop: 10 },
-  ownerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  ownerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   ownerContainer: { flexDirection: 'row', alignItems: 'center' },
   ownerImage: { width: 38, height: 38, borderRadius: 19, marginRight: 10 },
   ownerName: { fontSize: 15, color: COLORS.secondaryText },
-  favoriteButtonNew: { backgroundColor: COLORS.card, padding: 8, borderRadius: 50 },
-  title: { fontSize: 22, fontWeight: '600', color: COLORS.primaryText, marginBottom: 8 },
-  price: { fontSize: 20, fontWeight: 'bold', color: COLORS.primaryText, marginBottom: 12 },
-  description: { fontSize: 16, color: COLORS.primaryText, lineHeight: 22, marginBottom: 20 },
+  favoriteButtonNew: {
+    backgroundColor: COLORS.card,
+    padding: 8,
+    borderRadius: 50,
+  },
+  mainTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: COLORS.primaryText,
+    marginBottom: 8,
+  },
+  mainPrice: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.primaryText,
+    marginBottom: 12,
+  },
+  description: {
+    fontSize: 16,
+    color: COLORS.primaryText,
+    lineHeight: 22,
+    marginBottom: 20,
+  },
   detail: { fontSize: 15, color: COLORS.secondaryText, marginBottom: 6 },
-  divider: { height: 1, backgroundColor: COLORS.divider, marginVertical: 16, opacity: 0.2 },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.divider,
+    marginVertical: 16,
+    opacity: 0.2,
+  },
+  otherProductsContainer: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+    paddingTop: 16,
+    minHeight: 100,
+  },
+  otherProductsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.primaryText,
+    marginBottom: 12,
+    paddingHorizontal: 20,
+  },
+  noOtherProductsText: {
+    fontSize: 14,
+    color: COLORS.secondaryText,
+    paddingHorizontal: 20,
+    fontStyle: 'italic',
+  },
+
+  // --- KART STİLLERİ ---
+  card: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.card,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+    width: cardWidth,
+    marginRight: 10,
+    marginLeft: 5,
+  },
+  imageContainer: {
+    padding: 10,
+    height: 'auto',
+  },
+  image: {
+    width: '100%',
+    resizeMode: 'cover',
+    borderRadius: 8,
+  },
+  noImage: {
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E8E8E8',
+    borderRadius: 8,
+  },
+  noImageText: {
+    color: COLORS.secondaryText,
+  },
+  infoContainer: {
+    padding: 12,
+    paddingTop: 0,
+    backgroundColor: COLORS.card,
+  },
+  userRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  username: {
+    fontSize: 13,
+    color: COLORS.primaryText,
+    flex: 1,
+  },
+  favoriteButton: {
+    padding: 2,
+  },
+  title: {
+    fontSize: 15,
+    color: COLORS.secondaryText,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  price: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: COLORS.primaryText,
+  },
+
+  // --- YENİ EKLENDİ: Mesaj Butonu Stilleri ---
+  messageButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.background, 
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    // paddingBottom, 'insets' ile inline olarak veriliyor
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.card,
+  },
+  messageButton: {
+    backgroundColor: COLORS.primaryText, // Siyah buton
+    paddingVertical: 14,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  messageButtonText: {
+    color: COLORS.background, // Beyaz yazı
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
 });

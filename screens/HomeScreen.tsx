@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react'; // useEffect eklendi
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
 import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
@@ -35,26 +35,56 @@ const HomeScreen = () => {
   const { colors } = useThemeContext();
   const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
 
+  // Dinamik tab bar yüksekliği
+  const tabBarHeight = 60 + insets.bottom;
+
+  // HomeScreen her görüntülendiğinde Tab Bar'ı doğru stile getirir.
+  useFocusEffect(
+    useCallback(() => {
+      navigation.getParent()?.setOptions({
+        tabBarStyle: {
+            display: 'flex',
+            position: 'absolute',
+            backgroundColor: '#FFFFFF',
+            borderTopWidth: 1,
+            borderTopColor: '#F0F0F0',
+            height: tabBarHeight,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+            paddingTop: 8,
+           }
+      });
+    }, [navigation, insets.bottom, tabBarHeight])
+  );
+
   const fetchData = async () => {
     try {
-      const productSnap = await getDocs(
-        query(collection(db, 'products'), where('isSold', '==', false), limit(50))
-      );
-      const productList = productSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProducts(shuffleArray(productList));
+       const [productSnap, usersSnap] = await Promise.all([
+        getDocs(
+            query(collection(db, 'products'), where('isSold', '==', false), limit(50))
+        ),
+        getDocs(collection(db, 'users'))
+      ]);
 
-      const usersSnap = await getDocs(collection(db, 'users'));
       const userNamesMap: { [key: string]: string } = {};
       usersSnap.docs.forEach(userDoc => {
         const userData = userDoc.data();
         userNamesMap[userData.username] = userData.fullName || userData.username;
       });
       setUserNames(userNamesMap);
+
+      const productList = productSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
+        }));
+      setProducts(shuffleArray(productList));
+
     } catch (error) {
       console.error('Veriler alınırken hata:', error);
     }
   };
 
+  // Veri çekme efekti
   useFocusEffect(
     useCallback(() => {
       const loadData = async () => {
@@ -65,6 +95,7 @@ const HomeScreen = () => {
       loadData();
     }, [])
   );
+
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -81,20 +112,30 @@ const HomeScreen = () => {
   };
 
   const handleImageLoad = (productId: string, width: number, height: number) => {
-    const imageWidth = columnWidth - 20;
-    const aspectRatio = height / width;
-    const calculatedHeight = imageWidth * aspectRatio;
-    setImageHeights(prev => ({ ...prev, [productId]: calculatedHeight }));
+    const imageWidth = columnWidth - 20; // card padding (10+10)
+    if (width > 0) {
+        const aspectRatio = height / width;
+        const calculatedHeight = imageWidth * aspectRatio;
+        const clampedHeight = Math.max(100, Math.min(calculatedHeight, screenWidth * 1.2));
+        setImageHeights(prev => ({ ...prev, [productId]: clampedHeight }));
+    } else {
+        setImageHeights(prev => ({ ...prev, [productId]: 200 }));
+    }
   };
+
 
   const distributeProducts = () => {
     const leftColumn: any[] = [];
     const rightColumn: any[] = [];
     let leftHeight = 0;
     let rightHeight = 0;
+
     products.forEach((product) => {
       const imageHeight = imageHeights[product.id] || 250;
-      const cardHeight = imageHeight + 110;
+      // GÜNCELLEME: Orijinal koddaki info alanı tahmini (padding hariç ~70-90 idi, padding ile ~110)
+      const infoHeightEstimate = 12 + 15 + 6 + 20 + 8 + 20 + 12; // padding + username + margin + title + margin + price + padding
+      const cardHeight = imageHeight + infoHeightEstimate;
+
       if (leftHeight <= rightHeight) {
         leftColumn.push(product);
         leftHeight += cardHeight;
@@ -110,17 +151,21 @@ const HomeScreen = () => {
 
   const handleFavoriteToggle = (item: any) => {
     const isFav = favoriteItems.some(fav => fav.id === item.id);
+    const imageUrl = item.imageUrls?.[0] || item.imageUrl || null;
+
     const favItem: FavoriteItem = {
       id: item.id,
-      title: item.title,
-      username: item.username,
-      imageUrl: item.imageUrls?.[0] || item.imageUrl,
-      price: item.price,
-      year: item.year,
+      title: item.title || 'Başlık Yok',
+      username: item.username || 'Bilinmeyen',
+      imageUrl: imageUrl,
+      price: item.price || 0,
+      year: item.year || '',
     };
     isFav ? removeFavorite(item.id) : addFavorite(favItem);
   };
 
+  // --- GÜNCELLEME: renderProductCard Orijinal Haline Döndürüldü ---
+  // (createdAt için handlePress eklendi)
   const renderProductCard = (item: any) => {
     const isFavorite = favoriteItems.some(fav => fav.id === item.id);
     const imageHeight = imageHeights[item.id] || 250;
@@ -128,10 +173,20 @@ const HomeScreen = () => {
 
     const displayName = userNames[item.username] || item.username || 'Bilinmeyen';
 
+     // Non-serializable hatasını önlemek için handlePress
+     const handlePress = () => {
+      const serializableProduct = {
+        ...item,
+        // createdAt'in Date objesi olup olmadığını kontrol et ve string'e çevir
+        createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString(), // Eğer Date değilse şimdiki zamanı kullan
+      };
+      navigation.navigate('ProductDetail', { product: serializableProduct });
+    };
+
     return (
       <View key={item.id} style={[styles.card, { width: columnWidth }]}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('ProductDetail', { product: item })}
+          onPress={handlePress} // handlePress kullanılıyor
           activeOpacity={0.7}
         >
           <View style={styles.imageContainer}>
@@ -146,6 +201,7 @@ const HomeScreen = () => {
               />
             ) : (
               <View style={[styles.image, styles.noImage, { height: 200 }]}>
+                {/* Orijinalde Text kullanılıyordu */}
                 <Text style={styles.noImageText}>Resim yok</Text>
               </View>
             )}
@@ -176,6 +232,8 @@ const HomeScreen = () => {
       </View>
     );
   };
+  // --- GÜNCELLEME Sonu ---
+
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -205,6 +263,7 @@ const HomeScreen = () => {
               colors={['#0A0A0A']}
             />
           }
+          contentContainerStyle={{ paddingBottom: tabBarHeight }}
         >
           <View style={styles.masonryContainer}>
             <View style={styles.column}>
@@ -222,6 +281,7 @@ const HomeScreen = () => {
 
 export default HomeScreen;
 
+// --- GÜNCELLEME: Stiller Orijinal Haline Döndürüldü ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   searchWrapper: {
@@ -242,37 +302,91 @@ const styles = StyleSheet.create({
     height: 48,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.15, // Orijinal opaklık
     shadowRadius: 6,
-    elevation: 5,
+    elevation: 5, // Orijinal elevation
+    // Orijinalde border yoktu
   },
   searchIcon: { marginRight: 10 },
-  searchPlaceholder: { 
-    fontSize: 16, 
+  searchPlaceholder: {
+    fontSize: 16,
     color: '#999',
   },
-  masonryContainer: { flexDirection: 'row', paddingHorizontal: 10, paddingBottom: 30 },
-  column: { flex: 1, paddingHorizontal: 5 },
-  card: {
+  masonryContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 10,
+    // Orijinalde paddingBottom: 30 vardı, ancak ScrollView'a taşındı
+  },
+  column: {
+    flex: 1,
+    paddingHorizontal: 5,
+  },
+  card: { // Orijinal card stili
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 12,
-    backgroundColor: '#F4F4F4',
+    backgroundColor: '#F4F4F4', // Orijinal arka plan
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
+    // Orijinalde border yoktu
   },
-  imageContainer: { padding: 10 },
-  image: { width: '100%', resizeMode: 'contain', borderRadius: 8 },
-  noImage: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8E8E8' },
-  noImageText: { color: '#6E6E6E' },
-  infoContainer: { padding: 12, paddingTop: 0, backgroundColor: '#F4F4F4' },
-  userRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  username: { fontSize: 13, color: '#0A0A0A', flex: 1 },
-  favoriteButton: { padding: 2 },
-  title: { fontSize: 15, color: '#6E6E6E', marginBottom: 8, lineHeight: 20 },
-  price: { fontSize: 17, fontWeight: 'bold', color: '#0A0A0A' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  imageContainer: { // Orijinal imageContainer stili
+    padding: 10
+  },
+  image: { // Orijinal image stili
+    width: '100%',
+    resizeMode: 'contain', // Orijinal resizeMode
+    borderRadius: 8 // Orijinal border radius
+  },
+  noImage: { // Orijinal noImage stili
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E8E8E8'
+  },
+  noImageText: { // Orijinal noImageText stili
+    color: '#6E6E6E'
+  },
+  infoContainer: { // Orijinal infoContainer stili
+    padding: 12,
+    paddingTop: 0, // Orijinalde paddingTop vardı
+    backgroundColor: '#F4F4F4' // Orijinal arka plan
+  },
+  userRow: { // Orijinal userRow stili
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6
+  },
+  username: { // Orijinal username stili
+    fontSize: 13,
+    color: '#0A0A0A', // Orijinal renk
+    flex: 1
+    // Orijinalde marginRight yoktu
+  },
+  favoriteButton: { // Orijinal favoriteButton stili
+    padding: 2
+    // Orijinalde marginLeft yoktu
+   },
+  title: { // Orijinal title stili
+    fontSize: 15,
+    color: '#6E6E6E', // Orijinal renk
+    marginBottom: 8,
+    lineHeight: 20 // Orijinal lineHeight
+    // Orijinalde fontWeight yoktu
+  },
+  price: { // Orijinal price stili
+    fontSize: 17, // Orijinal boyut
+    fontWeight: 'bold', // Orijinal kalınlık
+    color: '#0A0A0A'
+  },
+  loadingContainer: {
+     flex: 1,
+     justifyContent: 'center',
+     alignItems: 'center',
+     backgroundColor: '#FFFFFF'
+    },
 });
+// --- GÜNCELLEME Sonu ---
