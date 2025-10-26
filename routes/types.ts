@@ -23,6 +23,7 @@ export type Product = {
   isSold?: boolean;
   createdAt?: any;
   updatedAt?: any;
+  viewCount?: number; // <--- BU SATIRI EKLEYİN
 };
 
 // Root Stack Param Listesi

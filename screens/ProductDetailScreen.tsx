@@ -472,7 +472,7 @@ const ProductDetailScreen = () => {
 
           {productData.dimensions && (
             <Text style={styles.detail}>
-              📐 Boyut:{' '}
+               Boyut:{' '}
               {['height', 'width', 'depth']
                 .map((key) =>
                   productData.dimensions
@@ -488,11 +488,11 @@ const ProductDetailScreen = () => {
           )}
 
           <Text style={styles.detail}>
-            📦 Kategori: {productData.category || 'Bilinmiyor'}
+             Kategori: {productData.category || 'Bilinmiyor'}
           </Text>
           {productData.createdAt && (
             <Text style={styles.detail}>
-              📅 Eklenme Tarihi: {formatDate(productData.createdAt)}
+             Eklenme Tarihi: {formatDate(productData.createdAt)}
             </Text>
           )}
         </View>
