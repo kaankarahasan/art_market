@@ -25,6 +25,8 @@ import TermsOfUseScreen from './screens/TermsOfUseScreen';
 import PrivacyFollowerCommentSettingsScreen from './screens/PrivacyFollowerCommentSettingsScreen';
 import ChatScreen from './screens/ChatScreen';
 import SearchScreen from './screens/SearchScreen';
+// 1. ADIM: Yeni ekranı import edin
+import PasswordResetScreen from './screens/PasswordResetScreen'; 
 
 import { RootStackParamList } from './routes/types';
 import { FavoriteUsersProvider } from './contexts/FavoritesContext';
@@ -45,6 +47,10 @@ export default function App() {
             <Stack.Navigator initialRouteName="Login">
               <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
               <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+              
+              {/* 2. ADIM: Yeni ekranı buraya ekleyin */}
+              <Stack.Screen name="PasswordReset" component={PasswordResetScreen} options={{ headerShown: false }} />
+
               <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
               <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
               <Stack.Screen name="Followers" component={FollowersScreen} />

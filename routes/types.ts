@@ -30,6 +30,7 @@ export type Product = {
 export type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
+  PasswordReset: undefined;
   Main: undefined;
   Profile: { userId?: string };
   Followers: { userId: string };

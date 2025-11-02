@@ -20,7 +20,7 @@
     "@react-navigation/native": "^6.1.8",
     "@react-navigation/native-stack": "^6.9.22",
     "dayjs": "^1.11.18",
-    "expo": "54.0.20",
+    "expo": "54.0.21",
     "expo-file-system": "~19.0.17",
     "expo-image-picker": "~17.0.8",
     "expo-media-library": "~18.2.0",

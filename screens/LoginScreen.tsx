@@ -24,10 +24,12 @@ import { useThemeContext } from '../contexts/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
+// 1. RootStackParamList güncellendi
 type RootStackParamList = {
   Login: undefined;
   Main: undefined;
   SignUp: undefined;
+  PasswordReset: undefined; // Eklendi
   ProductDetail: {
     product: { id: string; title: string; image: string; seller?: string; description?: string };
   };
@@ -222,6 +224,14 @@ const IOSLoginScreen = ({
                     </TouchableOpacity>
                   </View>
 
+                  {/* 2. Şifremi Unuttum Butonu Eklendi (iOS) */}
+                  <TouchableOpacity 
+                    style={styles.forgotPasswordButton}
+                    onPress={() => navigation.navigate('PasswordReset')}
+                  >
+                    <Text style={styles.forgotPasswordText}>Forgot Your Password?</Text>
+                  </TouchableOpacity>
+
                   <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
                     <View style={styles.loginButton}>
                       <Text style={styles.loginButtonText}>
@@ -351,6 +361,14 @@ const AndroidLoginScreen = ({
                   </TouchableOpacity>
                 </View>
 
+                {/* 3. Şifremi Unuttum Butonu Eklendi (Android) */}
+                <TouchableOpacity 
+                  style={styles.forgotPasswordButton}
+                  onPress={() => navigation.navigate('PasswordReset')}
+                >
+                  <Text style={styles.forgotPasswordText}>Forgot Your Password?</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
                   <View style={styles.loginButton}>
                     <Text style={styles.loginButtonText}>
@@ -427,4 +445,16 @@ const styles = StyleSheet.create({
   registerContainer: { justifyContent: 'center', alignItems: 'center', marginTop: 10 },
   registerText: { fontSize: 14, color: '#0A0A0A' },
   registerLink: { fontWeight: 'bold', color: '#333333' },
+  
+  // 4. Yeni stiller eklendi
+  forgotPasswordButton: {
+    alignSelf: 'flex-end', // Sağa yaslar
+    marginTop: 4,      // Üstten boşluk (inputContainer'daki gap'e ek olarak)
+    marginBottom: 0,     // Alttan boşluk (loginButton'a olan mesafeyi ayarlar)
+  },
+  forgotPasswordText: {
+    color: '#333333',     // registerLink ile aynı renk
+    fontSize: 14,
+    fontWeight: 'bold',  // registerLink ile aynı font ağırlığı
+  },
 });
