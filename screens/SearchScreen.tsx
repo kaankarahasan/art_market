@@ -83,7 +83,6 @@ type UserSearchResult = {
     photoURL?: string;
 };
 
-// Boyut ayrıştırma fonksiyonu kaldırıldı
 
 const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -100,6 +99,8 @@ const SearchScreen = () => {
   const [newProducts, setNewProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [filterModalVisible, setFilterModalVisible] = useState<boolean>(false);
+  const [sortModalVisible, setSortModalVisible] = useState<boolean>(false);
+  const [selectedSort, setSelectedSort] = useState<string | null>(null);
   const [filteredLeftColumn, setFilteredLeftColumn] = useState<Product[]>([]);
   const [filteredRightColumn, setFilteredRightColumn] = useState<Product[]>([]);
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
@@ -313,7 +314,8 @@ const SearchScreen = () => {
 
       // TODO: Diğer modal filtrelerini buraya ekle (selectedArtworkType vs.)
       // if (selectedArtworkType) { ... }
-
+    
+      currentlyFilteredProducts = sortProducts(currentlyFilteredProducts);
       setFinalFilteredProducts(currentlyFilteredProducts);
       setFilteringLoader(false);
 
@@ -343,6 +345,31 @@ const SearchScreen = () => {
   const clearFilters = () => {
      setSelectedPriceFilter(null); setMinPrice(''); setMaxPrice(''); setSelectedArtworkType(null); setSelectedStyle(null); setSelectedTheme(null); setSelectedTechnique(null);
      setFilterWidth(''); setFilterHeight(''); setFilterDepth('');
+  };
+
+  const sortProducts = (productsToSort: Product[]): Product[] => {
+    if (!selectedSort) return productsToSort;
+    const sorted = [...productsToSort];
+    switch (selectedSort) {
+      case 'price_high':
+        return sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
+      case 'price_low':
+        return sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
+      case 'date_new':
+        return sorted.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+      case 'date_old':
+        return sorted.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
+      case 'year_new':
+        return sorted.sort((a, b) => parseInt(b.year?.toString() || '0', 10) - parseInt(a.year?.toString() || '0', 10));
+      case 'year_old':
+        return sorted.sort((a, b) => parseInt(a.year?.toString() || '9999', 10) - parseInt(b.year?.toString() || '9999', 10));
+      case 'name_az':
+        return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'tr'));
+      case 'name_za':
+        return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '', 'tr'));
+      default:
+        return sorted;
+    }
   };
 
   // hasActiveFilters useCallback içinde tanımlandı
@@ -384,6 +411,9 @@ const SearchScreen = () => {
            <TextInput ref={inputRef} style={styles.input} placeholder="İsim, kategori, yıl, fiyat..." /* Boyut kaldırıldı */ placeholderTextColor={COLORS.secondaryText} value={searchQuery} onChangeText={setSearchQuery} returnKeyType="search" onSubmitEditing={handleSearchSubmit} autoFocus={false} />
            {searchQuery.length > 0 && ( <TouchableOpacity style={styles.clearButton} onPress={clearSearch}><Ionicons name="close-circle" size={20} color={COLORS.secondaryText} /></TouchableOpacity> )}
          </View>
+         <TouchableOpacity style={styles.sortButton} onPress={() => setSortModalVisible(true)}>
+            <Ionicons name="swap-vertical-outline" size={24} color={COLORS.text} />
+          </TouchableOpacity>
          <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)} >
            <Ionicons name="options-outline" size={24} color={COLORS.text} />
          </TouchableOpacity>
@@ -471,6 +501,53 @@ const SearchScreen = () => {
           )}
         </ScrollView>
       )}
+
+      <Modal
+        visible={sortModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setSortModalVisible(false)}
+        statusBarTranslucent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.sortModalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sıralama</Text>
+              <TouchableOpacity onPress={() => setSortModalVisible(false)}>
+                <Ionicons name="close" size={28} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.sortModalContent}>
+              {[
+                { key: 'price_high', label: 'Fiyat: Yüksekten Düşüğe' },
+                { key: 'price_low', label: 'Fiyat: Düşükten Yükseğe' },
+                { key: 'date_new', label: 'Tarih: Önce Yeni' },
+                { key: 'date_old', label: 'Tarih: Önce Eski' },
+                { key: 'year_new', label: 'Yıl: Önce Yeni' },
+                { key: 'year_old', label: 'Yıl: Önce Eski' },
+                { key: 'name_az', label: 'İsim: A-Z' },
+                { key: 'name_za', label: 'İsim: Z-A' },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[styles.sortOption, selectedSort === item.key && styles.sortOptionSelected]}
+                  onPress={() => setSelectedSort(item.key)}
+                >
+                  <Text style={[styles.sortOptionText, selectedSort === item.key && styles.sortOptionTextSelected]}>
+                    {item.label}
+                  </Text>
+                  {selectedSort === item.key && <Ionicons name="checkmark" size={22} color={COLORS.background} />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.sortModalFooter}>
+              <TouchableOpacity style={styles.sortCloseButton} onPress={() => setSortModalVisible(false)}>
+                <Text style={styles.sortCloseButtonText}>Kapat</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* --- Filtre Modalı (Boyut inputları güncellendi, animationType="fade") --- */}
       <Modal
@@ -625,4 +702,15 @@ const styles = StyleSheet.create({
   clearFiltersTextModal: { fontSize: 16, fontWeight: '600', color: COLORS.text },
   applyFiltersButton: { flex: 1, height: 50, borderRadius: 12, backgroundColor: COLORS.text, alignItems: 'center', justifyContent: 'center' },
   applyFiltersText: { fontSize: 16, fontWeight: '600', color: COLORS.background },
+
+  sortButton: { marginLeft: 8, padding: 8, backgroundColor: COLORS.card, borderRadius: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  sortModalContainer: { backgroundColor: COLORS.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '60%' },
+  sortModalContent: { paddingHorizontal: 20, paddingTop: 10 },
+  sortOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 16, marginBottom: 8, borderRadius: 12, backgroundColor: COLORS.card },
+  sortOptionSelected: { backgroundColor: COLORS.text },
+  sortOptionText: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  sortOptionTextSelected: { color: COLORS.background },
+  sortModalFooter: { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1, borderTopColor: COLORS.card },
+  sortCloseButton: { height: 50, borderRadius: 12, backgroundColor: COLORS.text, alignItems: 'center', justifyContent: 'center' },
+  sortCloseButtonText: { fontSize: 16, fontWeight: '600', color: COLORS.background },
 });
