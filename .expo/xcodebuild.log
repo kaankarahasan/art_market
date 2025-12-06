@@ -1,0 +1,3 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace /Users/kaankarahasan/Desktop/Project/app_market/ios/FireBase.xcworkspace -configuration Debug -scheme FireBase -destination id=EA07F622-A954-41DB-BA7A-13FE9468B4B7
+

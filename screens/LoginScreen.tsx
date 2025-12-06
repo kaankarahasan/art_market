@@ -15,21 +15,28 @@ import {
   Keyboard,
   Easing,
 } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase';
+// Firebase ve Google Sign-In Importları
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { auth, db } from '../firebase';
+
+// İkonlar
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { AntDesign } from '@expo/vector-icons'; // Google logosu için eklendi
+
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useThemeContext } from '../contexts/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
-// 1. RootStackParamList güncellendi
+// 1. RootStackParamList
 type RootStackParamList = {
   Login: undefined;
   Main: undefined;
   SignUp: undefined;
-  PasswordReset: undefined; // Eklendi
+  PasswordReset: undefined;
   ProductDetail: {
     product: { id: string; title: string; image: string; seller?: string; description?: string };
   };
@@ -49,6 +56,75 @@ const LoginScreen = () => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // --- GOOGLE SIGN-IN AYARLARI ---
+  useEffect(() => {
+    GoogleSignin.configure({
+      // DİKKAT: Buraya Firebase Console -> Authentication -> Google -> Web Client ID'yi yapıştır.
+      webClientId: '955753428630-5rk8spap7hc4biqhintbqnl8tq832pkf.apps.googleusercontent.com',
+    });
+  }, []);
+
+  // --- GÜNCELLENMİŞ GOOGLE GİRİŞ FONKSİYONU ---
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+    try {
+      // 1. Play Services kontrolü
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      // 2. Giriş Yap
+      const response = await GoogleSignin.signIn();
+
+      // DÜZELTME BURADA:
+      // TypeScript hatasını çözmek için sadece 'data' içinden okuyoruz.
+      // response.data?.idToken yeni standarttır.
+      const idToken = response.data?.idToken;
+
+      if (!idToken) {
+        throw new Error('Google ID Token bulunamadı.');
+      }
+
+      // 3. Firebase Credential oluştur
+      const googleCredential = GoogleAuthProvider.credential(idToken);
+
+      // 4. Firebase'e giriş yap
+      // 4. Firebase'e giriş yap
+      const userCredential = await signInWithCredential(auth, googleCredential);
+      const user = userCredential.user;
+
+      // 5. Firestore'da kullanıcı kaydı var mı kontrol et
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        // Kayıt yoksa oluştur (SignUp mantığıyla aynı)
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          email: user.email,
+          fullName: user.displayName || 'Unnamed User',
+          username: user.email?.split('@')[0] || 'user_' + user.uid.substring(0, 5),
+          profilePicture: user.photoURL || '',
+          bio: '',
+          followersCount: 0,
+          followingCount: 0,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      Alert.alert('Giriş Başarılı', `Hoş geldin, ${userCredential.user.displayName || userCredential.user.email}`);
+      navigation.replace('Main');
+
+    } catch (error: any) {
+      // Kullanıcı vazgeçerse (iptal ederse) hata mesajı gösterme
+      if (error.code !== 'SIGN_IN_CANCELLED') {
+        console.error("Google Sign-In Hatası:", error);
+        setErrorMessage('Google girişi başarısız: ' + (error.message || error.toString()));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const togglePasswordVisibility = () => setIsPasswordVisible(!isPasswordVisible);
 
@@ -120,7 +196,7 @@ const LoginScreen = () => {
 
   // Platform kontrolü
   if (Platform.OS === 'ios') {
-    return <IOSLoginScreen 
+    return <IOSLoginScreen
       email={email}
       setEmail={setEmail}
       password={password}
@@ -128,6 +204,7 @@ const LoginScreen = () => {
       isPasswordVisible={isPasswordVisible}
       togglePasswordVisibility={togglePasswordVisibility}
       handleLogin={handleLogin}
+      handleGoogleLogin={handleGoogleLogin} // Prop olarak gönderildi
       isLoading={isLoading}
       errorMessage={errorMessage}
       navigation={navigation}
@@ -137,7 +214,7 @@ const LoginScreen = () => {
     />;
   }
 
-  return <AndroidLoginScreen 
+  return <AndroidLoginScreen
     email={email}
     setEmail={setEmail}
     password={password}
@@ -145,6 +222,7 @@ const LoginScreen = () => {
     isPasswordVisible={isPasswordVisible}
     togglePasswordVisibility={togglePasswordVisibility}
     handleLogin={handleLogin}
+    handleGoogleLogin={handleGoogleLogin} // Prop olarak gönderildi
     isLoading={isLoading}
     errorMessage={errorMessage}
     navigation={navigation}
@@ -155,10 +233,10 @@ const LoginScreen = () => {
 };
 
 // 🍎 iOS Login Screen
-const IOSLoginScreen = ({ 
-  email, setEmail, password, setPassword, isPasswordVisible, 
-  togglePasswordVisibility, handleLogin, isLoading, errorMessage, 
-  navigation, translateX, translateY, scaleAnim 
+const IOSLoginScreen = ({
+  email, setEmail, password, setPassword, isPasswordVisible,
+  togglePasswordVisibility, handleLogin, handleGoogleLogin, // Parametre eklendi
+  isLoading, errorMessage, navigation, translateX, translateY, scaleAnim
 }: any) => {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -224,19 +302,27 @@ const IOSLoginScreen = ({
                     </TouchableOpacity>
                   </View>
 
-                  {/* 2. Şifremi Unuttum Butonu Eklendi (iOS) */}
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.forgotPasswordButton}
                     onPress={() => navigation.navigate('PasswordReset')}
                   >
                     <Text style={styles.forgotPasswordText}>Forgot Your Password?</Text>
                   </TouchableOpacity>
 
+                  {/* Email Login Button */}
                   <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
                     <View style={styles.loginButton}>
                       <Text style={styles.loginButtonText}>
                         {isLoading ? 'Logging in...' : 'Login'}
                       </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* GOOGLE LOGIN BUTTON (iOS) */}
+                  <TouchableOpacity onPress={handleGoogleLogin} disabled={isLoading} style={{ marginTop: 12 }}>
+                    <View style={styles.googleButton}>
+                      <AntDesign name="google" size={20} color="#DB4437" style={{ marginRight: 10 }} />
+                      <Text style={styles.googleButtonText}>Sign in with Google</Text>
                     </View>
                   </TouchableOpacity>
 
@@ -265,10 +351,10 @@ const IOSLoginScreen = ({
 };
 
 // 🤖 Android Login Screen
-const AndroidLoginScreen = ({ 
-  email, setEmail, password, setPassword, isPasswordVisible, 
-  togglePasswordVisibility, handleLogin, isLoading, errorMessage, 
-  navigation, translateX, translateY, scaleAnim 
+const AndroidLoginScreen = ({
+  email, setEmail, password, setPassword, isPasswordVisible,
+  togglePasswordVisibility, handleLogin, handleGoogleLogin, // Parametre eklendi
+  isLoading, errorMessage, navigation, translateX, translateY, scaleAnim
 }: any) => {
   const translateYAnim = useRef(new Animated.Value(0)).current;
 
@@ -315,9 +401,9 @@ const AndroidLoginScreen = ({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.cardContainer, 
+              styles.cardContainer,
               { transform: [{ translateY: translateYAnim }] }
             ]}
           >
@@ -361,19 +447,27 @@ const AndroidLoginScreen = ({
                   </TouchableOpacity>
                 </View>
 
-                {/* 3. Şifremi Unuttum Butonu Eklendi (Android) */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.forgotPasswordButton}
                   onPress={() => navigation.navigate('PasswordReset')}
                 >
                   <Text style={styles.forgotPasswordText}>Forgot Your Password?</Text>
                 </TouchableOpacity>
 
+                {/* Email Login Button */}
                 <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
                   <View style={styles.loginButton}>
                     <Text style={styles.loginButtonText}>
                       {isLoading ? 'Logging in...' : 'Login'}
                     </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* GOOGLE LOGIN BUTTON (Android) */}
+                <TouchableOpacity onPress={handleGoogleLogin} disabled={isLoading} style={{ marginTop: 12 }}>
+                  <View style={styles.googleButton}>
+                    <AntDesign name="google" size={20} color="#DB4437" style={{ marginRight: 10 }} />
+                    <Text style={styles.googleButtonText}>Sign in with Google</Text>
                   </View>
                 </TouchableOpacity>
 
@@ -445,16 +539,37 @@ const styles = StyleSheet.create({
   registerContainer: { justifyContent: 'center', alignItems: 'center', marginTop: 10 },
   registerText: { fontSize: 14, color: '#0A0A0A' },
   registerLink: { fontWeight: 'bold', color: '#333333' },
-  
-  // 4. Yeni stiller eklendi
+
   forgotPasswordButton: {
-    alignSelf: 'flex-end', // Sağa yaslar
-    marginTop: 4,      // Üstten boşluk (inputContainer'daki gap'e ek olarak)
-    marginBottom: 0,     // Alttan boşluk (loginButton'a olan mesafeyi ayarlar)
+    alignSelf: 'flex-end',
+    marginTop: 4,
+    marginBottom: 0,
   },
   forgotPasswordText: {
-    color: '#333333',     // registerLink ile aynı renk
+    color: '#333333',
     fontSize: 14,
-    fontWeight: 'bold',  // registerLink ile aynı font ağırlığı
+    fontWeight: 'bold',
+  },
+
+  // --- GOOGLE BUTTON STYLE ---
+  googleButton: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  googleButtonText: {
+    color: '#333333',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -1,0 +1,6 @@
+2025-11-23 20:01:34.253 xcodebuild[21136:259303] Writing error result bundle to /var/folders/fp/twr40fc53k308c47nmnhrcmc0000gn/T/ResultBundle_2025-23-11_20-01-0034.xcresult
+xcodebuild: error: Unable to find a destination matching the provided destination specifier:
+		{ id:EA07F622-A954-41DB-BA7A-13FE9468B4B7 }
+
+	Ineligible destinations for the "FireBase" scheme:
+		{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device, error:iOS 26.0 is not installed. Please download and install the platform from Xcode > Settings > Components. }

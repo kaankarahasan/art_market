@@ -1,7 +1,9 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+// @ts-ignore
+import { initializeAuth, getReactNativePersistence, Auth, getAuth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
 // Firebase yapılandırması - HANGİ PROJEYİ KULLANIYORSANIZ O CONFIG'İ AÇIN
 const firebaseConfig = {
@@ -28,8 +30,10 @@ const firebaseConfig = {
 // Firebase uygulamasını başlat
 const app: FirebaseApp = initializeApp(firebaseConfig);
 
-// Authentication - React Native otomatik olarak AsyncStorage kullanır
-export const auth: Auth = getAuth(app);
+// Authentication - Initialize with AsyncStorage for persistence
+export const auth: Auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+});
 
 // Firestore - React Native için BASİT yapılandırma
 // persistentLocalCache ve persistentMultipleTabManager KULLANMAYIN!

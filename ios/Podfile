@@ -1,0 +1,56 @@
+require File.join(File.dirname(`node -p "require.resolve('expo/package.json')"`), "scripts/autolinking")
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+
+# 1. Firebase için Statik Framework Ayarı
+$RNFirebaseAsStaticFramework = true
+
+platform :ios, '15.1'
+prepare_react_native_project!
+
+target 'FireBase' do
+  use_expo_modules!
+  config = use_native_modules!
+
+  # 2. Framework Linkage
+  use_frameworks! :linkage => :static
+
+  flags = get_default_flags()
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    :hermes_enabled => flags[:hermes_enabled],
+    :fabric_enabled => flags[:fabric_enabled],
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
+
+  # --- Test Bölümü Kaldırıldı ---
+
+  # 3. Özel Yama Bloğu (Header Search Path Hatası İçin)
+  post_install do |installer|
+    react_native_post_install(installer)
+    
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        # M1/M2 uyumluluğu
+        # M1/M2 uyumluluğu - KALDIRILDI: Bu satir Apple Silicon cihazlarda simulator hatasina sebep olabilir
+        # config.build_settings["EXCLUDED_ARCHS[sdk=iphonesimulator*]"] = "arm64"
+        
+        # Uyarı kirliliğini önle
+        config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+        
+        # --- RNFBStorage Hatası İçin Kesin Çözüm ---
+        if target.name == 'RNFBStorage'
+          search_paths = config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited)'
+          search_paths_array = search_paths.is_a?(Array) ? search_paths : search_paths.split(' ')
+          
+          unless search_paths_array.any? { |p| p.include?("FirebaseAuth") }
+            search_paths_array << "\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAuth\""
+          end
+          
+          config.build_settings['HEADER_SEARCH_PATHS'] = search_paths_array
+        end
+        # -------------------------------------------
+      end
+    end
+  end
+end

@@ -19,7 +19,8 @@
           "NSAllowsArbitraryLoads": true
         }
       },
-      "bundleIdentifier": "com.kaankarahasan.FireBase"
+      "bundleIdentifier": "com.kaankarahasan.FireBase",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -34,7 +35,8 @@
           "CAMERA"
         ]
       },
-      "package": "com.kaankarahasan.FireBase"
+      "package": "com.kaankarahasan.FireBase",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
