@@ -19,10 +19,13 @@ import { auth, db, storage } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { v4 as uuidv4 } from 'uuid';
 import { ThemeContext } from '../contexts/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 const AddProductScreen = () => {
   const { isDarkTheme } = useContext(ThemeContext);
   const styles = getStyles(isDarkTheme);
+  const insets = useSafeAreaInsets();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -184,151 +187,169 @@ const AddProductScreen = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Yeni Eser Ekle</Text>
-
-      <View style={styles.card}>
-        <Text style={styles.label}>Ürün Adı</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ürün adı girin"
-          placeholderTextColor="#6E6E6E"
-          value={title}
-          onChangeText={setTitle}
-        />
-
-        <Text style={styles.label}>Yıl</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Yapım yılı (örn: 2024)"
-          placeholderTextColor="#6E6E6E"
-          keyboardType="numeric"
-          value={year}
-          onChangeText={setYear}
-          maxLength={4}
-        />
-
-        <Text style={styles.label}>Açıklama</Text>
-        <TextInput
-          style={[styles.input, { height: 100 }]}
-          placeholder="Açıklama girin"
-          placeholderTextColor="#6E6E6E"
-          multiline
-          value={description}
-          onChangeText={setDescription}
-        />
-
-        <Text style={styles.label}>Fiyat (₺)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Fiyat girin"
-          placeholderTextColor="#6E6E6E"
-          keyboardType="numeric"
-          value={price}
-          onChangeText={setPrice}
-        />
-
-        <Text style={styles.label}>Kategori</Text>
-        <TouchableOpacity
-          style={styles.categorySelector}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.categorySelectorText}>
-            {category ? getCategoryLabel(category) : 'Kategori Seçin'}
-          </Text>
+    <View style={[styles.mainContainer, { paddingTop: insets.top, backgroundColor: isDarkTheme ? '#121212' : '#F4F4F4' }]}>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={isDarkTheme ? '#fff' : '#333'} />
         </TouchableOpacity>
-
-        <Text style={styles.label}>Boyut (cm)</Text>
-        <View style={styles.dimensionsContainer}>
-          <View style={styles.dimensionBox}>
-            <Text style={styles.dimensionLabel}>Yükseklik</Text>
-            <TextInput
-              style={styles.dimensionInput}
-              keyboardType="numeric"
-              value={height}
-              onChangeText={setHeight}
-            />
-          </View>
-          <View style={styles.dimensionBox}>
-            <Text style={styles.dimensionLabel}>Genişlik</Text>
-            <TextInput
-              style={styles.dimensionInput}
-              keyboardType="numeric"
-              value={width}
-              onChangeText={setWidth}
-            />
-          </View>
-          <View style={styles.dimensionBox}>
-            <Text style={styles.dimensionLabel}>Kalınlık</Text>
-            <TextInput
-              style={styles.dimensionInput}
-              keyboardType="numeric"
-              value={depth}
-              onChangeText={setDepth}
-            />
-          </View>
-        </View>
+        <Text style={styles.headerTitle}>Yeni Eser Ekle</Text>
       </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Fotoğraflar (max 3)</Text>
-        <View style={styles.imageRow}>
-          {images.map((uri, index) => (
-            <Image key={index} source={{ uri }} style={styles.imagePreview} />
-          ))}
+        <View style={styles.card}>
+          <Text style={styles.label}>Ürün Adı</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ürün adı girin"
+            placeholderTextColor="#6E6E6E"
+            value={title}
+            onChangeText={setTitle}
+          />
+
+          <Text style={styles.label}>Yıl</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Yapım yılı (örn: 2024)"
+            placeholderTextColor="#6E6E6E"
+            keyboardType="numeric"
+            value={year}
+            onChangeText={setYear}
+            maxLength={4}
+          />
+
+          <Text style={styles.label}>Açıklama</Text>
+          <TextInput
+            style={[styles.input, { height: 100 }]}
+            placeholder="Açıklama girin"
+            placeholderTextColor="#6E6E6E"
+            multiline
+            value={description}
+            onChangeText={setDescription}
+          />
+
+          <Text style={styles.label}>Fiyat (₺)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Fiyat girin"
+            placeholderTextColor="#6E6E6E"
+            keyboardType="numeric"
+            value={price}
+            onChangeText={setPrice}
+          />
+
+          <Text style={styles.label}>Kategori</Text>
+          <TouchableOpacity
+            style={styles.categorySelector}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.categorySelectorText}>
+              {category ? getCategoryLabel(category) : 'Kategori Seçin'}
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={styles.label}>Boyut (cm)</Text>
+          <View style={styles.dimensionsContainer}>
+            <View style={styles.dimensionBox}>
+              <Text style={styles.dimensionLabel}>Yükseklik</Text>
+              <TextInput
+                style={styles.dimensionInput}
+                keyboardType="numeric"
+                value={height}
+                onChangeText={setHeight}
+              />
+            </View>
+            <View style={styles.dimensionBox}>
+              <Text style={styles.dimensionLabel}>Genişlik</Text>
+              <TextInput
+                style={styles.dimensionInput}
+                keyboardType="numeric"
+                value={width}
+                onChangeText={setWidth}
+              />
+            </View>
+            <View style={styles.dimensionBox}>
+              <Text style={styles.dimensionLabel}>Kalınlık</Text>
+              <TextInput
+                style={styles.dimensionInput}
+                keyboardType="numeric"
+                value={depth}
+                onChangeText={setDepth}
+              />
+            </View>
+          </View>
         </View>
 
-        <View style={styles.imageButtons}>
-          <TouchableOpacity style={styles.button} onPress={pickImages}>
-            <Text style={styles.buttonText}>Galeriden Seç</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={takePhoto}>
-            <Text style={styles.buttonText}>Kameradan Çek</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        <View style={styles.card}>
+          <Text style={styles.label}>Fotoğraflar (max 3)</Text>
+          <View style={styles.imageRow}>
+            {images.map((uri, index) => (
+              <Image key={index} source={{ uri }} style={styles.imagePreview} />
+            ))}
+          </View>
 
-      <TouchableOpacity
-        style={[styles.button, { marginTop: 10, alignSelf: 'center', width: '90%' }]}
-        onPress={handleAddProduct}
-        disabled={uploading}
-      >
-        {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Kaydet</Text>}
-      </TouchableOpacity>
-
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Kategori Seçin</Text>
-            <FlatList
-              data={categories}
-              keyExtractor={(item) => item.value}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.modalItem}
-                  onPress={() => {
-                    setCategory(item.value);
-                    setModalVisible(false);
-                  }}
-                >
-                  <Text style={styles.modalItemText}>{item.label}</Text>
-                </TouchableOpacity>
-              )}
-            />
-            <TouchableOpacity style={[styles.button, { marginTop: 10 }]} onPress={() => setModalVisible(false)}>
-              <Text style={styles.buttonText}>Kapat</Text>
+          <View style={styles.imageButtons}>
+            <TouchableOpacity style={styles.button} onPress={pickImages}>
+              <Text style={styles.buttonText}>Galeriden Seç</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={takePhoto}>
+              <Text style={styles.buttonText}>Kameradan Çek</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
-    </ScrollView>
+
+        <TouchableOpacity
+          style={[styles.button, { marginTop: 10, alignSelf: 'center', width: '90%' }]}
+          onPress={handleAddProduct}
+          disabled={uploading}
+        >
+          {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Kaydet</Text>}
+        </TouchableOpacity>
+
+        <Modal visible={modalVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Kategori Seçin</Text>
+              <FlatList
+                data={categories}
+                keyExtractor={(item) => item.value}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setCategory(item.value);
+                      setModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.modalItemText}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+              <TouchableOpacity style={[styles.button, { marginTop: 10 }]} onPress={() => setModalVisible(false)}>
+                <Text style={styles.buttonText}>Kapat</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </View>
   );
 };
 
 const getStyles = (isDarkTheme: boolean) =>
   StyleSheet.create({
-    container: { flexGrow: 1, padding: 20, backgroundColor: isDarkTheme ? '#121212' : '#F4F4F4' },
-    header: { fontSize: 22, fontWeight: 'bold', color: '#333333', marginBottom: 20, textAlign: 'center' },
+    mainContainer: { flex: 1 },
+    headerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+      backgroundColor: isDarkTheme ? '#121212' : '#F4F4F4',
+    },
+    backButton: { marginRight: 15 },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: isDarkTheme ? '#fff' : '#333' },
+    scrollContent: { padding: 20 },
+    // container: { flexGrow: 1, padding: 20, backgroundColor: isDarkTheme ? '#121212' : '#F4F4F4' }, // Replaced by mainContainer+scrollContent, kept if needed for other refs logic but commented out to avoid confusion or keep as legacy
+    // header: { fontSize: 22, fontWeight: 'bold', color: '#333333', marginBottom: 20, textAlign: 'center' }, // Replaced by headerTitle
     card: { backgroundColor: isDarkTheme ? '#1E1E1E' : '#fff', borderRadius: 12, padding: 15, marginBottom: 15, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 },
     label: { color: '#6E6E6E', marginBottom: 5, fontWeight: '600' },
     input: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, padding: 10, backgroundColor: '#F4F4F4', color: '#333333', marginBottom: 15 },

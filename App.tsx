@@ -63,11 +63,11 @@ function AppContent() {
           <Stack.Screen name="Followers" component={FollowersScreen} />
           <Stack.Screen name="Following" component={FollowingScreen} />
           <Stack.Screen name="Sold" component={SoldScreen} options={{ title: 'Sold Products' }} />
-          <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
           <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
           <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'User Profile' }} />
           <Stack.Screen name="OtherProfile" component={OtherProfileScreen} options={{ title: 'Other Profile' }} />
-          <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ title: 'Add Product' }} />
+          <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ headerShown: false }} />
           <Stack.Screen name="UpdateProduct" component={UpdateProductScreen} options={{ title: 'Update Product' }} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="ChangeEmailAndPassword" component={ChangeEmailAndPasswordScreen} />
@@ -75,7 +75,7 @@ function AppContent() {
           <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
           <Stack.Screen name="TermsOfService" component={TermsOfUseScreen} />
           <Stack.Screen name="PrivacyFollowerCommentSettings" component={PrivacyFollowerCommentSettingsScreen} />
-          <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
+          <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Search" component={SearchScreen} />
         </Stack.Navigator>
       </NavigationContainer>
