@@ -14,6 +14,7 @@ import {
   ScrollView,
   Keyboard,
   Easing,
+  StatusBar,
 } from 'react-native';
 // Firebase ve Google Sign-In Importları
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
@@ -241,6 +242,7 @@ const IOSLoginScreen = ({
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}
           style={[
@@ -386,6 +388,7 @@ const AndroidLoginScreen = ({
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}
           style={[

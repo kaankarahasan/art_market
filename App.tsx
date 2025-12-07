@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import React from 'react';
+import { StatusBar } from 'react-native';
 import 'react-native-get-random-values';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -26,7 +27,7 @@ import PrivacyFollowerCommentSettingsScreen from './screens/PrivacyFollowerComme
 import ChatScreen from './screens/ChatScreen';
 import SearchScreen from './screens/SearchScreen';
 // 1. ADIM: Yeni ekranı import edin
-import PasswordResetScreen from './screens/PasswordResetScreen'; 
+import PasswordResetScreen from './screens/PasswordResetScreen';
 
 import { RootStackParamList } from './routes/types';
 import { FavoriteUsersProvider } from './contexts/FavoritesContext';
@@ -47,7 +48,7 @@ export default function App() {
             <Stack.Navigator initialRouteName="Login">
               <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
               <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-              
+
               {/* 2. ADIM: Yeni ekranı buraya ekleyin */}
               <Stack.Screen name="PasswordReset" component={PasswordResetScreen} options={{ headerShown: false }} />
 
@@ -74,6 +75,7 @@ export default function App() {
           </NavigationContainer>
         </ThemeProvider>
       </FavoriteItemsProvider>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
     </FavoriteUsersProvider>
   );
 }

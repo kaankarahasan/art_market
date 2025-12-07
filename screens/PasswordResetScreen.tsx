@@ -12,15 +12,16 @@ import {
   ScrollView,
   Keyboard,
   Easing,
+  StatusBar,
 } from 'react-native';
 // Sadece 'sendPasswordResetEmail' yeterli
-import { sendPasswordResetEmail } from 'firebase/auth'; 
-import { auth } from '../firebase'; 
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../firebase';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 // Merkezi tiplerinizi import ettiğinizi varsayıyorum
-import type { RootStackParamList } from '../routes/types'; 
+import type { RootStackParamList } from '../routes/types';
 
 const { width, height } = Dimensions.get('window');
 
@@ -54,7 +55,7 @@ const PasswordResetScreen = () => {
       // Sadece 'auth' ve 'email' gönderiyoruz.
       // 'actionCodeSettings' göndermeyince Firebase varsayılan web akışını kullanır.
       await sendPasswordResetEmail(auth, email);
-      
+
       setSuccessMessage('Şifre sıfırlama e-postası gönderildi. Lütfen gelen kutunuzu (ve spam klasörünü) kontrol edin.');
       setEmail(''); // Başarılı olunca input'u temizle
     } catch (error: any) {
@@ -96,7 +97,7 @@ const PasswordResetScreen = () => {
   useEffect(() => {
     const keyboardShow = Keyboard.addListener('keyboardDidShow', (e) => {
       Animated.timing(translateYAnim, {
-        toValue: -e.endCoordinates.height * 0.9, 
+        toValue: -e.endCoordinates.height * 0.9,
         duration: 250,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
@@ -121,6 +122,7 @@ const PasswordResetScreen = () => {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}
           style={[
@@ -136,9 +138,9 @@ const PasswordResetScreen = () => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.cardContainer, 
+              styles.cardContainer,
               { transform: [{ translateY: translateYAnim }] }
             ]}
           >
@@ -146,9 +148,9 @@ const PasswordResetScreen = () => {
               Ekran her zaman e-posta isteme formunu gösterecek.
             */}
             <View style={styles.card}>
-              
+
               {/* Geri Dön Butonu */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => navigation.goBack()}
               >
@@ -258,37 +260,37 @@ const styles = StyleSheet.create({
   icon: { marginRight: 10 },
   loginButton: { backgroundColor: '#333333', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 10, elevation: 3 },
   loginButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  errorMessageContainer: { 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+  errorMessageContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 5,
     padding: 10,
     backgroundColor: 'rgba(255, 59, 48, 0.1)',
     borderRadius: 8,
   },
-  errorMessage: { 
-    color: '#FF3B30', 
+  errorMessage: {
+    color: '#FF3B30',
     fontSize: 14,
     textAlign: 'center',
   },
   successMessageContainer: {
-    justifyContent: 'center', 
-    alignItems: 'center', 
+    justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 5,
     padding: 10,
     backgroundColor: 'rgba(52, 199, 89, 0.1)',
     borderRadius: 8,
   },
   successMessage: {
-    color: '#34C759', 
+    color: '#34C759',
     fontSize: 14,
     textAlign: 'center',
     fontWeight: 'bold',
   },
   // Bu stiller artık kullanılmıyor ama zararı da yok
-  registerContainer: { justifyContent: 'center', alignItems: 'center', marginTop: 15, borderTopWidth: 1, borderTopColor: '#E0E0E0', paddingTop: 20},
-  registerText: { 
-    fontSize: 14, 
+  registerContainer: { justifyContent: 'center', alignItems: 'center', marginTop: 15, borderTopWidth: 1, borderTopColor: '#E0E0E0', paddingTop: 20 },
+  registerText: {
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#333333',
   },

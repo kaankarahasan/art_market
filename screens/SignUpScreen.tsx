@@ -13,6 +13,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -115,6 +116,7 @@ const SignUpScreen = () => {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         {/* 🔹 Dinamik arka plan */}
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}
