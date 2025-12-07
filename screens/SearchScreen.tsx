@@ -101,7 +101,8 @@ const SearchScreen = () => {
   const [selectedSort, setSelectedSort] = useState<string | null>(null);
   const [filteredLeftColumn, setFilteredLeftColumn] = useState<Product[]>([]);
   const [filteredRightColumn, setFilteredRightColumn] = useState<Product[]>([]);
-  const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
+  // Store aspect ratios instead of absolute heights to support different column widths
+  const [imageAspectRatios, setImageAspectRatios] = useState<{ [key: string]: number }>({});
 
   // Scoped Search State
   const [searchScope, setSearchScope] = useState<'All' | 'Artwork' | 'Artist' | 'Price' | 'Size'>('All');
@@ -379,13 +380,51 @@ const SearchScreen = () => {
 
 
   // --- Sütun Dağıtma Fonksiyonu (değişmedi) ---
-  const distributeColumns = (items: Product[]) => { /* ... */ const leftColumn: Product[] = []; const rightColumn: Product[] = []; let leftHeight = 0; let rightHeight = 0; items.forEach(product => { const imageHeight = imageHeights[product.id] || (columnWidth - 20) * 1.2; const infoHeightEstimate = 110; const cardHeight = imageHeight + infoHeightEstimate; if (leftHeight <= rightHeight) { leftColumn.push(product); leftHeight += cardHeight; } else { rightColumn.push(product); rightHeight += cardHeight; } }); return { leftColumn, rightColumn }; };
+  const distributeColumns = (items: Product[]) => {
+    const leftColumn: Product[] = [];
+    const rightColumn: Product[] = [];
+    let leftHeight = 0;
+    let rightHeight = 0;
+    items.forEach(product => {
+      // Use aspect ratio to estimate height. Default 1.2 if unknown.
+      const aspectRatio = imageAspectRatios[product.id] || 1.2;
+      // Image container has padding: 10, so effective width is columnWidth - 20
+      const imageWidth = columnWidth - 20;
+      const imageHeight = imageWidth * aspectRatio;
+
+      const infoHeightEstimate = 110;
+      const cardHeight = imageHeight + infoHeightEstimate;
+
+      if (leftHeight <= rightHeight) {
+        leftColumn.push(product);
+        leftHeight += cardHeight;
+      } else {
+        rightColumn.push(product);
+        rightHeight += cardHeight;
+      }
+    });
+    return { leftColumn, rightColumn };
+  };
 
   // --- Nihai Ürünleri Sütunlara Dağıt ---
-  useEffect(() => { /* ... */ const { leftColumn, rightColumn } = distributeColumns(finalFilteredProducts); setFilteredLeftColumn(leftColumn); setFilteredRightColumn(rightColumn); }, [finalFilteredProducts, imageHeights]);
+  useEffect(() => {
+    // Re-trigger distribution when products or aspect ratios change
+    const { leftColumn, rightColumn } = distributeColumns(finalFilteredProducts);
+    setFilteredLeftColumn(leftColumn);
+    setFilteredRightColumn(rightColumn);
+  }, [finalFilteredProducts, imageAspectRatios]);
 
-  // handleImageLoad (değişmedi)
-  const handleImageLoad = (productId: string, event: NativeSyntheticEvent<{ source: { width: number; height: number } }>) => { /* ... */ const { width, height } = event.nativeEvent.source; const imageWidth = columnWidth - 20; if (width > 0) { const aspectRatio = height / width; const calculatedHeight = imageWidth * aspectRatio; const clampedHeight = Math.max(100, Math.min(calculatedHeight, screenWidth * 1.2)); if (imageHeights[productId] !== clampedHeight) { setImageHeights(prev => ({ ...prev, [productId]: clampedHeight })); } } else { if (!imageHeights[productId]) { setImageHeights(prev => ({ ...prev, [productId]: 200 })); } } };
+  // handleImageLoad updated to store Aspect Ratio
+  const handleImageLoad = (productId: string, event: NativeSyntheticEvent<{ source: { width: number; height: number } }>) => {
+    const { width, height } = event.nativeEvent.source;
+    if (width > 0 && height > 0) {
+      const aspectRatio = height / width;
+      // Update state only if ratio changes significantly to avoid loops, though unlikely with key check
+      if (imageAspectRatios[productId] !== aspectRatio) {
+        setImageAspectRatios(prev => ({ ...prev, [productId]: aspectRatio }));
+      }
+    }
+  };
 
   const clearSearch = () => {
     setSearchQuery('');
@@ -457,7 +496,62 @@ const SearchScreen = () => {
   const renderSmallBox = (label: string, selected: boolean, onPress: () => void, key?: string | number) => (<TouchableOpacity key={key} onPress={onPress} style={[styles.smallBox, selected && styles.smallBoxSelected]} ><Text style={[styles.smallBoxText, selected && styles.smallBoxTextSelected]}>{label}</Text></TouchableOpacity>);
   const renderFilterBox = (label: string, imageKey: string, selected: boolean, onPress: () => void, key?: string | number) => { const imageSource = categoryImages[imageKey]; return (<TouchableOpacity key={key} onPress={onPress} style={[styles.filterBox, { width: boxSize, height: boxSize }]}>{imageSource ? (<Image source={imageSource} style={styles.categoryImage} resizeMode="cover" onError={(e) => console.log(`Görsel yüklenemedi: ${imageKey}`, e.nativeEvent.error)} />) : (<View style={styles.categoryImageFallback}><Text style={{ fontSize: 10, color: 'red' }}>Bulunamadı: {imageKey}</Text></View>)}<View style={[styles.filterTextContainer, selected && styles.filterTextContainerSelected]}><Text style={[styles.filterBoxText, selected && styles.filterBoxTextSelected]} numberOfLines={3}>{label}</Text></View></TouchableOpacity>); };
   const handleFavoriteToggle = (item: Product) => { const isFav = favoriteItems.some(fav => fav.id === item.id); const imageUrl = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls || undefined; const favItem: FavoriteItem = { id: item.id, title: item.title || 'Başlık Yok', username: item.username || 'Bilinmeyen', imageUrl: imageUrl, price: item.price || 0, year: item.year || '', }; isFav ? removeFavorite(item.id) : addFavorite(favItem); };
-  const renderProductCard = (item: Product, cardStyle?: object) => { const isFavorite = favoriteItems.some(fav => fav.id === item.id); const firstImage = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls; const owner = allUsers.find(u => u.id === item.ownerId); const displayName = owner?.fullName || owner?.username || item.username || 'Bilinmeyen'; const imageHeight = imageHeights[item.id] || (cardStyle && (cardStyle as any).width === boxSize ? boxSize : columnWidth * 1.2); const handlePress = () => { const serializableProduct = { ...item, createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString(), }; navigation.navigate('ProductDetail', { product: serializableProduct }); }; return (<TouchableOpacity key={item.id} style={[styles.card, cardStyle || { width: columnWidth }]} onPress={handlePress} activeOpacity={0.7} ><View style={styles.imageContainer}>{firstImage ? (<Image source={{ uri: firstImage || undefined }} style={[styles.image, { height: imageHeight }]} resizeMode="cover" onLoad={(e) => handleImageLoad(item.id, e)} onError={(e) => console.log(`Ürün görseli yüklenemedi: ${item.id}`, e.nativeEvent.error)} />) : (<View style={[styles.noImage, { height: imageHeight }]}><Text style={styles.noImageText}>Resim yok</Text></View>)}</View><View style={styles.infoContainer}><View style={styles.userRow}><Text style={styles.username} numberOfLines={1}>{displayName}</Text><TouchableOpacity onPress={() => handleFavoriteToggle(item)} style={styles.favoriteButton} ><Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={colors.text} /></TouchableOpacity></View><Text style={styles.title} numberOfLines={2}> {item.title}{item.year ? `, ${item.year}` : ''} </Text><Text style={styles.price}> ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'} </Text></View></TouchableOpacity>); };
+  const renderProductCard = (item: Product, cardStyle?: object) => {
+    const isFavorite = favoriteItems.some(fav => fav.id === item.id);
+    const firstImage = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls;
+    const owner = allUsers.find(u => u.id === item.ownerId);
+    const displayName = owner?.fullName || owner?.username || item.username || 'Bilinmeyen';
+
+    // Calculate Height based on Aspect Ratio and current Width
+    const targetWidth = (cardStyle && (cardStyle as any).width) ? (cardStyle as any).width : columnWidth;
+    const aspectRatio = imageAspectRatios[item.id] || 1.2; // Default aspect ratio
+    // Clamp height to reasonable limits
+    // Use targetWidth * aspectRatio - Padding if needed. If width is boxSize (Horizontal), use calculated.
+    // BoxSize calculation:
+    const calculatedHeight = targetWidth * aspectRatio;
+    // For horizontal scroll views, height is usually dynamic or container restricted?
+    // In horizontal scroll we set width to boxSize. Height will be calculated.
+    // IMPORTANT: In "Popular/New" horizontal list, we want flexible height for the CARD?
+    // But HorizontalScrollView usually aligns items.
+    // If items have different heights, it's fine.
+    // Max height constraint to prevent massive vertical expansion.
+    const finalHeight = Math.max(100, Math.min(calculatedHeight, screenWidth * 1.5));
+
+    const handlePress = () => {
+      const serializableProduct = { ...item, createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString(), };
+      navigation.navigate('ProductDetail', { product: serializableProduct });
+    };
+
+    return (
+      <TouchableOpacity key={item.id} style={[styles.card, cardStyle || { width: columnWidth }]} onPress={handlePress} activeOpacity={0.7}>
+        <View style={styles.imageContainer}>
+          {firstImage ? (
+            <Image
+              source={{ uri: firstImage || undefined }}
+              style={[styles.image, { height: finalHeight }]}
+              resizeMode="cover"
+              onLoad={(e) => handleImageLoad(item.id, e)}
+              onError={(e) => console.log(`Ürün görseli yüklenemedi: ${item.id}`, e.nativeEvent.error)}
+            />
+          ) : (
+            <View style={[styles.noImage, { height: finalHeight }]}>
+              <Text style={styles.noImageText}>Resim yok</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.infoContainer}>
+          <View style={styles.userRow}>
+            <Text style={styles.username} numberOfLines={1}>{displayName}</Text>
+            <TouchableOpacity onPress={() => handleFavoriteToggle(item)} style={styles.favoriteButton}>
+              <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.title} numberOfLines={2}>{item.title}{item.year ? `, ${item.year}` : ''}</Text>
+          <Text style={styles.price}>₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
   const renderProfileCard = (user: UserSearchResult) => { return (<TouchableOpacity key={user.id} style={styles.profileCard} onPress={() => navigation.navigate('OtherProfile', { userId: user.id })} activeOpacity={0.7} ><Image source={user.photoURL ? { uri: user.photoURL } : require('../assets/default-profile.png')} style={styles.profileCardImage} resizeMode="cover" /><Text style={styles.profileCardUsername} numberOfLines={2}> {user.fullName || user.username || 'Kullanıcı'} </Text></TouchableOpacity>); };
   // --- Render Fonksiyonları Sonu ---
 
@@ -469,11 +563,7 @@ const SearchScreen = () => {
       <View style={{ backgroundColor: colors.background, paddingBottom: 8 }}>
         <View style={styles.searchWrapper}>
           {/* Left Icon: Back if searching, else Chevron Back (standard nav) */}
-          {!isSearching && (
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} >
-              <Ionicons name="chevron-back" size={24} color={colors.text} />
-            </TouchableOpacity>
-          )}
+          {/* Back button removed per request */}
 
           <View style={styles.searchInputContainer}>
             {isSearching ? (
@@ -556,7 +646,7 @@ const SearchScreen = () => {
             <View style={styles.resultsContainer}>
               {filteringLoader ? (
                 <ActivityIndicator size="small" color={colors.text} style={{ marginVertical: 20 }} />
-              ) : (
+              ) :
                 // Hem kullanıcı hem ürün sonucu yoksa mesaj göster
                 textFilteredUsers.length === 0 && finalFilteredProducts.length === 0 ? (
                   <Text style={styles.noResultsText}>
@@ -564,54 +654,55 @@ const SearchScreen = () => {
                     Sonuç bulunamadı.
                     {hasActiveFilters() ? "\nFiltreleri kontrol edin veya temizleyin." : ""}
                   </Text>
-                ) : (
+                ) :
                   <>
-                    {/* Kullanıcılar (sadece metin aramasında görünür) */}
-                    {isSearching && textFilteredUsers.length > 0 && (
-                      <View style={styles.filterSection}>
-                        <Text style={styles.resultsSubTitle}>Kullanıcılar</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>
-                          {textFilteredUsers.map(user => renderProfileCard(user))}
-                        </ScrollView>
-                      </View>
-                    )}
+                    {/* --- ARAMA SONUÇLARI (HomeScreen Stili) --- */}
+                    {(isSearching || hasActiveFilters()) && (
+                      <ScrollView style={styles.resultsContainer} keyboardShouldPersistTaps="handled">
+                        <View style={{ padding: 16 }}>
+                          {/* --- KULLANICILAR (Yatay Scroll) --- */}
+                          {textFilteredUsers.length > 0 && (
+                            <View style={{ marginBottom: 20 }}>
+                              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>Kullanıcılar</Text>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                {textFilteredUsers.map(user => (
+                                  <TouchableOpacity key={user.id} style={{ marginRight: 16, alignItems: 'center' }} onPress={() => navigation.navigate('OtherProfile', { userId: user.id })}>
+                                    <Image source={user.photoURL ? { uri: user.photoURL } : require('../assets/default-profile.png')} style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#e0e0e0', marginBottom: 4 }} />
+                                    <Text style={{ color: colors.text, fontSize: 12 }}>{user.username}</Text>
+                                  </TouchableOpacity>
+                                ))}
+                              </ScrollView>
+                            </View>
+                          )}
 
-                    {/* Eserler (Nihai filtrelenmiş liste) */}
-                    {finalFilteredProducts.length > 0 && (
-                      <View style={styles.filterSection}>
-                        {(isSearching && textFilteredUsers.length > 0 || hasActiveFilters()) &&
-                          <Text style={styles.resultsSubTitle}>Eserler</Text>
-                        }
-                        <View style={styles.masonryContainer}>
-                          <View style={styles.column}>
-                            {filteredLeftColumn.map(item => renderProductCard(item))}
-                          </View>
-                          <View style={styles.column}>
-                            {filteredRightColumn.map(item => renderProductCard(item))}
-                          </View>
+                          {/* --- ESERLER (Dikey Liste) --- */}
+                          {finalFilteredProducts.length > 0 && (
+                            <View>
+                              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>Eserler</Text>
+                              {finalFilteredProducts.map(item => (
+                                <TouchableOpacity key={item.id} style={{ flexDirection: 'row', marginBottom: 12, alignItems: 'center' }} onPress={() => navigation.navigate('ProductDetail', { product: { ...item, createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString() } })}>
+                                  <Image source={{ uri: Array.isArray(item.imageUrls) ? item.imageUrls[0] : (item as any).imageUrl || item.imageUrls }} style={{ width: 50, height: 50, borderRadius: 8, marginRight: 12, backgroundColor: '#eee' }} />
+                                  <View>
+                                    <Text style={{ color: colors.text, fontWeight: '600' }}>{item.title}</Text>
+                                    <Text style={{ color: colors.secondaryText, fontSize: 12 }}>{item.price} ₺</Text>
+                                  </View>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                          )}
                         </View>
-                      </View>
+                      </ScrollView>
                     )}
                   </>
-                )
-              )}
+              }
             </View>
           ) : (
             // --- VARSAYILAN GÖRÜNÜM (Arama yok, Filtre yok) ---
             <View style={styles.filtersContainer}>
 
-              {/* --- GÜNCELLENMİŞ SON ARAMALAR BÖLÜMÜ --- */}
-              <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>Son Aramalar</Text>
-                {recentSearches.length > 0 ? (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>
-                    {recentSearches.map((search) => renderSmallBox(search, false, () => setSearchQuery(search), search))}
-                  </ScrollView>
-                ) : (
-                  <Text style={[styles.noRecentSearchesText, { paddingHorizontal: 16 }]}>Henüz arama yapmadınız.</Text>
-                )}
-              </View>
-              {/* --- SON ARAMALAR BÖLÜMÜ SONU --- */}
+
+              {/* Recent Searches Section Removed */}
+
 
               {popularProducts.length > 0 && (<View style={styles.filterSection}><Text style={styles.filterSectionTitle}>Popüler Eserler</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>{popularProducts.map(product => renderProductCard(product, { width: boxSize, marginRight: 16 }))}</ScrollView></View>)}
               {newProducts.length > 0 && (<View style={styles.filterSection}><Text style={styles.filterSectionTitle}>Yeni Eklenenler</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>{newProducts.map(product => renderProductCard(product, { width: boxSize, marginRight: 16 }))}</ScrollView></View>)}
