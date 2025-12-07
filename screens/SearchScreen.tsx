@@ -103,6 +103,9 @@ const SearchScreen = () => {
   const [filteredRightColumn, setFilteredRightColumn] = useState<Product[]>([]);
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
 
+  // Scoped Search State
+  const [searchScope, setSearchScope] = useState<'All' | 'Artwork' | 'Artist' | 'Price' | 'Size'>('All');
+
   // --- Modal Filtre State'leri ---
   const [selectedPriceFilter, setSelectedPriceFilter] = useState<string | null>(null);
   const [minPrice, setMinPrice] = useState<string>('');
@@ -131,11 +134,14 @@ const SearchScreen = () => {
       navigation.getParent<BottomTabNavigationProp<any>>()?.setOptions({
         tabBarStyle: { display: 'none' }
       });
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(timer);
-    }, [navigation])
+      // Only auto-focus if we have an initial query passed from navigation (e.g. from Home)
+      if (route.params?.initialQuery) {
+        const timer = setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }, [navigation, route.params?.initialQuery])
   );
 
   // Initial Query Handling
@@ -249,33 +255,66 @@ const SearchScreen = () => {
 
     setFilteringLoader(true);
 
-    // Ürünleri filtrele
-    const currentProductResults = products.filter(product => {
-      const titleMatch = product.title?.toLowerCase().includes(queryLower) ?? false;
-      const descriptionMatch = product.description?.toLowerCase().includes(queryLower) ?? false;
-      const categoryMatch = product.category?.toLowerCase().includes(queryLower) ?? false;
-      const usernameMatch = product.username?.toLowerCase().includes(queryLower) ?? false;
-      const owner = allUsers.find(u => u.id === product.ownerId);
-      const fullNameMatch = owner?.fullName?.toLowerCase().includes(queryLower) ?? false;
-      const priceMatch = product.price?.toString().includes(queryLower) ?? false;
-      const yearMatch = product.year?.toString().includes(queryLower) ?? false; // Yıl araması
+    let currentProductResults: Product[] = [];
+    let currentUserResults: UserSearchResult[] = [];
 
-      return titleMatch || descriptionMatch || categoryMatch || usernameMatch ||
-        fullNameMatch || priceMatch || yearMatch; // yearMatch eklendi
-    });
+    // --- Scope Logic ---
+    if (searchScope === 'All') {
+      currentProductResults = products.filter(product => {
+        const titleMatch = product.title?.toLowerCase().includes(queryLower) ?? false;
+        const descriptionMatch = product.description?.toLowerCase().includes(queryLower) ?? false;
+        const categoryMatch = product.category?.toLowerCase().includes(queryLower) ?? false;
+        const usernameMatch = product.username?.toLowerCase().includes(queryLower) ?? false;
+        const owner = allUsers.find(u => u.id === product.ownerId);
+        const fullNameMatch = owner?.fullName?.toLowerCase().includes(queryLower) ?? false;
+        const priceMatch = product.price?.toString().includes(queryLower) ?? false;
+        const yearMatch = product.year?.toString().includes(queryLower) ?? false;
+        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || fullNameMatch || priceMatch || yearMatch;
+      });
+      currentUserResults = allUsers.filter(user => {
+        const usernameMatch = user.username?.toLowerCase().includes(queryLower) ?? false;
+        const fullNameMatch = user.fullName?.toLowerCase().includes(queryLower) ?? false;
+        return usernameMatch || fullNameMatch;
+      });
 
-    // Kullanıcıları filtrele
-    const currentUserResults = allUsers.filter(user => {
-      const usernameMatch = user.username?.toLowerCase().includes(queryLower) ?? false;
-      const fullNameMatch = user.fullName?.toLowerCase().includes(queryLower) ?? false;
-      return usernameMatch || fullNameMatch;
-    });
+    } else if (searchScope === 'Artwork') {
+      currentProductResults = products.filter(product => {
+        const titleMatch = product.title?.toLowerCase().includes(queryLower) ?? false;
+        const descriptionMatch = product.description?.toLowerCase().includes(queryLower) ?? false;
+        const categoryMatch = product.category?.toLowerCase().includes(queryLower) ?? false;
+        return titleMatch || descriptionMatch || categoryMatch;
+      });
+    } else if (searchScope === 'Artist') {
+      currentUserResults = allUsers.filter(user => {
+        const usernameMatch = user.username?.toLowerCase().includes(queryLower) ?? false;
+        const fullNameMatch = user.fullName?.toLowerCase().includes(queryLower) ?? false;
+        return usernameMatch || fullNameMatch;
+      });
+      const artistProducts = products.filter(p => {
+        const owner = allUsers.find(u => u.id === p.ownerId);
+        const nameMatch = owner?.fullName?.toLowerCase().includes(queryLower) ?? false;
+        const usernameMatch = p.username?.toLowerCase().includes(queryLower) ?? false;
+        return nameMatch || usernameMatch;
+      });
+      currentProductResults = artistProducts;
+
+    } else if (searchScope === 'Price') {
+      currentProductResults = products.filter(product => {
+        return product.price?.toString().includes(queryLower) ?? false;
+      });
+    } else if (searchScope === 'Size') {
+      currentProductResults = products.filter(product => {
+        const widthMatch = product.dimensions?.width?.toString().includes(queryLower) ?? false;
+        const heightMatch = product.dimensions?.height?.toString().includes(queryLower) ?? false;
+        const depthMatch = product.dimensions?.depth?.toString().includes(queryLower) ?? false;
+        return widthMatch || heightMatch || depthMatch;
+      });
+    }
 
     setTextFilteredProducts(currentProductResults);
     setTextFilteredUsers(currentUserResults);
-    // Yükleniyor durumu diğer useEffect'de kapatılacak
 
-  }, [debouncedSearchQuery, products, allUsers, loading]);
+  }, [debouncedSearchQuery, products, allUsers, loading, searchScope]);
 
   // --- MODAL FİLTRELERİNİ UYGULAMA Mantığı (Boyut filtresi güncellendi) ---
   useEffect(() => {
@@ -349,11 +388,20 @@ const SearchScreen = () => {
   const handleImageLoad = (productId: string, event: NativeSyntheticEvent<{ source: { width: number; height: number } }>) => { /* ... */ const { width, height } = event.nativeEvent.source; const imageWidth = columnWidth - 20; if (width > 0) { const aspectRatio = height / width; const calculatedHeight = imageWidth * aspectRatio; const clampedHeight = Math.max(100, Math.min(calculatedHeight, screenWidth * 1.2)); if (imageHeights[productId] !== clampedHeight) { setImageHeights(prev => ({ ...prev, [productId]: clampedHeight })); } } else { if (!imageHeights[productId]) { setImageHeights(prev => ({ ...prev, [productId]: 200 })); } } };
 
   const clearSearch = () => {
-    // Silinmeyi engelleme isteği üzerine, sadece input'u temizler, geçmişi değil.
     setSearchQuery('');
     setDebouncedSearchQuery('');
-    setIsSearching(false);
-    Keyboard.dismiss();
+    inputRef.current?.focus();
+  };
+
+  const handleBackPress = () => {
+    if (isSearching) {
+      setIsSearching(false);
+      setSearchQuery('');
+      setDebouncedSearchQuery('');
+      Keyboard.dismiss();
+    } else {
+      navigation.goBack();
+    }
   };
 
   // clearFilters güncellendi
@@ -417,21 +465,85 @@ const SearchScreen = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* --- Arama Çubuğu --- */}
-      <View style={styles.searchWrapper}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} >
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={20} color={colors.secondaryText} style={styles.searchIcon} />
-          <TextInput ref={inputRef} style={styles.input} placeholder="İsim, kategori, yıl, fiyat..." /* Boyut kaldırıldı */ placeholderTextColor={colors.secondaryText} value={searchQuery} onChangeText={setSearchQuery} returnKeyType="search" onSubmitEditing={handleSearchSubmit} autoFocus={false} />
-          {searchQuery.length > 0 && (<TouchableOpacity style={styles.clearButton} onPress={clearSearch}><Ionicons name="close-circle" size={20} color={colors.secondaryText} /></TouchableOpacity>)}
+      {/* --- Arama Çubuğu --- */}
+      <View style={{ backgroundColor: colors.background, paddingBottom: 8 }}>
+        <View style={styles.searchWrapper}>
+          {/* Left Icon: Back if searching, else Chevron Back (standard nav) */}
+          {!isSearching && (
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} >
+              <Ionicons name="chevron-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.searchInputContainer}>
+            {isSearching ? (
+              <TouchableOpacity onPress={handleBackPress}>
+                <Ionicons name="arrow-back" size={20} color={colors.secondaryText} style={styles.searchIcon} />
+              </TouchableOpacity>
+            ) : (
+              <Ionicons name="search" size={20} color={colors.secondaryText} style={styles.searchIcon} />
+            )}
+
+            <TextInput
+              ref={inputRef}
+              style={styles.input}
+              placeholder={
+                searchScope === 'All' ? "İsim, kategori, yıl, fiyat..." :
+                  searchScope === 'Artwork' ? "Eser adı, açıklama..." :
+                    searchScope === 'Artist' ? "Sanatçı ara..." :
+                      searchScope === 'Price' ? "Fiyat ara..." : "Boyut ara..."
+              }
+              placeholderTextColor={colors.secondaryText}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onFocus={() => setIsSearching(true)}
+              returnKeyType="search"
+              onSubmitEditing={handleSearchSubmit}
+              autoFocus={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity style={styles.clearButton} onPress={clearSearch}>
+                <Ionicons name="close" size={20} color={colors.secondaryText} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {!isSearching && (
+            <>
+              <TouchableOpacity style={styles.sortButton} onPress={() => setSortModalVisible(true)}>
+                <Ionicons name="swap-vertical-outline" size={24} color={colors.text} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)} >
+                <Ionicons name="options-outline" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
-        <TouchableOpacity style={styles.sortButton} onPress={() => setSortModalVisible(true)}>
-          <Ionicons name="swap-vertical-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)} >
-          <Ionicons name="options-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
+
+        {/* Scope Chips */}
+        {isSearching && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
+            {(['All', 'Artwork', 'Artist', 'Price', 'Size'] as const).map((scope) => (
+              <TouchableOpacity
+                key={scope}
+                style={[
+                  styles.scopeChip,
+                  searchScope === scope && styles.scopeChipSelected,
+                  { borderColor: colors.border || '#e0e0e0' }
+                ]}
+                onPress={() => setSearchScope(scope)}
+              >
+                <Text style={[
+                  styles.scopeChipText,
+                  searchScope === scope && styles.scopeChipTextSelected,
+                  { color: searchScope === scope ? colors.background : colors.text }
+                ]}>
+                  {scope === 'Artwork' ? 'Eser' : scope === 'Artist' ? 'Sanatçı' : scope === 'Price' ? 'Fiyat' : scope === 'Size' ? 'Boyut' : 'Tümü'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </View>
 
       {/* --- Ana İçerik Alanı --- */}
@@ -640,6 +752,25 @@ const createStyles = (colors: any) => StyleSheet.create({
   input: { flex: 1, fontSize: 16, color: colors.text },
   clearButton: { padding: 4, marginLeft: 8 },
   filterButton: { marginLeft: 12, padding: 8, backgroundColor: colors.card, borderRadius: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  scopeChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginRight: 8,
+    backgroundColor: 'transparent',
+  },
+  scopeChipSelected: {
+    backgroundColor: colors.text,
+    borderColor: colors.text,
+  },
+  scopeChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  scopeChipTextSelected: {
+    fontWeight: '700',
+  },
   scrollView: { flex: 1, backgroundColor: colors.background },
   filtersContainer: { backgroundColor: colors.background, paddingVertical: 16 },
   filterSection: { marginBottom: 32 },
