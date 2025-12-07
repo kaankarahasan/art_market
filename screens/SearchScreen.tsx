@@ -13,7 +13,7 @@ import {
   Keyboard,
   ImageLoadEventData, NativeSyntheticEvent
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute, RouteProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, Product } from '../routes/types';
@@ -79,6 +79,9 @@ type UserSearchResult = {
 };
 
 
+
+type SearchScreenRouteProp = RouteProp<{ params: { initialQuery?: string } }, 'params'>;
+
 const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
@@ -113,6 +116,7 @@ const SearchScreen = () => {
   const [filterDepth, setFilterDepth] = useState<string>('');
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<SearchScreenRouteProp>();
   const insets = useSafeAreaInsets();
   const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
   const inputRef = useRef<TextInput>(null);
@@ -133,6 +137,18 @@ const SearchScreen = () => {
       return () => clearTimeout(timer);
     }, [navigation])
   );
+
+  // Initial Query Handling
+  useEffect(() => {
+    if (route.params?.initialQuery) {
+      const query = route.params.initialQuery;
+      setSearchQuery(query);
+      setDebouncedSearchQuery(query); // Trigger search
+      // Optional: Clear params to prevent re-triggering if needed, 
+      // but usually route params persist until change. 
+      // We rely on the fact that if user changes query in this screen, normal flow takes over.
+    }
+  }, [route.params?.initialQuery]);
 
   // --- ASYNCSTORAGE İŞLEMLERİ ---
 

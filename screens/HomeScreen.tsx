@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'; // useEffect eklendi
+import React, { useState, useCallback, useEffect, useRef } from 'react'; // useRef eklendi
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  TextInput,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,10 +21,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
 
 const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 45) / 2;
+const RECENT_SEARCHES_KEY = '@recent_searches_general';
 
 const HomeScreen = () => {
   const [products, setProducts] = useState<any[]>([]);
@@ -29,6 +34,12 @@ const HomeScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
   const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
+
+  // Search States
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const searchInputRef = useRef<TextInput>(null);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
@@ -97,7 +108,63 @@ const HomeScreen = () => {
       loadData();
     }, [])
   );
+  // Load Recent Searches
+  useEffect(() => {
+    const loadRecentSearches = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+        if (jsonValue != null) {
+          setRecentSearches(JSON.parse(jsonValue));
+        }
+      } catch (e) {
+        console.error('Failed to load recent searches', e);
+      }
+    };
+    loadRecentSearches();
+  }, []);
 
+  const saveRecentSearches = async (searches: string[]) => {
+    try {
+      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+    } catch (e) {
+      console.error('Failed to save recent searches', e);
+    }
+  };
+
+  const handleSearchSubmit = () => {
+    if (searchQuery.trim()) {
+      const trimmedQuery = searchQuery.trim();
+      const newSearches = [trimmedQuery, ...recentSearches.filter(s => s !== trimmedQuery)].slice(0, 6);
+      setRecentSearches(newSearches);
+      saveRecentSearches(newSearches);
+      // Navigate to Search Tab with query (assuming SearchScreen handles params or context)
+      // Note: Passing params to a tab screen might require specific navigation structure or Context
+      navigation.navigate('SearchTab' as any, { screen: 'Search', params: { initialQuery: trimmedQuery } });
+
+      // Reset Home Search state
+      setIsSearchActive(false);
+      setSearchQuery('');
+      Keyboard.dismiss();
+    }
+  };
+
+  const handleRecentSearchPress = (query: string) => {
+    navigation.navigate('SearchTab' as any, { screen: 'Search', params: { initialQuery: query } });
+    setIsSearchActive(false);
+    setSearchQuery('');
+  }
+
+  const handleDeleteRecentSearch = (searchToDelete: string) => {
+    const newSearches = recentSearches.filter(s => s !== searchToDelete);
+    setRecentSearches(newSearches);
+    saveRecentSearches(newSearches);
+  };
+
+  const cancelSearch = () => {
+    setIsSearchActive(false);
+    setSearchQuery('');
+    Keyboard.dismiss();
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -240,42 +307,87 @@ const HomeScreen = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.searchWrapper}>
-        <TouchableOpacity
-          style={styles.searchContainer}
-          onPress={() => navigation.navigate('Search')}
-          activeOpacity={0.7}
-        >
+        <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color={colors.secondaryText} style={styles.searchIcon} />
-          <Text style={styles.searchPlaceholder}>Ara...</Text>
-        </TouchableOpacity>
+          {isSearchActive ? (
+            <TextInput
+              ref={searchInputRef}
+              style={{ flex: 1, color: colors.text, fontSize: 16, height: '100%' }}
+              placeholder="Ara..."
+              placeholderTextColor={colors.secondaryText}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearchSubmit}
+              returnKeyType="search"
+              autoFocus
+            />
+          ) : (
+            <TouchableOpacity
+              style={{ flex: 1, justifyContent: 'center' }}
+              onPress={() => setIsSearchActive(true)}
+              activeOpacity={1}
+            >
+              <Text style={styles.searchPlaceholder}>Ara...</Text>
+            </TouchableOpacity>
+          )}
+          {isSearchActive && (
+            <TouchableOpacity onPress={cancelSearch}>
+              <Text style={{ color: colors.text, marginLeft: 8 }}>Vazgeç</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text} />
-        </View>
-      ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.text}
-              colors={[colors.text]}
-            />
-          }
-          contentContainerStyle={{ paddingBottom: tabBarHeight }}
-        >
-          <View style={styles.masonryContainer}>
-            <View style={styles.column}>
-              {leftColumn.map(renderProductCard)}
+      {/* Recent Searches Overlay/View */}
+      {isSearchActive ? (
+        <ScrollView style={{ flex: 1, backgroundColor: colors.background }} keyboardShouldPersistTaps="handled">
+          {recentSearches.length > 0 && (
+            <View style={{ padding: 16 }}>
+              <Text style={{ color: colors.secondaryText, marginBottom: 10, fontSize: 14 }}>Son Aramalar</Text>
+              {recentSearches.map((item, index) => (
+                <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border || '#e0e0e0' }}>
+                  <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }} onPress={() => handleRecentSearchPress(item)}>
+                    <Ionicons name="time-outline" size={20} color={colors.secondaryText} style={{ marginRight: 10 }} />
+                    <Text style={{ color: colors.text, fontSize: 16 }}>{item}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDeleteRecentSearch(item)} style={{ padding: 4 }}>
+                    <Ionicons name="close" size={18} color={colors.secondaryText} />
+                  </TouchableOpacity>
+                </View>
+              ))}
             </View>
-            <View style={styles.column}>
-              {rightColumn.map(renderProductCard)}
-            </View>
-          </View>
+          )}
         </ScrollView>
+      ) : (
+        <>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.text} />
+            </View>
+          ) : (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={colors.text}
+                  colors={[colors.text]}
+                />
+              }
+              contentContainerStyle={{ paddingBottom: tabBarHeight }}
+            >
+              <View style={styles.masonryContainer}>
+                <View style={styles.column}>
+                  {leftColumn.map(renderProductCard)}
+                </View>
+                <View style={styles.column}>
+                  {rightColumn.map(renderProductCard)}
+                </View>
+              </View>
+            </ScrollView>
+          )}
+        </>
       )}
     </View>
   );

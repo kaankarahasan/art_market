@@ -113,6 +113,18 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
         }}
       />
       <Tab.Screen
+        name="SearchTab"
+        component={SearchScreen}
+        options={{
+          tabBarLabel: ({ focused }) => (
+            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Search</Text>
+          ),
+          tabBarIcon: ({ focused, size }) =>
+            focused ? <Ionicons name="search" size={30} color={iconColor} />
+              : <Ionicons name="search-outline" size={30} color={iconColor} />,
+        }}
+      />
+      <Tab.Screen
         name="InboxTab"
         component={InboxStackNavigator}
         options={{
