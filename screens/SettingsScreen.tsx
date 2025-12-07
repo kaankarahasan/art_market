@@ -22,37 +22,7 @@ const SettingsScreen = () => {
 
   const { isDarkTheme, toggleTheme, colors } = useThemeContext();
 
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [loadingPrivacy, setLoadingPrivacy] = useState(true);
 
-  useEffect(() => {
-    if (!userId) return;
-    const fetchPrivacy = async () => {
-      try {
-        const userDoc = await getDoc(doc(db, 'users', userId));
-        if (userDoc.exists()) {
-          setIsPrivate(userDoc.data().isPrivate || false);
-        }
-      } catch {
-        Alert.alert('Hata', 'Gizlilik durumu alınamadı');
-      } finally {
-        setLoadingPrivacy(false);
-      }
-    };
-    fetchPrivacy();
-  }, [userId]);
-
-  const togglePrivacy = async () => {
-    if (!userId) return;
-    try {
-      const newPrivacy = !isPrivate;
-      await updateDoc(doc(db, 'users', userId), { isPrivate: newPrivacy });
-      setIsPrivate(newPrivacy);
-      Alert.alert('Başarılı', `Profiliniz ${newPrivacy ? 'gizli' : 'açık'} olarak ayarlandı.`);
-    } catch {
-      Alert.alert('Hata', 'Gizlilik ayarı güncellenemedi');
-    }
-  };
 
   const onToggleTheme = () => {
     toggleTheme();
@@ -93,28 +63,7 @@ const SettingsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Gizlilik Bölümü */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Gizlilik</Text>
 
-        <View style={styles.privacyRow}>
-          <Text style={[styles.item, { color: colors.text }]}>Hesabı Gizli Yap</Text>
-          {loadingPrivacy ? (
-            <Text style={{ color: colors.text }}>Yükleniyor...</Text>
-          ) : (
-            <Switch
-              value={isPrivate}
-              onValueChange={togglePrivacy}
-              trackColor={{ false: '#ccc', true: '#1976d2' }}
-              thumbColor="#fff"
-            />
-          )}
-        </View>
-
-        <TouchableOpacity onPress={() => navigation.navigate('PrivacyFollowerCommentSettings')}>
-          <Text style={[styles.item, { color: colors.text }]}>Takipçi / Yorum Ayarları</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Görünüm */}
       <View style={styles.section}>

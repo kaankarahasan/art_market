@@ -23,22 +23,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; // <-- YEN
 import { db } from '../firebase';
 import { collection, query, where, getDocs, orderBy, limit, DocumentData } from 'firebase/firestore';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
 const boxSize = (screenWidth - 48) / 2;
 const columnWidth = (screenWidth - 45) / 2;
 
-// AsyncStorage için anahtar (Kullanıcıya özel hale getirmek için kullanıcı ID'sini dahil etmek daha iyidir,
-// ancak mevcut kodda auth bilgisi olmadığı için genel bir anahtar kullanıyoruz.)
+// AsyncStorage için anahtar
 const RECENT_SEARCHES_KEY = '@recent_searches_general';
 
-const COLORS = {
-  background: '#FFFFFF',
-  text: '#0A0A0A',
-  card: '#F4F4F4',
-  secondaryText: '#6E6E6E',
-  accent: '#333333',
-};
+// COLORS sabiti yerine tema renkleri kullanılacak
+
 
 // ... categoryImages ...
 const categoryImages: { [key: string]: any } = {
@@ -122,6 +117,10 @@ const SearchScreen = () => {
   const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
   const inputRef = useRef<TextInput>(null);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Tema Entegrasyonu
+  const { colors, isDarkTheme } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   useFocusEffect(
     useCallback(() => {
@@ -394,7 +393,7 @@ const SearchScreen = () => {
   const renderSmallBox = (label: string, selected: boolean, onPress: () => void, key?: string | number) => (<TouchableOpacity key={key} onPress={onPress} style={[styles.smallBox, selected && styles.smallBoxSelected]} ><Text style={[styles.smallBoxText, selected && styles.smallBoxTextSelected]}>{label}</Text></TouchableOpacity>);
   const renderFilterBox = (label: string, imageKey: string, selected: boolean, onPress: () => void, key?: string | number) => { const imageSource = categoryImages[imageKey]; return (<TouchableOpacity key={key} onPress={onPress} style={[styles.filterBox, { width: boxSize, height: boxSize }]}>{imageSource ? (<Image source={imageSource} style={styles.categoryImage} resizeMode="cover" onError={(e) => console.log(`Görsel yüklenemedi: ${imageKey}`, e.nativeEvent.error)} />) : (<View style={styles.categoryImageFallback}><Text style={{ fontSize: 10, color: 'red' }}>Bulunamadı: {imageKey}</Text></View>)}<View style={[styles.filterTextContainer, selected && styles.filterTextContainerSelected]}><Text style={[styles.filterBoxText, selected && styles.filterBoxTextSelected]} numberOfLines={3}>{label}</Text></View></TouchableOpacity>); };
   const handleFavoriteToggle = (item: Product) => { const isFav = favoriteItems.some(fav => fav.id === item.id); const imageUrl = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls || undefined; const favItem: FavoriteItem = { id: item.id, title: item.title || 'Başlık Yok', username: item.username || 'Bilinmeyen', imageUrl: imageUrl, price: item.price || 0, year: item.year || '', }; isFav ? removeFavorite(item.id) : addFavorite(favItem); };
-  const renderProductCard = (item: Product, cardStyle?: object) => { const isFavorite = favoriteItems.some(fav => fav.id === item.id); const firstImage = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls; const owner = allUsers.find(u => u.id === item.ownerId); const displayName = owner?.fullName || owner?.username || item.username || 'Bilinmeyen'; const imageHeight = imageHeights[item.id] || (cardStyle && (cardStyle as any).width === boxSize ? boxSize : columnWidth * 1.2); const handlePress = () => { const serializableProduct = { ...item, createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString(), }; navigation.navigate('ProductDetail', { product: serializableProduct }); }; return (<TouchableOpacity key={item.id} style={[styles.card, cardStyle || { width: columnWidth }]} onPress={handlePress} activeOpacity={0.7} ><View style={styles.imageContainer}>{firstImage ? (<Image source={{ uri: firstImage || undefined }} style={[styles.image, { height: imageHeight }]} resizeMode="cover" onLoad={(e) => handleImageLoad(item.id, e)} onError={(e) => console.log(`Ürün görseli yüklenemedi: ${item.id}`, e.nativeEvent.error)} />) : (<View style={[styles.noImage, { height: imageHeight }]}><Text style={styles.noImageText}>Resim yok</Text></View>)}</View><View style={styles.infoContainer}><View style={styles.userRow}><Text style={styles.username} numberOfLines={1}>{displayName}</Text><TouchableOpacity onPress={() => handleFavoriteToggle(item)} style={styles.favoriteButton} ><Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={COLORS.accent} /></TouchableOpacity></View><Text style={styles.title} numberOfLines={2}> {item.title}{item.year ? `, ${item.year}` : ''} </Text><Text style={styles.price}> ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'} </Text></View></TouchableOpacity>); };
+  const renderProductCard = (item: Product, cardStyle?: object) => { const isFavorite = favoriteItems.some(fav => fav.id === item.id); const firstImage = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls; const owner = allUsers.find(u => u.id === item.ownerId); const displayName = owner?.fullName || owner?.username || item.username || 'Bilinmeyen'; const imageHeight = imageHeights[item.id] || (cardStyle && (cardStyle as any).width === boxSize ? boxSize : columnWidth * 1.2); const handlePress = () => { const serializableProduct = { ...item, createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString(), }; navigation.navigate('ProductDetail', { product: serializableProduct }); }; return (<TouchableOpacity key={item.id} style={[styles.card, cardStyle || { width: columnWidth }]} onPress={handlePress} activeOpacity={0.7} ><View style={styles.imageContainer}>{firstImage ? (<Image source={{ uri: firstImage || undefined }} style={[styles.image, { height: imageHeight }]} resizeMode="cover" onLoad={(e) => handleImageLoad(item.id, e)} onError={(e) => console.log(`Ürün görseli yüklenemedi: ${item.id}`, e.nativeEvent.error)} />) : (<View style={[styles.noImage, { height: imageHeight }]}><Text style={styles.noImageText}>Resim yok</Text></View>)}</View><View style={styles.infoContainer}><View style={styles.userRow}><Text style={styles.username} numberOfLines={1}>{displayName}</Text><TouchableOpacity onPress={() => handleFavoriteToggle(item)} style={styles.favoriteButton} ><Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={colors.text} /></TouchableOpacity></View><Text style={styles.title} numberOfLines={2}> {item.title}{item.year ? `, ${item.year}` : ''} </Text><Text style={styles.price}> ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'} </Text></View></TouchableOpacity>); };
   const renderProfileCard = (user: UserSearchResult) => { return (<TouchableOpacity key={user.id} style={styles.profileCard} onPress={() => navigation.navigate('OtherProfile', { userId: user.id })} activeOpacity={0.7} ><Image source={user.photoURL ? { uri: user.photoURL } : require('../assets/default-profile.png')} style={styles.profileCardImage} resizeMode="cover" /><Text style={styles.profileCardUsername} numberOfLines={2}> {user.fullName || user.username || 'Kullanıcı'} </Text></TouchableOpacity>); };
   // --- Render Fonksiyonları Sonu ---
 
@@ -404,31 +403,31 @@ const SearchScreen = () => {
       {/* --- Arama Çubuğu --- */}
       <View style={styles.searchWrapper}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} >
-          <Ionicons name="chevron-back" size={24} color={COLORS.text} />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={20} color={COLORS.secondaryText} style={styles.searchIcon} />
-          <TextInput ref={inputRef} style={styles.input} placeholder="İsim, kategori, yıl, fiyat..." /* Boyut kaldırıldı */ placeholderTextColor={COLORS.secondaryText} value={searchQuery} onChangeText={setSearchQuery} returnKeyType="search" onSubmitEditing={handleSearchSubmit} autoFocus={false} />
-          {searchQuery.length > 0 && (<TouchableOpacity style={styles.clearButton} onPress={clearSearch}><Ionicons name="close-circle" size={20} color={COLORS.secondaryText} /></TouchableOpacity>)}
+          <Ionicons name="search" size={20} color={colors.secondaryText} style={styles.searchIcon} />
+          <TextInput ref={inputRef} style={styles.input} placeholder="İsim, kategori, yıl, fiyat..." /* Boyut kaldırıldı */ placeholderTextColor={colors.secondaryText} value={searchQuery} onChangeText={setSearchQuery} returnKeyType="search" onSubmitEditing={handleSearchSubmit} autoFocus={false} />
+          {searchQuery.length > 0 && (<TouchableOpacity style={styles.clearButton} onPress={clearSearch}><Ionicons name="close-circle" size={20} color={colors.secondaryText} /></TouchableOpacity>)}
         </View>
         <TouchableOpacity style={styles.sortButton} onPress={() => setSortModalVisible(true)}>
-          <Ionicons name="swap-vertical-outline" size={24} color={COLORS.text} />
+          <Ionicons name="swap-vertical-outline" size={24} color={colors.text} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)} >
-          <Ionicons name="options-outline" size={24} color={COLORS.text} />
+          <Ionicons name="options-outline" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
       {/* --- Ana İçerik Alanı --- */}
       {loading ? (
-        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={COLORS.text} /></View>
+        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={colors.text} /></View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView} keyboardShouldPersistTaps="handled" onScrollBeginDrag={Keyboard.dismiss} >
           {/* Arama modu veya modal filtreleri aktifse sonuçları göster */}
           {isSearching || hasActiveFilters() ? (
             <View style={styles.resultsContainer}>
               {filteringLoader ? (
-                <ActivityIndicator size="small" color={COLORS.text} style={{ marginVertical: 20 }} />
+                <ActivityIndicator size="small" color={colors.text} style={{ marginVertical: 20 }} />
               ) : (
                 // Hem kullanıcı hem ürün sonucu yoksa mesaj göster
                 textFilteredUsers.length === 0 && finalFilteredProducts.length === 0 ? (
@@ -514,7 +513,7 @@ const SearchScreen = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Sıralama</Text>
               <TouchableOpacity onPress={() => setSortModalVisible(false)}>
-                <Ionicons name="close" size={28} color={COLORS.text} />
+                <Ionicons name="close" size={28} color={colors.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.sortModalContent}>
@@ -536,7 +535,7 @@ const SearchScreen = () => {
                   <Text style={[styles.sortOptionText, selectedSort === item.key && styles.sortOptionTextSelected]}>
                     {item.label}
                   </Text>
-                  {selectedSort === item.key && <Ionicons name="checkmark" size={22} color={COLORS.background} />}
+                  {selectedSort === item.key && <Ionicons name="checkmark" size={22} color={colors.background} />}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -563,7 +562,7 @@ const SearchScreen = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Detaylı Filtreler</Text>
               <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
-                <Ionicons name="close" size={28} color={COLORS.text} />
+                <Ionicons name="close" size={28} color={colors.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
@@ -571,9 +570,9 @@ const SearchScreen = () => {
               <View style={styles.inputSection}>
                 <Text style={styles.filterSectionTitle}>Özel Fiyat Aralığı (₺)</Text>
                 <View style={styles.priceInputRow}>
-                  <TextInput style={styles.priceInput} placeholder="Min" placeholderTextColor={COLORS.secondaryText} keyboardType="numeric" value={minPrice} onChangeText={setMinPrice} />
+                  <TextInput style={styles.priceInput} placeholder="Min" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={minPrice} onChangeText={setMinPrice} />
                   <Text style={styles.priceSeparator}>-</Text>
-                  <TextInput style={styles.priceInput} placeholder="Max" placeholderTextColor={COLORS.secondaryText} keyboardType="numeric" value={maxPrice} onChangeText={setMaxPrice} />
+                  <TextInput style={styles.priceInput} placeholder="Max" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={maxPrice} onChangeText={setMaxPrice} />
                 </View>
               </View>
               {/* Boyut Alanı (GÜNCELLENDİ) */}
@@ -582,17 +581,17 @@ const SearchScreen = () => {
                 {/* Genişlik */}
                 <View style={styles.dimensionInputContainer}>
                   <Text style={styles.dimensionLabel}>Genişlik:</Text>
-                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme" placeholderTextColor={COLORS.secondaryText} keyboardType="numeric" value={filterWidth} onChangeText={setFilterWidth} />
+                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={filterWidth} onChangeText={setFilterWidth} />
                 </View>
                 {/* Yükseklik */}
                 <View style={styles.dimensionInputContainer}>
                   <Text style={styles.dimensionLabel}>Yükseklik:</Text>
-                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme" placeholderTextColor={COLORS.secondaryText} keyboardType="numeric" value={filterHeight} onChangeText={setFilterHeight} />
+                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={filterHeight} onChangeText={setFilterHeight} />
                 </View>
                 {/* Derinlik */}
                 <View style={styles.dimensionInputContainer}>
                   <Text style={styles.dimensionLabel}>Derinlik:</Text>
-                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme (Opsiyonel)" placeholderTextColor={COLORS.secondaryText} keyboardType="numeric" value={filterDepth} onChangeText={setFilterDepth} />
+                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme (Opsiyonel)" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={filterDepth} onChangeText={setFilterDepth} />
                 </View>
               </View>
               {/* Yorum formatı düzeltildi */}
@@ -616,67 +615,67 @@ const SearchScreen = () => {
 export default SearchScreen;
 
 // --- STYLESHEET GÜNCELLENDİ ---
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  searchWrapper: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, backgroundColor: COLORS.background },
+const createStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  searchWrapper: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, backgroundColor: colors.background },
   backButton: { marginRight: 12, padding: 4 },
-  searchInputContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 12, paddingHorizontal: 16, height: 48 },
+  searchInputContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 16, height: 48 },
   searchIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 16, color: COLORS.text },
+  input: { flex: 1, fontSize: 16, color: colors.text },
   clearButton: { padding: 4, marginLeft: 8 },
-  filterButton: { marginLeft: 12, padding: 8, backgroundColor: COLORS.card, borderRadius: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  scrollView: { flex: 1, backgroundColor: COLORS.background },
-  filtersContainer: { backgroundColor: COLORS.background, paddingVertical: 16 },
+  filterButton: { marginLeft: 12, padding: 8, backgroundColor: colors.card, borderRadius: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  scrollView: { flex: 1, backgroundColor: colors.background },
+  filtersContainer: { backgroundColor: colors.background, paddingVertical: 16 },
   filterSection: { marginBottom: 32 },
-  filterSectionTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 16, paddingHorizontal: 16 },
+  filterSectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 16, paddingHorizontal: 16 },
   filterScrollView: { paddingLeft: 16 },
-  smallBox: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: COLORS.card, marginRight: 12, borderWidth: 1, borderColor: COLORS.card },
-  smallBoxSelected: { backgroundColor: COLORS.text, borderColor: COLORS.text },
-  smallBoxText: { fontSize: 14, fontWeight: '600', color: COLORS.text },
-  smallBoxTextSelected: { color: COLORS.background },
-  filterBox: { borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 3, marginRight: 16, position: 'relative', backgroundColor: COLORS.card, justifyContent: 'center', alignItems: 'center' },
+  smallBox: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.card, marginRight: 12, borderWidth: 1, borderColor: colors.card },
+  smallBoxSelected: { backgroundColor: colors.text, borderColor: colors.text },
+  smallBoxText: { fontSize: 14, fontWeight: '600', color: colors.text },
+  smallBoxTextSelected: { color: colors.background },
+  filterBox: { borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 3, marginRight: 16, position: 'relative', backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center' },
   categoryImage: { width: '100%', height: '100%', position: 'absolute' },
   categoryImageFallback: { width: '100%', height: '100%', position: 'absolute', backgroundColor: '#EEEEEE', justifyContent: 'center', alignItems: 'center' },
   filterTextContainer: { backgroundColor: 'rgba(255, 255, 255, 0.9)', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, maxWidth: '90%' },
   filterTextContainerSelected: { backgroundColor: 'rgba(10, 10, 10, 0.9)' },
-  filterBoxText: { fontSize: 14, color: COLORS.text, fontWeight: '700', textAlign: 'center' },
-  filterBoxTextSelected: { color: COLORS.background },
+  filterBoxText: { fontSize: 14, color: colors.text, fontWeight: '700', textAlign: 'center' },
+  filterBoxTextSelected: { color: colors.background },
 
   // --- Ürün Kartı Stilleri (Değişmedi) ---
-  card: { borderRadius: 12, overflow: 'hidden', backgroundColor: COLORS.card, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2, marginBottom: 12, },
+  card: { borderRadius: 12, overflow: 'hidden', backgroundColor: colors.card, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2, marginBottom: 12, },
   imageContainer: { padding: 10, height: 'auto' },
   image: { width: '100%', resizeMode: 'cover', borderRadius: 8 },
   noImage: { width: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8E8E8', borderRadius: 8 },
-  noImageText: { color: COLORS.secondaryText },
-  infoContainer: { padding: 12, paddingTop: 0, backgroundColor: COLORS.card },
+  noImageText: { color: colors.secondaryText },
+  infoContainer: { padding: 12, paddingTop: 0, backgroundColor: colors.card },
   userRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  username: { fontSize: 13, color: COLORS.text, flex: 1 },
+  username: { fontSize: 13, color: colors.text, flex: 1 },
   favoriteButton: { padding: 2 },
-  title: { fontSize: 15, color: COLORS.secondaryText, marginBottom: 8, lineHeight: 20 },
-  price: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
+  title: { fontSize: 15, color: colors.secondaryText, marginBottom: 8, lineHeight: 20 },
+  price: { fontSize: 17, fontWeight: 'bold', color: colors.text },
   // --- Ürün Kartı Stilleri Sonu ---
 
   // --- Profil Kartı Stilleri (Değişmedi) ---
-  profileCard: { width: 120, marginRight: 12, alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 10, padding: 10, paddingBottom: 15, },
+  profileCard: { width: 120, marginRight: 12, alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, padding: 10, paddingBottom: 15, },
   profileCardImage: { width: 80, height: 80, borderRadius: 8, marginBottom: 8, backgroundColor: '#E0E0E0' },
-  profileCardUsername: { fontSize: 13, fontWeight: '600', color: COLORS.text, textAlign: 'center', },
+  profileCardUsername: { fontSize: 13, fontWeight: '600', color: colors.text, textAlign: 'center', },
   // --- Profil Kartı Stilleri Sonu ---
 
   // --- ARAMA SONUÇLARI STİLLERİ ---
   resultsContainer: { paddingVertical: 16, minHeight: Dimensions.get('window').height * 0.7 },
-  resultsSubTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text, marginBottom: 12, paddingHorizontal: 16, },
+  resultsSubTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 12, paddingHorizontal: 16, },
   masonryContainer: { flexDirection: 'row', paddingHorizontal: 10 },
   column: { flex: 1, paddingHorizontal: 5 },
-  noResultsText: { textAlign: 'center', color: COLORS.secondaryText, marginTop: 40, fontSize: 16, paddingHorizontal: 16 },
+  noResultsText: { textAlign: 'center', color: colors.secondaryText, marginTop: 40, fontSize: 16, paddingHorizontal: 16 },
   noRecentSearchesText: { // Yeni eklenen stil
     fontSize: 14,
-    color: COLORS.secondaryText,
+    color: colors.secondaryText,
   },
   // --- ARAMA SONUÇLARI STİLLERİ SONU ---
 
-  clearAllFiltersButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.text, paddingVertical: 16, paddingHorizontal: 20, borderRadius: 12, marginHorizontal: 16, marginTop: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-  clearAllFiltersText: { color: COLORS.background, fontSize: 16, fontWeight: '700', marginLeft: 8 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
+  clearAllFiltersButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.text, paddingVertical: 16, paddingHorizontal: 20, borderRadius: 12, marginHorizontal: 16, marginTop: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  clearAllFiltersText: { color: colors.background, fontSize: 16, fontWeight: '700', marginLeft: 8 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
 
   // --- Modal Stilleri ---
   modalOverlay: { // Arka plan efekti GERİ GETİRİLDİ
@@ -684,33 +683,33 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)', // Yarı saydam siyah
     justifyContent: 'flex-end'
   },
-  modalContainer: { backgroundColor: COLORS.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '65%', /* Yükseklik artırıldı */ shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 8 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.card },
-  modalTitle: { fontSize: 22, fontWeight: '700', color: COLORS.text },
+  modalContainer: { backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '65%', /* Yükseklik artırıldı */ shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 8 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.card },
+  modalTitle: { fontSize: 22, fontWeight: '700', color: colors.text },
   modalContent: { flex: 1, paddingHorizontal: 20, paddingTop: 20 },
   inputSection: { marginBottom: 24 },
   priceInputRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  priceInput: { flex: 1, height: 48, backgroundColor: COLORS.card, borderRadius: 12, paddingHorizontal: 16, fontSize: 16, color: COLORS.text },
-  priceSeparator: { fontSize: 18, color: COLORS.secondaryText, fontWeight: '600' },
+  priceInput: { flex: 1, height: 48, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 16, fontSize: 16, color: colors.text },
+  priceSeparator: { fontSize: 18, color: colors.secondaryText, fontWeight: '600' },
   // Boyut input stilleri
   dimensionInputContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, },
-  dimensionLabel: { fontSize: 16, color: COLORS.secondaryText, width: 80, },
-  dimensionInput: { flex: 1, height: 48, backgroundColor: COLORS.card, borderRadius: 12, paddingHorizontal: 16, fontSize: 16, color: COLORS.text, },
+  dimensionLabel: { fontSize: 16, color: colors.secondaryText, width: 80, },
+  dimensionInput: { flex: 1, height: 48, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 16, fontSize: 16, color: colors.text, },
   // --- Boyut input stilleri sonu ---
-  modalFooter: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1, borderTopColor: COLORS.card, gap: 12, backgroundColor: COLORS.background },
-  clearFiltersButtonModal: { flex: 1, height: 50, borderRadius: 12, backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center' },
-  clearFiltersTextModal: { fontSize: 16, fontWeight: '600', color: COLORS.text },
-  applyFiltersButton: { flex: 1, height: 50, borderRadius: 12, backgroundColor: COLORS.text, alignItems: 'center', justifyContent: 'center' },
-  applyFiltersText: { fontSize: 16, fontWeight: '600', color: COLORS.background },
+  modalFooter: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1, borderTopColor: colors.card, gap: 12, backgroundColor: colors.background },
+  clearFiltersButtonModal: { flex: 1, height: 50, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  clearFiltersTextModal: { fontSize: 16, fontWeight: '600', color: colors.text },
+  applyFiltersButton: { flex: 1, height: 50, borderRadius: 12, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
+  applyFiltersText: { fontSize: 16, fontWeight: '600', color: colors.background },
 
-  sortButton: { marginLeft: 8, padding: 8, backgroundColor: COLORS.card, borderRadius: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  sortModalContainer: { backgroundColor: COLORS.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '60%' },
+  sortButton: { marginLeft: 8, padding: 8, backgroundColor: colors.card, borderRadius: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  sortModalContainer: { backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '60%' },
   sortModalContent: { paddingHorizontal: 20, paddingTop: 10 },
-  sortOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 16, marginBottom: 8, borderRadius: 12, backgroundColor: COLORS.card },
-  sortOptionSelected: { backgroundColor: COLORS.text },
-  sortOptionText: { fontSize: 16, fontWeight: '600', color: COLORS.text },
-  sortOptionTextSelected: { color: COLORS.background },
-  sortModalFooter: { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1, borderTopColor: COLORS.card },
-  sortCloseButton: { height: 50, borderRadius: 12, backgroundColor: COLORS.text, alignItems: 'center', justifyContent: 'center' },
-  sortCloseButtonText: { fontSize: 16, fontWeight: '600', color: COLORS.background },
+  sortOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 16, marginBottom: 8, borderRadius: 12, backgroundColor: colors.card },
+  sortOptionSelected: { backgroundColor: colors.text },
+  sortOptionText: { fontSize: 16, fontWeight: '600', color: colors.text },
+  sortOptionTextSelected: { color: colors.background },
+  sortModalFooter: { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1, borderTopColor: colors.card },
+  sortCloseButton: { height: 50, borderRadius: 12, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
+  sortCloseButtonText: { fontSize: 16, fontWeight: '600', color: colors.background },
 });

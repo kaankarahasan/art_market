@@ -22,6 +22,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -90,10 +91,13 @@ export default function InboxScreen() {
     return () => unsubscribe();
   }, [currentUser]);
 
+  const { colors } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
+
   if (!currentUser) {
     return (
       <View style={styles.centered}>
-        <Text>Kullanıcı bilgisi alınamadı, lütfen giriş yapınız.</Text>
+        <Text style={{ color: colors.text }}>Kullanıcı bilgisi alınamadı, lütfen giriş yapınız.</Text>
       </View>
     );
   }
@@ -142,7 +146,7 @@ export default function InboxScreen() {
         ]}
         onPress={() => navigation.goBack()}
       >
-        <MaterialIcons name="arrow-back-ios" size={24} color="#111" />
+        <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
       </TouchableOpacity>
 
       <FlatList
@@ -151,7 +155,7 @@ export default function InboxScreen() {
         renderItem={renderChatItem}
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Text>Hiç sohbet yok.</Text>
+            <Text style={{ color: colors.text }}>Hiç sohbet yok.</Text>
           </View>
         }
         contentContainerStyle={chats.length === 0 ? { flex: 1 } : undefined}
@@ -160,8 +164,8 @@ export default function InboxScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA', paddingHorizontal: 10 },
+const createStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 10 },
   backButton: {
     width: 40,
     height: 40,
@@ -172,7 +176,7 @@ const styles = StyleSheet.create({
   chatCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     padding: 16,
     marginVertical: 6,
     borderRadius: 16,
@@ -189,9 +193,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   textContainer: { flex: 1 },
-  name: { fontWeight: '700', fontSize: 16, color: '#111', marginBottom: 4 },
+  name: { fontWeight: '700', fontSize: 16, color: colors.text, marginBottom: 4 },
   messageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  message: { color: '#777', fontSize: 14, flex: 1 },
+  message: { color: colors.secondaryText, fontSize: 14, flex: 1 },
   unreadBadge: {
     backgroundColor: '#FF3B30',
     borderRadius: 12,

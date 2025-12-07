@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
@@ -59,17 +60,20 @@ function InboxStackNavigator() {
 // MAIN TAB
 function MainTabNavigatorContent({ userData }: { userData: any }) {
   const insets = useSafeAreaInsets();
-  const iconColor = '#333333';
+  const { colors, isDarkTheme } = useThemeContext(); // Tema renklerini al
+
+  // İkon rengi artık temadan geliyor
+  const iconColor = colors.text;
 
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarBackground: () => <View style={{ backgroundColor: '#FFFFFF', flex: 1 }} />,
+        tabBarBackground: () => <View style={{ backgroundColor: colors.background, flex: 1 }} />,
         tabBarStyle: {
           position: 'absolute',
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#F4F4F4',
+          backgroundColor: colors.background,
+          borderTopColor: isDarkTheme ? '#333' : '#F4F4F4', // Sınır rengini de temaya göre ayarla
           borderTopWidth: 1,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
@@ -93,7 +97,7 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
           ),
           tabBarIcon: ({ focused, size }) =>
             focused ? <Ionicons name="home" size={size} color={iconColor} />
-            : <Ionicons name="home-outline" size={size} color={iconColor} />,
+              : <Ionicons name="home-outline" size={size} color={iconColor} />,
         }}
       />
       <Tab.Screen
@@ -105,7 +109,7 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
           ),
           tabBarIcon: ({ focused, size }) =>
             focused ? <Ionicons name="heart" size={size} color={iconColor} />
-            : <Ionicons name="heart-outline" size={size} color={iconColor} />,
+              : <Ionicons name="heart-outline" size={size} color={iconColor} />,
         }}
       />
       <Tab.Screen
@@ -117,7 +121,7 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
           ),
           tabBarIcon: ({ focused, size }) =>
             focused ? <Ionicons name="mail" size={size} color={iconColor} />
-            : <Ionicons name="mail-outline" size={size} color={iconColor} />,
+              : <Ionicons name="mail-outline" size={size} color={iconColor} />,
         }}
       />
       <Tab.Screen
@@ -138,7 +142,7 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
                   borderRadius: size / 2,
                   overflow: 'hidden',
                   borderWidth: borderWidth,
-                  borderColor: '#333333',
+                  borderColor: iconColor, // Border rengi de dinamik
                   justifyContent: 'center',
                   alignItems: 'center',
                 }}

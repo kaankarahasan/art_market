@@ -45,22 +45,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
-const { width, height } = Dimensions.get('window');
+import { useThemeContext } from '../contexts/ThemeContext';
 
-const COLORS = {
-  divider: '#333333',
-  secondaryText: '#6E6E6E',
-  card: '#F4F4F4',
-  primaryText: '#0A0A0A',
-  background: '#FFFFFF',
-  favoriteIcon: '#333333',
-  activeDot: '#000000',
-  inactiveDot: '#C4C4C4',
-};
+const { width, height } = Dimensions.get('window');
 
 const cardWidth = width * 0.45;
 
 const ProductDetailScreen = () => {
+  const { colors, isDarkTheme } = useThemeContext();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList, 'ProductDetail'>>();
   const route = useRoute<ProductDetailRouteProp>();
@@ -95,6 +87,8 @@ const ProductDetailScreen = () => {
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
+
+  const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
 
   const scrollRef = useRef<ScrollView>(null);
 
@@ -223,8 +217,8 @@ const ProductDetailScreen = () => {
     const images: string[] = Array.isArray(productData.imageUrls)
       ? productData.imageUrls.filter((url) => url && url.trim() !== '')
       : productData.imageUrls
-      ? [productData.imageUrls]
-      : [];
+        ? [productData.imageUrls]
+        : [];
 
     if (images.length === 0) {
       return (
@@ -232,9 +226,9 @@ const ProductDetailScreen = () => {
           <Ionicons
             name="image-outline"
             size={64}
-            color={COLORS.secondaryText}
+            color={colors.secondaryText}
           />
-          <Text style={{ color: COLORS.secondaryText, marginTop: 8 }}>
+          <Text style={{ color: colors.secondaryText, marginTop: 8 }}>
             Görsel bulunamadı
           </Text>
         </View>
@@ -250,7 +244,7 @@ const ProductDetailScreen = () => {
           showsHorizontalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16}
-          style={styles.mainImageContainer} 
+          style={styles.mainImageContainer}
         >
           {images.map((uri, index) => (
             <TouchableOpacity
@@ -275,8 +269,8 @@ const ProductDetailScreen = () => {
                 {
                   backgroundColor:
                     activeIndex === index
-                      ? COLORS.activeDot
-                      : COLORS.inactiveDot,
+                      ? colors.text
+                      : colors.secondaryText,
                 },
               ]}
             />
@@ -290,11 +284,11 @@ const ProductDetailScreen = () => {
 
   const imagesArray = Array.isArray(productData.imageUrls)
     ? productData.imageUrls
-        .filter((url) => url && url.trim() !== '')
-        .map((uri) => ({ uri }))
+      .filter((url) => url && url.trim() !== '')
+      .map((uri) => ({ uri }))
     : productData.imageUrls
-    ? [{ uri: productData.imageUrls }]
-    : [];
+      ? [{ uri: productData.imageUrls }]
+      : [];
 
   const handleFavoriteToggle = (item: Product) => {
     const isFav = favoriteItems.some(fav => fav.id === item.id);
@@ -304,7 +298,7 @@ const ProductDetailScreen = () => {
       id: item.id,
       title: item.title || 'Başlık Yok',
       username: ownerData?.username || 'Bilinmeyen',
-      imageUrl: imageUrl || undefined, 
+      imageUrl: imageUrl || undefined,
       price: item.price || 0,
       year: item.year || '',
     };
@@ -328,16 +322,16 @@ const ProductDetailScreen = () => {
     };
 
     return (
-      <TouchableOpacity 
-        style={styles.card} 
+      <TouchableOpacity
+        style={styles.card}
         onPress={handlePress}
         activeOpacity={0.7}
       >
-        <View style={styles.imageContainer}> 
+        <View style={styles.imageContainer}>
           {firstImage ? (
             <Image
-              source={{ uri: firstImage || undefined }} 
-              style={[styles.image, { height: imageHeight }]} 
+              source={{ uri: firstImage || undefined }}
+              style={[styles.image, { height: imageHeight }]}
             />
           ) : (
             <View style={[styles.noImage, { height: imageHeight }]}>
@@ -355,14 +349,14 @@ const ProductDetailScreen = () => {
               onPress={() => handleFavoriteToggle(item)}
               style={styles.favoriteButton}
             >
-              <Ionicons 
-                name={isFavorite ? 'heart' : 'heart-outline'} 
-                size={20} 
-                color={COLORS.favoriteIcon} 
+              <Ionicons
+                name={isFavorite ? 'heart' : 'heart-outline'}
+                size={20}
+                color={colors.text}
               />
             </TouchableOpacity>
           </View>
-          
+
           <Text style={styles.title} numberOfLines={2}>
             {item.title}{item.year ? `, ${item.year}` : ''}
           </Text>
@@ -378,7 +372,7 @@ const ProductDetailScreen = () => {
   return (
     <View style={styles.container}>
       <StatusBar
-        barStyle="dark-content"
+        barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
         translucent
         backgroundColor="transparent"
       />
@@ -389,7 +383,7 @@ const ProductDetailScreen = () => {
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={28} color="#333333" />
+          <Ionicons name="chevron-back" size={28} color={isDarkTheme ? '#FFF' : '#333'} />
         </TouchableOpacity>
 
         {isOwner && (
@@ -400,7 +394,7 @@ const ProductDetailScreen = () => {
             }
             activeOpacity={0.7}
           >
-            <Ionicons name="create-outline" size={26} color="#333333" />
+            <Ionicons name="create-outline" size={26} color={isDarkTheme ? '#FFF' : '#333'} />
           </TouchableOpacity>
         )}
       </View>
@@ -415,7 +409,7 @@ const ProductDetailScreen = () => {
 
         <View style={styles.content}>
           {loadingOwner ? (
-            <ActivityIndicator size="small" color={COLORS.secondaryText} />
+            <ActivityIndicator size="small" color={colors.secondaryText} />
           ) : (
             ownerData && (
               <View style={styles.ownerHeader}>
@@ -447,7 +441,7 @@ const ProductDetailScreen = () => {
                   <Ionicons
                     name={isFavoriteItem ? 'heart' : 'heart-outline'}
                     size={26}
-                    color={COLORS.favoriteIcon}
+                    color={colors.text}
                   />
                 </TouchableOpacity>
               </View>
@@ -472,13 +466,13 @@ const ProductDetailScreen = () => {
 
           {productData.dimensions && (
             <Text style={styles.detail}>
-               Boyut:{' '}
+              Boyut:{' '}
               {['height', 'width', 'depth']
                 .map((key) =>
                   productData.dimensions
                     ? productData.dimensions[
-                        key as keyof typeof productData.dimensions
-                      ]
+                    key as keyof typeof productData.dimensions
+                    ]
                     : null
                 )
                 .filter(Boolean)
@@ -488,11 +482,11 @@ const ProductDetailScreen = () => {
           )}
 
           <Text style={styles.detail}>
-             Kategori: {productData.category || 'Bilinmiyor'}
+            Kategori: {productData.category || 'Bilinmiyor'}
           </Text>
           {productData.createdAt && (
             <Text style={styles.detail}>
-             Eklenme Tarihi: {formatDate(productData.createdAt)}
+              Eklenme Tarihi: {formatDate(productData.createdAt)}
             </Text>
           )}
         </View>
@@ -527,17 +521,17 @@ const ProductDetailScreen = () => {
       {/* --- YENİ EKLENDİ: Sabit Mesaj Butonu --- */}
       {!isOwner && productData.ownerId && currentUser && (
         <View style={[
-          styles.messageButtonContainer, 
+          styles.messageButtonContainer,
           // Güvenli alan (çentik vs.) için alttan boşluk
           { paddingBottom: insets.bottom > 0 ? insets.bottom + 6 : 12 }
         ]}>
-          <TouchableOpacity 
-            style={styles.messageButton} 
+          <TouchableOpacity
+            style={styles.messageButton}
             onPress={handleSendMessage}
             activeOpacity={0.8}
           >
-            <Ionicons name="chatbubble-ellipses-outline" size={22} color={COLORS.background} />
-            <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.background} />
+            <Text style={[styles.messageButtonText, { color: colors.background }]}>Mesaj Gönder</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -549,7 +543,7 @@ const ProductDetailScreen = () => {
         imageIndex={activeIndex}
         visible={isImageViewVisible}
         onRequestClose={() => setIsImageViewVisible(false)}
-        backgroundColor={COLORS.background}
+        backgroundColor={colors.background}
         FooterComponent={({ imageIndex }) => (
           <View style={styles.squareIndicatorContainerFullScreen}>
             {imagesArray.map((_, idx) => (
@@ -560,8 +554,8 @@ const ProductDetailScreen = () => {
                   {
                     backgroundColor:
                       imageIndex === idx
-                        ? COLORS.activeDot
-                        : COLORS.inactiveDot,
+                        ? colors.text
+                        : colors.secondaryText,
                   },
                 ]}
               />
@@ -575,16 +569,16 @@ const ProductDetailScreen = () => {
 
 export default ProductDetailScreen;
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   topButtonsContainer: {
     position: 'absolute',
     top:
       Platform.OS === 'ios'
         ? 50
         : StatusBar.currentHeight
-        ? StatusBar.currentHeight + 10
-        : 50,
+          ? StatusBar.currentHeight + 10
+          : 50,
     left: 0,
     right: 0,
     zIndex: 10,
@@ -595,19 +589,19 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 6,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: isDarkTheme ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
   },
   editButton: {
     padding: 6,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: isDarkTheme ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
   },
   mainImageContainer: { height: height * 0.6 },
   mainImage: { width, height: height * 0.6 },
   imagePlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
   },
   squareIndicatorContainer: {
     flexDirection: 'row',
@@ -631,54 +625,54 @@ const styles = StyleSheet.create({
   },
   ownerContainer: { flexDirection: 'row', alignItems: 'center' },
   ownerImage: { width: 38, height: 38, borderRadius: 19, marginRight: 10 },
-  ownerName: { fontSize: 15, color: COLORS.secondaryText },
+  ownerName: { fontSize: 15, color: colors.secondaryText },
   favoriteButtonNew: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     padding: 8,
     borderRadius: 50,
   },
   mainTitle: {
     fontSize: 22,
     fontWeight: '600',
-    color: COLORS.primaryText,
+    color: colors.text,
     marginBottom: 8,
   },
   mainPrice: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.primaryText,
+    color: colors.text,
     marginBottom: 12,
   },
   description: {
     fontSize: 16,
-    color: COLORS.primaryText,
+    color: colors.text,
     lineHeight: 22,
     marginBottom: 20,
   },
-  detail: { fontSize: 15, color: COLORS.secondaryText, marginBottom: 6 },
+  detail: { fontSize: 15, color: colors.secondaryText, marginBottom: 6 },
   divider: {
     height: 1,
-    backgroundColor: COLORS.divider,
+    backgroundColor: isDarkTheme ? '#333' : '#E0E0E0',
     marginVertical: 16,
-    opacity: 0.2,
+    opacity: 0.5,
   },
   otherProductsContainer: {
     marginTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#EEE',
+    borderTopColor: isDarkTheme ? '#333' : '#EEE',
     paddingTop: 16,
     minHeight: 100,
   },
   otherProductsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.primaryText,
+    color: colors.text,
     marginBottom: 12,
     paddingHorizontal: 20,
   },
   noOtherProductsText: {
     fontSize: 14,
-    color: COLORS.secondaryText,
+    color: colors.secondaryText,
     paddingHorizontal: 20,
     fontStyle: 'italic',
   },
@@ -687,7 +681,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -714,12 +708,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   noImageText: {
-    color: COLORS.secondaryText,
+    color: colors.secondaryText,
   },
   infoContainer: {
     padding: 12,
     paddingTop: 0,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
   },
   userRow: {
     flexDirection: 'row',
@@ -729,7 +723,7 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 13,
-    color: COLORS.primaryText,
+    color: colors.text,
     flex: 1,
   },
   favoriteButton: {
@@ -737,36 +731,35 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    color: COLORS.secondaryText,
+    color: colors.secondaryText,
     marginBottom: 8,
     lineHeight: 20,
   },
   price: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: COLORS.primaryText,
+    color: colors.text,
   },
 
-  // --- YENİ EKLENDİ: Mesaj Butonu Stilleri ---
+  // --- Mesaj Butonu Stilleri ---
   messageButtonContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: COLORS.background, 
+    backgroundColor: colors.background,
     paddingHorizontal: 20,
     paddingTop: 12,
-    // paddingBottom, 'insets' ile inline olarak veriliyor
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 8,
     borderTopWidth: 1,
-    borderTopColor: COLORS.card,
+    borderTopColor: colors.card,
   },
   messageButton: {
-    backgroundColor: COLORS.primaryText, // Siyah buton
+    backgroundColor: colors.text, // Zıt renk
     paddingVertical: 14,
     borderRadius: 12,
     flexDirection: 'row',
@@ -774,7 +767,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   messageButtonText: {
-    color: COLORS.background, // Beyaz yazı
+    // Rengi inline style ile veriyoruz
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 10,

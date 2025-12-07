@@ -1,5 +1,6 @@
-import React, { createContext, useState, ReactNode, useContext } from 'react';
+import React, { createContext, useState, ReactNode, useContext, useEffect } from 'react';
 import { DarkTheme, DefaultTheme, Theme } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // interface yerine type kullandık
 type ExtendedColors = Theme['colors'] & {
@@ -25,7 +26,7 @@ const darkColors: ExtendedColors = {
 
 export const ThemeContext = createContext<ThemeContextProps>({
   isDarkTheme: false,
-  toggleTheme: () => {},
+  toggleTheme: () => { },
   colors: lightColors,
 });
 
@@ -36,7 +37,29 @@ interface ThemeProviderProps {
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   const [isDarkTheme, setIsDarkTheme] = useState(false);
 
-  const toggleTheme = () => setIsDarkTheme((prev) => !prev);
+  useEffect(() => {
+    const loadTheme = async () => {
+      try {
+        const storedTheme = await AsyncStorage.getItem('THEME_PREFERENCE');
+        if (storedTheme !== null) {
+          setIsDarkTheme(storedTheme === 'dark');
+        }
+      } catch (error) {
+        console.error('Failed to load theme preference:', error);
+      }
+    };
+    loadTheme();
+  }, []);
+
+  const toggleTheme = async () => {
+    try {
+      const newTheme = !isDarkTheme;
+      setIsDarkTheme(newTheme);
+      await AsyncStorage.setItem('THEME_PREFERENCE', newTheme ? 'dark' : 'light');
+    } catch (error) {
+      console.error('Failed to save theme preference:', error);
+    }
+  };
 
   const colors = isDarkTheme ? darkColors : lightColors;
 

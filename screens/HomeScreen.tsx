@@ -32,8 +32,10 @@ const HomeScreen = () => {
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
-  const { colors } = useThemeContext();
+  const { colors, isDarkTheme } = useThemeContext();
   const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
+
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   // Dinamik tab bar yüksekliği
   const tabBarHeight = 60 + insets.bottom;
@@ -43,24 +45,24 @@ const HomeScreen = () => {
     useCallback(() => {
       navigation.getParent()?.setOptions({
         tabBarStyle: {
-            display: 'flex',
-            position: 'absolute',
-            backgroundColor: '#FFFFFF',
-            borderTopWidth: 1,
-            borderTopColor: '#F0F0F0',
-            height: tabBarHeight,
-            paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-            paddingTop: 8,
-           }
+          display: 'flex',
+          position: 'absolute',
+          backgroundColor: colors.background,
+          borderTopWidth: 1,
+          borderTopColor: isDarkTheme ? '#333' : '#F0F0F0',
+          height: tabBarHeight,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          paddingTop: 8,
+        }
       });
-    }, [navigation, insets.bottom, tabBarHeight])
+    }, [navigation, insets.bottom, tabBarHeight, colors, isDarkTheme])
   );
 
   const fetchData = async () => {
     try {
-       const [productSnap, usersSnap] = await Promise.all([
+      const [productSnap, usersSnap] = await Promise.all([
         getDocs(
-            query(collection(db, 'products'), where('isSold', '==', false), limit(50))
+          query(collection(db, 'products'), where('isSold', '==', false), limit(50))
         ),
         getDocs(collection(db, 'users'))
       ]);
@@ -73,10 +75,10 @@ const HomeScreen = () => {
       setUserNames(userNamesMap);
 
       const productList = productSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
-        }));
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
+      }));
       setProducts(shuffleArray(productList));
 
     } catch (error) {
@@ -114,12 +116,12 @@ const HomeScreen = () => {
   const handleImageLoad = (productId: string, width: number, height: number) => {
     const imageWidth = columnWidth - 20; // card padding (10+10)
     if (width > 0) {
-        const aspectRatio = height / width;
-        const calculatedHeight = imageWidth * aspectRatio;
-        const clampedHeight = Math.max(100, Math.min(calculatedHeight, screenWidth * 1.2));
-        setImageHeights(prev => ({ ...prev, [productId]: clampedHeight }));
+      const aspectRatio = height / width;
+      const calculatedHeight = imageWidth * aspectRatio;
+      const clampedHeight = Math.max(100, Math.min(calculatedHeight, screenWidth * 1.2));
+      setImageHeights(prev => ({ ...prev, [productId]: clampedHeight }));
     } else {
-        setImageHeights(prev => ({ ...prev, [productId]: 200 }));
+      setImageHeights(prev => ({ ...prev, [productId]: 200 }));
     }
   };
 
@@ -173,8 +175,8 @@ const HomeScreen = () => {
 
     const displayName = userNames[item.username] || item.username || 'Bilinmeyen';
 
-     // Non-serializable hatasını önlemek için handlePress
-     const handlePress = () => {
+    // Non-serializable hatasını önlemek için handlePress
+    const handlePress = () => {
       const serializableProduct = {
         ...item,
         // createdAt'in Date objesi olup olmadığını kontrol et ve string'e çevir
@@ -216,7 +218,7 @@ const HomeScreen = () => {
                 onPress={() => handleFavoriteToggle(item)}
                 style={styles.favoriteButton}
               >
-                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color="#333333" />
+                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -243,14 +245,14 @@ const HomeScreen = () => {
           onPress={() => navigation.navigate('Search')}
           activeOpacity={0.7}
         >
-          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color={colors.secondaryText} style={styles.searchIcon} />
           <Text style={styles.searchPlaceholder}>Ara...</Text>
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0A0A0A" />
+          <ActivityIndicator size="large" color={colors.text} />
         </View>
       ) : (
         <ScrollView
@@ -259,8 +261,8 @@ const HomeScreen = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#0A0A0A"
-              colors={['#0A0A0A']}
+              tintColor={colors.text}
+              colors={[colors.text]}
             />
           }
           contentContainerStyle={{ paddingBottom: tabBarHeight }}
@@ -282,21 +284,21 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 // --- GÜNCELLEME: Stiller Orijinal Haline Döndürüldü ---
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   searchContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 48,
@@ -310,7 +312,7 @@ const styles = StyleSheet.create({
   searchIcon: { marginRight: 10 },
   searchPlaceholder: {
     fontSize: 16,
-    color: '#999',
+    color: colors.secondaryText,
   },
   masonryContainer: {
     flexDirection: 'row',
@@ -325,7 +327,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 12,
-    backgroundColor: '#F4F4F4', // Orijinal arka plan
+    backgroundColor: colors.card, // Orijinal arka plan
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -347,12 +349,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8E8E8'
   },
   noImageText: { // Orijinal noImageText stili
-    color: '#6E6E6E'
+    color: colors.secondaryText
   },
   infoContainer: { // Orijinal infoContainer stili
     padding: 12,
     paddingTop: 0, // Orijinalde paddingTop vardı
-    backgroundColor: '#F4F4F4' // Orijinal arka plan
+    backgroundColor: colors.card // Orijinal arka plan
   },
   userRow: { // Orijinal userRow stili
     flexDirection: 'row',
@@ -362,17 +364,17 @@ const styles = StyleSheet.create({
   },
   username: { // Orijinal username stili
     fontSize: 13,
-    color: '#0A0A0A', // Orijinal renk
+    color: colors.text, // Orijinal renk
     flex: 1
     // Orijinalde marginRight yoktu
   },
   favoriteButton: { // Orijinal favoriteButton stili
     padding: 2
     // Orijinalde marginLeft yoktu
-   },
+  },
   title: { // Orijinal title stili
     fontSize: 15,
-    color: '#6E6E6E', // Orijinal renk
+    color: colors.secondaryText, // Orijinal renk
     marginBottom: 8,
     lineHeight: 20 // Orijinal lineHeight
     // Orijinalde fontWeight yoktu
@@ -380,13 +382,13 @@ const styles = StyleSheet.create({
   price: { // Orijinal price stili
     fontSize: 17, // Orijinal boyut
     fontWeight: 'bold', // Orijinal kalınlık
-    color: '#0A0A0A'
+    color: colors.text
   },
   loadingContainer: {
-     flex: 1,
-     justifyContent: 'center',
-     alignItems: 'center',
-     backgroundColor: '#FFFFFF'
-    },
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background
+  },
 });
 // --- GÜNCELLEME Sonu ---

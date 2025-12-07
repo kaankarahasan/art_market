@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
 import { Product } from '../routes/types';
@@ -15,14 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../routes/types';
 import { useThemeContext } from '../contexts/ThemeContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 
 const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 70) / 2;
 
 const FavoritesScreen = () => {
   const { favoriteItems, removeFavorite } = useFavoriteItems();
-  const { colors } = useThemeContext();
+  const { colors, isDarkTheme } = useThemeContext();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
@@ -108,7 +107,10 @@ const FavoritesScreen = () => {
             <Text style={[styles.username, { color: colors.text }]} numberOfLines={1}>
               {item.username || 'Bilinmeyen'}
             </Text>
-            <TouchableOpacity onPress={() => removeFavorite(item.id)} style={styles.removeButton}>
+            <TouchableOpacity
+              onPress={() => removeFavorite(item.id)}
+              style={[styles.removeButton, { backgroundColor: isDarkTheme ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)' }]}
+            >
               <Ionicons name="close" size={18} color={colors.text} />
             </TouchableOpacity>
           </View>
@@ -130,7 +132,13 @@ const FavoritesScreen = () => {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <TouchableOpacity
-        style={[styles.backButton, { top: insets.top + 10 }]}
+        style={[
+          styles.backButton,
+          {
+            top: insets.top + 10,
+            backgroundColor: isDarkTheme ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.9)'
+          }
+        ]}
         onPress={() => navigation.goBack()}
       >
         <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -156,7 +164,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 15,
     zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+
     borderRadius: 25,
     padding: 6,
     elevation: 3,
@@ -181,7 +189,7 @@ const styles = StyleSheet.create({
   infoContainer: { paddingHorizontal: 12, paddingBottom: 12, paddingTop: 2 },
   userRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   username: { fontSize: 13, flex: 1 },
-  removeButton: { backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 20, padding: 4, marginLeft: 6 },
+  removeButton: { borderRadius: 20, padding: 4, marginLeft: 6 },
   title: { fontSize: 15, marginTop: 6, marginBottom: 6 },
   price: { fontSize: 17, fontWeight: 'bold' },
 });

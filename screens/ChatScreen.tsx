@@ -25,6 +25,7 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 type Message = {
   id: string;
@@ -54,6 +55,10 @@ export default function ChatScreen() {
 
   const chatId = [currentUserId, otherUserId].sort().join('_');
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+  // Tema Entegrasyonu
+  const { colors, isDarkTheme } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
 
   // Tab bar gizleme
   useFocusEffect(
@@ -176,8 +181,9 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
 
+
         {/* Mesajlar */}
-        <View style={{ flex: 1, backgroundColor: '#F4F4F4' }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
           <FlatList
             inverted
             data={[...messages].reverse()}
@@ -195,7 +201,7 @@ export default function ChatScreen() {
                   <Text
                     style={[
                       styles.messageText,
-                      item.senderId !== currentUserId && { color: '#333333' },
+                      item.senderId !== currentUserId && { color: colors.text },
                       { fontSize: messageFont },
                     ]}
                   >
@@ -214,6 +220,7 @@ export default function ChatScreen() {
             value={text}
             onChangeText={setText}
             placeholder="Mesaj..."
+            placeholderTextColor={colors.secondaryText}
             style={[
               styles.input,
               {
@@ -239,15 +246,15 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F4F4F4' },
+const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: colors.card,
+    backgroundColor: colors.background,
   },
   backButton: {
     paddingHorizontal: 12,
@@ -255,10 +262,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 8,
   },
-  backText: { color: '#333333' },
+  backText: { color: colors.text },
   userInfo: { flexDirection: 'row', alignItems: 'center' },
   avatar: { marginRight: 12 },
-  username: { fontWeight: '600', color: '#333333' },
+  username: { fontWeight: '600', color: colors.text },
   messageBubble: {
     padding: 14,
     marginVertical: 6,
@@ -266,7 +273,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   myMessage: {
-    backgroundColor: '#333333',
+    backgroundColor: isDarkTheme ? '#262626' : '#333333',
     alignSelf: 'flex-end',
     borderBottomRightRadius: 4,
     borderBottomLeftRadius: 20,
@@ -274,37 +281,37 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
   },
   otherMessage: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: isDarkTheme ? '#404040' : '#E5E5E5',
     borderBottomRightRadius: 20,
     borderBottomLeftRadius: 4,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
-  messageText: { color: '#FFFFFF' },
+  messageText: { color: '#FFFFFF' }, // myMessage text color, otherMessage overrides this inline
   inputContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: colors.card,
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#CCCCCC',
+    borderColor: isDarkTheme ? '#404040' : '#CCCCCC',
     borderRadius: 22,
     marginRight: 10,
-    backgroundColor: '#FAFAFA',
-    color: '#6E6E6E',
+    backgroundColor: isDarkTheme ? '#1F1F1F' : '#FAFAFA',
+    color: colors.text,
   },
   sendButton: {
-    backgroundColor: '#333333',
+    backgroundColor: isDarkTheme ? '#FFFFFF' : '#333333',
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sendButtonText: { color: '#FFFFFF', fontWeight: '600' },
+  sendButtonText: { color: isDarkTheme ? '#000000' : '#FFFFFF', fontWeight: '600' },
 });

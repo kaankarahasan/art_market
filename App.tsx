@@ -37,45 +37,60 @@ import { ThemeProvider } from './contexts/ThemeContext';
 // Firebase'i initialize etmek için içeri aktarıyoruz (tek seferlik tetiklenir)
 import './firebase';
 
+import { DarkTheme, DefaultTheme } from '@react-navigation/native';
+import { useThemeContext } from './contexts/ThemeContext';
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+function AppContent() {
+  const { isDarkTheme } = useThemeContext();
+  const theme = isDarkTheme ? DarkTheme : DefaultTheme;
+
+  return (
+    <>
+      <StatusBar
+        barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
+      <NavigationContainer theme={theme}>
+        <Stack.Navigator initialRouteName="Login">
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="PasswordReset" component={PasswordResetScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
+          <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Followers" component={FollowersScreen} />
+          <Stack.Screen name="Following" component={FollowingScreen} />
+          <Stack.Screen name="Sold" component={SoldScreen} options={{ title: 'Sold Products' }} />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: 'Product Detail' }} />
+          <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'User Profile' }} />
+          <Stack.Screen name="OtherProfile" component={OtherProfileScreen} options={{ title: 'Other Profile' }} />
+          <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ title: 'Add Product' }} />
+          <Stack.Screen name="UpdateProduct" component={UpdateProductScreen} options={{ title: 'Update Product' }} />
+          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+          <Stack.Screen name="ChangeEmailAndPassword" component={ChangeEmailAndPasswordScreen} />
+          <Stack.Screen name="About" component={AboutScreen} />
+          <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+          <Stack.Screen name="TermsOfService" component={TermsOfUseScreen} />
+          <Stack.Screen name="PrivacyFollowerCommentSettings" component={PrivacyFollowerCommentSettingsScreen} />
+          <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
+          <Stack.Screen name="Search" component={SearchScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </>
+  );
+}
 
 export default function App() {
   return (
     <FavoriteUsersProvider>
       <FavoriteItemsProvider>
         <ThemeProvider>
-          <NavigationContainer>
-            <Stack.Navigator initialRouteName="Login">
-              <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-
-              {/* 2. ADIM: Yeni ekranı buraya ekleyin */}
-              <Stack.Screen name="PasswordReset" component={PasswordResetScreen} options={{ headerShown: false }} />
-
-              <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
-              <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="Followers" component={FollowersScreen} />
-              <Stack.Screen name="Following" component={FollowingScreen} />
-              <Stack.Screen name="Sold" component={SoldScreen} options={{ title: 'Sold Products' }} />
-              <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
-              <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: 'Product Detail' }} />
-              <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'User Profile' }} />
-              <Stack.Screen name="OtherProfile" component={OtherProfileScreen} options={{ title: 'Other Profile' }} />
-              <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ title: 'Add Product' }} />
-              <Stack.Screen name="UpdateProduct" component={UpdateProductScreen} options={{ title: 'Update Product' }} />
-              <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-              <Stack.Screen name="ChangeEmailAndPassword" component={ChangeEmailAndPasswordScreen} />
-              <Stack.Screen name="About" component={AboutScreen} />
-              <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-              <Stack.Screen name="TermsOfService" component={TermsOfUseScreen} />
-              <Stack.Screen name="PrivacyFollowerCommentSettings" component={PrivacyFollowerCommentSettingsScreen} />
-              <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
-              <Stack.Screen name="Search" component={SearchScreen} />
-            </Stack.Navigator>
-          </NavigationContainer>
+          <AppContent />
         </ThemeProvider>
       </FavoriteItemsProvider>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
     </FavoriteUsersProvider>
   );
 }

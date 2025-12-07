@@ -50,22 +50,28 @@ const FullScreenImageModal = ({
   visible: boolean;
   onClose: () => void;
   imageUrl: string;
-}) => (
-  <Modal visible={visible} transparent animationType="fade">
-    <View style={styles.modalBackground}>
-      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-        <MaterialIcon name="close" size={30} color="#333333" />
-      </TouchableOpacity>
-      <ImageViewer
-        imageUrls={[{ url: imageUrl }]}
-        enableSwipeDown
-        onSwipeDown={onClose}
-        backgroundColor="#FFFFFF"
-        renderIndicator={() => <View />}
-      />
-    </View>
-  </Modal>
-);
+}) => {
+  const { colors } = useContext(ThemeContext);
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 40, right: 20, zIndex: 10 }}
+          onPress={onClose}
+        >
+          <MaterialIcon name="close" size={30} color={colors.text} />
+        </TouchableOpacity>
+        <ImageViewer
+          imageUrls={[{ url: imageUrl }]}
+          enableSwipeDown
+          onSwipeDown={onClose}
+          backgroundColor={colors.background}
+          renderIndicator={() => <View />}
+        />
+      </View>
+    </Modal>
+  );
+};
 
 const ProfileScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -74,6 +80,7 @@ const ProfileScreen = () => {
   const firestore = getFirestore();
   const insets = useSafeAreaInsets();
   const { colors } = useContext(ThemeContext);
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   const currentUser = auth.currentUser;
   const profileId = route.params?.userId ?? currentUser?.uid ?? '';
@@ -208,13 +215,13 @@ const ProfileScreen = () => {
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color="#333333" />
+        <ActivityIndicator size="large" color={colors.text} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header with username and buttons */}
       <View
         style={{
@@ -227,15 +234,15 @@ const ProfileScreen = () => {
         }}
       >
         <Text style={styles.headerUsername}>@{userData?.username || 'kullaniciadi'}</Text>
-        
+
         {isOwnProfile && (
           <View style={{ flexDirection: 'row', gap: 16 }}>
             <TouchableOpacity onPress={() => navigation.navigate('AddProduct')}>
-              <Ionicons name="add-outline" size={32} color="#333333" />
+              <Ionicons name="add-outline" size={32} color={colors.text} />
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-              <Feather name="menu" size={32} color="#333333" />
+              <Feather name="menu" size={32} color={colors.text} />
             </TouchableOpacity>
           </View>
         )}
@@ -298,9 +305,9 @@ const ProfileScreen = () => {
             <Ionicons
               name="albums-outline"
               size={20}
-              color={selectedTab === 'Artworks' ? '#0A0A0A' : '#6E6E6E'}
+              color={selectedTab === 'Artworks' ? colors.text : colors.secondaryText}
             />
-            <Text style={[styles.tabText, selectedTab === 'Artworks' && { color: '#0A0A0A' }]}>
+            <Text style={[styles.tabText, selectedTab === 'Artworks' && { color: colors.text }]}>
               Artworks
             </Text>
           </TouchableOpacity>
@@ -312,9 +319,9 @@ const ProfileScreen = () => {
             <Ionicons
               name="information-circle-outline"
               size={20}
-              color={selectedTab === 'About' ? '#0A0A0A' : '#6E6E6E'}
+              color={selectedTab === 'About' ? colors.text : colors.secondaryText}
             />
-            <Text style={[styles.tabText, selectedTab === 'About' && { color: '#0A0A0A' }]}>
+            <Text style={[styles.tabText, selectedTab === 'About' && { color: colors.text }]}>
               About
             </Text>
           </TouchableOpacity>
@@ -327,7 +334,7 @@ const ProfileScreen = () => {
           </View>
         ) : (
           <View style={{ paddingHorizontal: 16, marginTop: 10, paddingBottom: 50 }}>
-            <Text style={{ color: '#6E6E6E', fontSize: 14 }}>
+            <Text style={{ color: colors.secondaryText, fontSize: 14 }}>
               {userData?.bio || 'No bio available.'}
             </Text>
           </View>
@@ -345,20 +352,20 @@ const ProfileScreen = () => {
 
 export default ProfileScreen;
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   headerUsername: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0A0A0A',
+    color: colors.text,
   },
 
   profileCard: {
     flexDirection: 'row',
     padding: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 12,
@@ -392,7 +399,7 @@ const styles = StyleSheet.create({
   fullNameText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#0A0A0A',
+    color: colors.text,
     marginBottom: 8,
     textAlign: 'left', // Sola hizala
     width: '100%',
@@ -411,12 +418,12 @@ const styles = StyleSheet.create({
   followNumber: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#0A0A0A',
+    color: colors.text,
   },
 
   followLabel: {
     fontSize: 14,
-    color: '#6E6E6E',
+    color: colors.secondaryText,
     textAlign: 'center',
   },
 
@@ -432,7 +439,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     marginTop: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border || '#E0E0E0',
   },
   tabItem: {
     flexDirection: 'row',
@@ -442,8 +449,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
   },
-  activeTabLarge: { borderBottomWidth: 2, borderBottomColor: '#333333' },
-  tabText: { fontSize: 14, color: '#6E6E6E', fontWeight: '600' },
+  activeTabLarge: { borderBottomWidth: 2, borderBottomColor: colors.text },
+  tabText: { fontSize: 14, color: colors.secondaryText, fontWeight: '600' },
 
   masonryContainer: { flexDirection: 'row', paddingHorizontal: 10 },
   column: { flex: 1, paddingHorizontal: 5 },
@@ -451,16 +458,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 12,
-    backgroundColor: '#F4F4F4',
+    backgroundColor: colors.card,
     elevation: 2,
   },
   imageContainer: { padding: 10 },
   image: { width: '100%', resizeMode: 'contain', borderRadius: 8 },
   noImage: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8E8E8' },
-  noImageText: { color: '#6E6E6E' },
+  noImageText: { color: colors.secondaryText },
   infoContainer: { padding: 12, paddingTop: 0 },
-  title: { fontSize: 15, color: '#6E6E6E', marginBottom: 8, lineHeight: 20 },
-  price: { fontSize: 17, fontWeight: 'bold', color: '#0A0A0A' },
-  modalBackground: { flex: 1, backgroundColor: '#FFFFFF' },
+  title: { fontSize: 15, color: colors.secondaryText, marginBottom: 8, lineHeight: 20 },
+  price: { fontSize: 17, fontWeight: 'bold', color: colors.text },
+  // modalBackground kaldırıldı, inline kullanılıyor.
   closeButton: { position: 'absolute', top: 40, right: 20, zIndex: 10 },
 });
