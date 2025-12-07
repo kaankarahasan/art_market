@@ -64,7 +64,7 @@ function AppContent() {
           <Stack.Screen name="Following" component={FollowingScreen} />
           <Stack.Screen name="Sold" component={SoldScreen} options={{ title: 'Sold Products' }} />
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
-          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: 'Product Detail' }} />
+          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
           <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'User Profile' }} />
           <Stack.Screen name="OtherProfile" component={OtherProfileScreen} options={{ title: 'Other Profile' }} />
           <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ title: 'Add Product' }} />

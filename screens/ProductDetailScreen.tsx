@@ -544,8 +544,18 @@ const ProductDetailScreen = () => {
         visible={isImageViewVisible}
         onRequestClose={() => setIsImageViewVisible(false)}
         backgroundColor={colors.background}
+        HeaderComponent={({ imageIndex }) => (
+          <View style={[styles.imageHeaderContainer, { paddingTop: insets.top }]}>
+            <TouchableOpacity
+              style={styles.imageCloseButton}
+              onPress={() => setIsImageViewVisible(false)}
+            >
+              <Ionicons name="close" size={28} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+        )}
         FooterComponent={({ imageIndex }) => (
-          <View style={styles.squareIndicatorContainerFullScreen}>
+          <View style={[styles.squareIndicatorContainerFullScreen, { paddingBottom: insets.bottom + 20 }]}>
             {imagesArray.map((_, idx) => (
               <View
                 key={idx}
@@ -554,8 +564,8 @@ const ProductDetailScreen = () => {
                   {
                     backgroundColor:
                       imageIndex === idx
-                        ? colors.text
-                        : colors.secondaryText,
+                        ? '#FFF'
+                        : 'rgba(255, 255, 255, 0.5)',
                   },
                 ]}
               />
@@ -609,13 +619,7 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     marginTop: 8,
     gap: 6,
   },
-  squareIndicatorContainerFullScreen: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    paddingBottom: 20,
-  },
-  squareDot: { width: 10, height: 10, borderRadius: 2 },
+
   content: { paddingHorizontal: 20, paddingTop: 10 },
   ownerHeader: {
     flexDirection: 'row',
@@ -771,5 +775,38 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 10,
+  },
+
+  // --- Tam Ekran Resim Stilleri ---
+  imageHeaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 9999, // Ensure it's above everything
+    flexDirection: 'row',
+    justifyContent: 'flex-start', // Align to left/start
+    paddingHorizontal: 20,
+    // paddingTop is handled dynamically via inline style
+  },
+  imageCloseButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)', // Semi-transparent background for visibility
+    marginTop: 10, // Additional margin from the very top/notch
+  },
+  squareIndicatorContainerFullScreen: {
+    paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+  },
+  squareDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
   },
 });

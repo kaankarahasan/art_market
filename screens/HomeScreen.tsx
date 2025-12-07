@@ -121,21 +121,23 @@ const HomeScreen = () => {
   );
   // Load Recent Searches
   // Load Recent Searches
-  useEffect(() => {
-    const loadRecentSearches = async () => {
-      try {
-        const user = auth.currentUser;
-        const key = user ? `recentSearches_${user.uid}` : 'recentSearches_guest';
-        const savedSearches = await AsyncStorage.getItem(key);
-        if (savedSearches) {
-          setRecentSearches(JSON.parse(savedSearches));
+  useFocusEffect(
+    useCallback(() => {
+      const loadRecentSearches = async () => {
+        try {
+          const user = auth.currentUser;
+          const key = user ? `recentSearches_${user.uid}` : 'recentSearches_guest';
+          const savedSearches = await AsyncStorage.getItem(key);
+          if (savedSearches) {
+            setRecentSearches(JSON.parse(savedSearches));
+          }
+        } catch (error) {
+          console.error('Failed to load recent searches', error);
         }
-      } catch (error) {
-        console.error('Failed to load recent searches', error);
-      }
-    };
-    loadRecentSearches();
-  }, []);
+      };
+      loadRecentSearches();
+    }, [])
+  );
 
   const saveRecentSearches = async (searches: string[]) => {
     try {
@@ -399,7 +401,7 @@ const HomeScreen = () => {
 
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
       <View style={{ backgroundColor: colors.background, paddingBottom: 8 }}>
         <View style={styles.searchWrapper}>
           <View style={styles.searchInputContainer}>

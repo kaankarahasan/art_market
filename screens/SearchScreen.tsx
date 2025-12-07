@@ -136,6 +136,9 @@ const SearchScreen = () => {
       navigation.getParent<BottomTabNavigationProp<any>>()?.setOptions({
         tabBarStyle: { display: 'none' }
       });
+      // Refresh Recent Searches on Focus
+      loadRecentSearches();
+
       // Only auto-focus if we have an initial query passed from navigation (e.g. from Home)
       if (route.params?.initialQuery) {
         const timer = setTimeout(() => {
@@ -224,9 +227,9 @@ const SearchScreen = () => {
   };
 
   // Component mount edildiğinde ve her 'recentSearches' değiştiğinde çalışır
+  // Component mount edildiğinde ve her 'recentSearches' değiştiğinde çalışır
   useEffect(() => {
-    // Yalnızca ilk yüklemede AsyncStorage'dan geçmişi yükle
-    loadRecentSearches();
+    // Verileri yükle 
     fetchAllData();
   }, []);
 
