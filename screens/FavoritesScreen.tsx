@@ -131,7 +131,13 @@ const FavoritesScreen = () => {
     );
   };
 
-  if (isLoading) return <ActivityIndicator style={{ marginTop: 40 }} size="large" color={colors.primary} />;
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>

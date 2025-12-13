@@ -214,7 +214,7 @@ const ProfileScreen = () => {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', flex: 1 }]}>
         <ActivityIndicator size="large" color={colors.text} />
       </View>
     );

@@ -221,7 +221,11 @@ const OtherProfileScreen = () => {
 
   if (loading)
     // Renk güncellendi
-    return <ActivityIndicator style={{ marginTop: 40 }} size="large" color={colors.text} />;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.text} />
+      </View>
+    );
 
   return (
     // Renk güncellendi
