@@ -36,14 +36,16 @@ const columnWidth = (screenWidth - 45) / 2;
 
 
 // --- Category Data with Placeholders ---
+// Define heights for asymmetry: roughly alternating tall/short/medium
+const categoryHeights = [220, 180, 160, 240, 240, 190, 180, 260, 200, 220, 160];
+
 const categories = [
   'Yağlı Boya', 'Suluboya', 'Akrilik', 'Heykel', 'Fotoğraf',
   'Dijital Sanat', 'Çizim', 'Grafik Tasarım', 'Seramik',
   'Kolaj', 'Diğer'
 ].map((name, index) => ({
   name,
-  // Deterministic random height between 120 and 240
-  height: 120 + (name.length * 15 + index * 35) % 120,
+  height: categoryHeights[index % categoryHeights.length],
   imageUrl: `https://picsum.photos/seed/${name}/300/${200 + (index % 5) * 50}`
 }));
 
