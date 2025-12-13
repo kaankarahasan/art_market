@@ -37,11 +37,9 @@ const columnWidth = (screenWidth - 45) / 2;
 
 // --- Category Data with Placeholders ---
 const categories = [
-  'Tablo', 'Heykel', 'Fotoğraf', 'Baskı', 'Çizim', 'Dijital', 'Seramik',
-  'Enstalasyon', 'Modern', 'Soyut', 'Empresyonizm', 'Realizm', 'Kübizm',
-  'Sürrealizm', 'Pop Art', 'Minimalizm', 'Portre', 'Manzara', 'Natürmort',
-  'Figüratif', 'Şehir', 'Deniz', 'Yağlıboya', 'Akrilik', 'Suluboya',
-  'Karışık', 'Tuval', 'Kağıt', 'Ahşap', 'Metal'
+  'Yağlı Boya', 'Suluboya', 'Akrilik', 'Heykel', 'Fotoğraf',
+  'Dijital Sanat', 'Çizim', 'Grafik Tasarım', 'Seramik',
+  'Kolaj', 'Diğer'
 ].map((name, index) => ({
   name,
   // Deterministic random height between 120 and 240
