@@ -35,41 +35,23 @@ const columnWidth = (screenWidth - 45) / 2;
 // COLORS sabiti yerine tema renkleri kullanılacak
 
 
-// ... categoryImages ...
-const categoryImages: { [key: string]: any } = {
-  'Tablo': require('../assets/SearchScreenBoxBackground/tablo.png'),
-  'Heykel': require('../assets/SearchScreenBoxBackground/heykel.png'),
-  'Fotoğraf': require('../assets/SearchScreenBoxBackground/fotograf.png'),
-  'Baskı': require('../assets/SearchScreenBoxBackground/baski.png'),
-  'Çizim': require('../assets/SearchScreenBoxBackground/cizim.png'),
-  'Dijital': require('../assets/SearchScreenBoxBackground/dijital.png'),
-  'Seramik': require('../assets/SearchScreenBoxBackground/seramik.png'),
-  'Enstalasyon': require('../assets/SearchScreenBoxBackground/modern.png'),
-  'Modern': require('../assets/SearchScreenBoxBackground/modern.png'),
-  'SoyutStil': require('../assets/SearchScreenBoxBackground/soyut.png'),
-  'Empresyonizm': require('../assets/SearchScreenBoxBackground/empresyonizm.png'),
-  'Realizm': require('../assets/SearchScreenBoxBackground/realizm.png'),
-  'Kübizm': require('../assets/SearchScreenBoxBackground/kubizm.png'),
-  'Sürrealizm': require('../assets/SearchScreenBoxBackground/surrealizm.png'),
-  'Pop Art': require('../assets/SearchScreenBoxBackground/popart.png'),
-  'Minimalizm': require('../assets/SearchScreenBoxBackground/minimalizm.png'),
-  'Portre': require('../assets/SearchScreenBoxBackground/portre.png'),
-  'Manzara': require('../assets/SearchScreenBoxBackground/manzara.png'),
-  'Natürmort': require('../assets/SearchScreenBoxBackground/naturmort.png'),
-  'SoyutTema': require('../assets/SearchScreenBoxBackground/soyut.png'),
-  'Figüratif': require('../assets/SearchScreenBoxBackground/figuratif.png'),
-  'Şehir': require('../assets/SearchScreenBoxBackground/sehir.png'),
-  'Deniz': require('../assets/SearchScreenBoxBackground/deniz.png'),
-  'Yağlıboya': require('../assets/SearchScreenBoxBackground/yagliboya.png'),
-  'Akrilik': require('../assets/SearchScreenBoxBackground/akrilik.png'),
-  'Suluboya': require('../assets/SearchScreenBoxBackground/suluboya.png'),
-  'Karışık': require('../assets/SearchScreenBoxBackground/karisik.png'),
-  'Tuval': require('../assets/SearchScreenBoxBackground/tuval.png'),
-  'Kağıt': require('../assets/SearchScreenBoxBackground/kagit.png'),
-  'Ahşap': require('../assets/SearchScreenBoxBackground/ahsap.png'),
-  'Metal': require('../assets/SearchScreenBoxBackground/metal.png'),
-};
+// --- Category Data with Placeholders ---
+const categories = [
+  'Tablo', 'Heykel', 'Fotoğraf', 'Baskı', 'Çizim', 'Dijital', 'Seramik',
+  'Enstalasyon', 'Modern', 'Soyut', 'Empresyonizm', 'Realizm', 'Kübizm',
+  'Sürrealizm', 'Pop Art', 'Minimalizm', 'Portre', 'Manzara', 'Natürmort',
+  'Figüratif', 'Şehir', 'Deniz', 'Yağlıboya', 'Akrilik', 'Suluboya',
+  'Karışık', 'Tuval', 'Kağıt', 'Ahşap', 'Metal'
+].map((name, index) => ({
+  name,
+  // Deterministic random height between 120 and 240
+  height: 120 + (name.length * 15 + index * 35) % 120,
+  imageUrl: `https://picsum.photos/seed/${name}/300/${200 + (index % 5) * 50}`
+}));
 
+// Split categories into two columns for Masonry
+const leftCategories = categories.filter((_, i) => i % 2 === 0);
+const rightCategories = categories.filter((_, i) => i % 2 !== 0);
 
 type UserSearchResult = {
   id: string;
@@ -77,8 +59,6 @@ type UserSearchResult = {
   fullName?: string;
   photoURL?: string;
 };
-
-
 
 type SearchScreenRouteProp = RouteProp<{ params: { initialQuery?: string } }, 'params'>;
 
@@ -373,10 +353,6 @@ const SearchScreen = () => {
         return widthMatch && heightMatch && depthMatch;
       });
     }
-    // --- Boyut Filtresi Sonu ---
-
-    // TODO: Diğer modal filtrelerini buraya ekle (selectedArtworkType vs.)
-    // if (selectedArtworkType) { ... }
 
     currentlyFilteredProducts = sortProducts(currentlyFilteredProducts);
     setFinalFilteredProducts(currentlyFilteredProducts);
@@ -509,9 +485,38 @@ const SearchScreen = () => {
     });
   };
 
+  // renderCategoryCard helper
+  const renderCategoryCard = (cat: { name: string, height: number, imageUrl: string }) => (
+    <TouchableOpacity
+      key={cat.name}
+      style={{
+        width: '100%',
+        height: cat.height,
+        marginBottom: 10,
+        borderRadius: 16,
+        overflow: 'hidden',
+        position: 'relative',
+        backgroundColor: '#eee'
+      }}
+      onPress={() => {
+        setSearchQuery(cat.name);
+        setDebouncedSearchQuery(cat.name);
+      }}
+    >
+      <Image
+        source={{ uri: cat.imageUrl }}
+        style={{ width: '100%', height: '100%', position: 'absolute' }}
+        resizeMode="cover"
+      />
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', padding: 4 }}>{cat.name}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   // --- Render Fonksiyonları (değişmedi) ---
   const renderSmallBox = (label: string, selected: boolean, onPress: () => void, key?: string | number) => (<TouchableOpacity key={key} onPress={onPress} style={[styles.smallBox, selected && styles.smallBoxSelected]} ><Text style={[styles.smallBoxText, selected && styles.smallBoxTextSelected]}>{label}</Text></TouchableOpacity>);
-  const renderFilterBox = (label: string, imageKey: string, selected: boolean, onPress: () => void, key?: string | number) => { const imageSource = categoryImages[imageKey]; return (<TouchableOpacity key={key} onPress={onPress} style={[styles.filterBox, { width: boxSize, height: boxSize }]}>{imageSource ? (<Image source={imageSource} style={styles.categoryImage} resizeMode="cover" onError={(e) => console.log(`Görsel yüklenemedi: ${imageKey}`, e.nativeEvent.error)} />) : (<View style={styles.categoryImageFallback}><Text style={{ fontSize: 10, color: 'red' }}>Bulunamadı: {imageKey}</Text></View>)}<View style={[styles.filterTextContainer, selected && styles.filterTextContainerSelected]}><Text style={[styles.filterBoxText, selected && styles.filterBoxTextSelected]} numberOfLines={3}>{label}</Text></View></TouchableOpacity>); };
+  // Removed outdated renderFilterBox
   const handleFavoriteToggle = (item: Product) => { const isFav = favoriteItems.some(fav => fav.id === item.id); const imageUrl = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls || undefined; const favItem: FavoriteItem = { id: item.id, title: item.title || 'Başlık Yok', username: item.username || 'Bilinmeyen', imageUrl: imageUrl, price: item.price || 0, year: item.year || '', }; isFav ? removeFavorite(item.id) : addFavorite(favItem); };
   const renderProductCard = (item: Product, cardStyle?: object) => {
     const isFavorite = favoriteItems.some(fav => fav.id === item.id);
@@ -572,28 +577,24 @@ const SearchScreen = () => {
   const renderProfileCard = (user: UserSearchResult) => { return (<TouchableOpacity key={user.id} style={styles.profileCard} onPress={() => navigation.navigate('OtherProfile', { userId: user.id })} activeOpacity={0.7} ><Image source={user.photoURL ? { uri: user.photoURL } : require('../assets/default-profile.png')} style={styles.profileCardImage} resizeMode="cover" /><Text style={styles.profileCardUsername} numberOfLines={2}> {user.fullName || user.username || 'Kullanıcı'} </Text></TouchableOpacity>); };
   // --- Render Fonksiyonları Sonu ---
 
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* --- Arama Çubuğu --- */}
-      {/* --- Arama Çubuğu --- */}
-      <View style={{ backgroundColor: colors.background, paddingBottom: 8 }}>
+      {/* ... Search Bar ... */}
+      <View style={{ backgroundColor: colors.background, paddingBottom: 10, paddingTop: 10 }}>
+        {/* ... (Existing Search Bar Code) ... */}
         <View style={styles.searchWrapper}>
-          {/* Left Icon: Back if searching, else Chevron Back (standard nav) */}
-          {/* Back button removed per request */}
-
-          <View style={styles.searchInputContainer}>
+          <View style={[styles.searchInputContainer, { borderRadius: 30, height: 50, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 }]}>
             {isSearching || isFocused ? (
               <TouchableOpacity onPress={handleBackPress}>
-                <Ionicons name="arrow-back" size={20} color={colors.text} style={{ marginRight: 8 }} />
+                <Ionicons name="arrow-back" size={24} color={colors.text} style={{ marginRight: 10 }} />
               </TouchableOpacity>
             ) : (
-              <Ionicons name="search" size={20} color={colors.secondaryText} style={{ marginRight: 8 }} />
+              <Ionicons name="search" size={24} color={colors.secondaryText} style={{ marginRight: 10 }} />
             )}
 
             <TextInput
               ref={inputRef}
-              style={[styles.input, { color: colors.text }]}
+              style={[styles.input, { color: colors.text, fontSize: 16 }]}
               placeholder="Ara..."
               placeholderTextColor={colors.secondaryText}
               value={searchQuery}
@@ -605,155 +606,89 @@ const SearchScreen = () => {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity style={styles.clearButton} onPress={clearSearch}>
-                <Ionicons name="close" size={20} color={colors.secondaryText} />
+                <Ionicons name="close-circle" size={20} color={colors.secondaryText} />
               </TouchableOpacity>
             )}
           </View>
 
           {!isSearching && !isFocused && (
-            <>
-              <TouchableOpacity style={styles.sortButton} onPress={() => setSortModalVisible(true)}>
-                <Ionicons name="swap-vertical-outline" size={24} color={colors.text} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)} >
-                <Ionicons name="options-outline" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </>
+            <TouchableOpacity style={{ marginLeft: 10 }} onPress={() => setFilterModalVisible(true)}>
+              <Ionicons name="options" size={28} color={colors.text} />
+            </TouchableOpacity>
           )}
         </View>
-
-        {/* Scope Chips */}
-        {(isSearching || isFocused) && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
-            {(['All', 'Artwork', 'Artist', 'Price', 'Size'] as const).map((scope) => (
-              <TouchableOpacity
-                key={scope}
-                style={[
-                  styles.scopeChip,
-                  searchScope === scope && styles.scopeChipSelected,
-                  { borderColor: colors.border || '#e0e0e0' }
-                ]}
-                onPress={() => setSearchScope(scope)}
-              >
-                <Text style={[
-                  styles.scopeChipText,
-                  searchScope === scope && styles.scopeChipTextSelected,
-                  { color: searchScope === scope ? colors.background : colors.text }
-                ]}>
-                  {scope === 'Artwork' ? 'Eser' : scope === 'Artist' ? 'Sanatçı' : scope === 'Price' ? 'Fiyat' : scope === 'Size' ? 'Boyut' : 'Tümü'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
       </View>
 
-      {/* --- Ana İçerik Alanı --- */}
+      {/* --- Main Content --- */}
       {loading ? (
         <View style={styles.loadingContainer}><ActivityIndicator size="large" color={colors.text} /></View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView} keyboardShouldPersistTaps="handled" onScrollBeginDrag={Keyboard.dismiss} >
-          {/* Arama modu veya modal filtreleri aktifse veya focuslanmışsa sonuçları göster */}
           {isSearching || hasActiveFilters() || (isFocused && searchQuery.length === 0) ? (
             <View style={styles.resultsContainer}>
+              {/* ... (Existing Results View Code) ... */}
               {!isSearching && !hasActiveFilters() && isFocused ? (
-                // --- SON ARAMALAR (FOCUS DURUMUNDA GÖRÜNÜR) ---
                 <ScrollView keyboardShouldPersistTaps="handled" style={{ padding: 16 }}>
                   <Text style={[styles.filterSectionTitle, { marginBottom: 10 }]}>Son Aramalar</Text>
-                  {recentSearches.length > 0 ? (
-                    recentSearches.map((term, index) => (
-                      <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                        <TouchableOpacity onPress={() => { setSearchQuery(term); setDebouncedSearchQuery(term); }} style={{ flex: 1 }}>
-                          <Text style={{ color: colors.text, fontSize: 16 }}>{term}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleRemoveRecentSearch(term)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                          <Ionicons name="close" size={20} color={colors.secondaryText} />
-                        </TouchableOpacity>
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={{ color: colors.secondaryText, marginTop: 20, textAlign: 'center' }}>Henüz arama yapmadınız.</Text>
-                  )}
+                  {recentSearches.map((term, index) => (
+                    <TouchableOpacity key={index} onPress={() => { setSearchQuery(term); setDebouncedSearchQuery(term); }} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12 }}>
+                      <Ionicons name="time-outline" size={20} color={colors.secondaryText} style={{ marginRight: 10 }} />
+                      <Text style={{ color: colors.text, fontSize: 16, flex: 1 }}>{term}</Text>
+                      <TouchableOpacity onPress={() => handleRemoveRecentSearch(term)}>
+                        <Ionicons name="close" size={18} color={colors.secondaryText} />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  ))}
                 </ScrollView>
               ) : (
-                // --- NORMAL ACTIVE SEARCH LOGIC ---
-
                 filteringLoader ?
-                  <ActivityIndicator size="small" color={colors.text} style={{ marginVertical: 20 }} />
-                  :
-                  // Hem kullanıcı hem ürün sonucu yoksa mesaj göster
-                  textFilteredUsers.length === 0 && finalFilteredProducts.length === 0 ? (
-                    <Text style={styles.noResultsText}>
-                      {debouncedSearchQuery ? `"${debouncedSearchQuery}" için ` : ""}
-                      Sonuç bulunamadı.
-                      {hasActiveFilters() ? "\nFiltreleri kontrol edin veya temizleyin." : ""}
-                    </Text>
-                  ) :
-                    <>
-                      {/* --- ARAMA SONUÇLARI (HomeScreen Stili) --- */}
-                      {(isSearching || hasActiveFilters()) && (
-                        <ScrollView style={styles.resultsContainer} keyboardShouldPersistTaps="handled">
-                          <View style={{ padding: 16 }}>
-                            {/* --- KULLANICILAR (Yatay Scroll) --- */}
-                            {textFilteredUsers.length > 0 && (
-                              <View style={{ marginBottom: 20 }}>
-                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>Kullanıcılar</Text>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                  {textFilteredUsers.map(user => (
-                                    <TouchableOpacity key={user.id} style={{ marginRight: 16, alignItems: 'center' }} onPress={() => navigation.navigate('OtherProfile', { userId: user.id })}>
-                                      <Image source={user.photoURL ? { uri: user.photoURL } : require('../assets/default-profile.png')} style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#e0e0e0', marginBottom: 4 }} />
-                                      <Text style={{ color: colors.text, fontSize: 12 }}>{user.username}</Text>
-                                    </TouchableOpacity>
-                                  ))}
-                                </ScrollView>
-                              </View>
-                            )}
-
-                            {/* --- ESERLER (Dikey Liste) --- */}
-                            {finalFilteredProducts.length > 0 && (
-                              <View>
-                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>Eserler</Text>
-                                {finalFilteredProducts.map(item => (
-                                  <TouchableOpacity key={item.id} style={{ flexDirection: 'row', marginBottom: 12, alignItems: 'center' }} onPress={() => navigation.navigate('ProductDetail', { product: { ...item, createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString() } })}>
-                                    <Image source={{ uri: Array.isArray(item.imageUrls) ? item.imageUrls[0] : (item as any).imageUrl || item.imageUrls }} style={{ width: 50, height: 50, borderRadius: 8, marginRight: 12, backgroundColor: '#eee' }} />
-                                    <View>
-                                      <Text style={{ color: colors.text, fontWeight: '600' }}>{item.title}</Text>
-                                      <Text style={{ color: colors.secondaryText, fontSize: 12 }}>{item.price} ₺</Text>
-                                    </View>
-                                  </TouchableOpacity>
-                                ))}
-                              </View>
-                            )}
-                          </View>
-                        </ScrollView>
+                  <ActivityIndicator size="small" color={colors.text} style={{ marginVertical: 20 }} /> :
+                  (textFilteredUsers.length === 0 && finalFilteredProducts.length === 0 ?
+                    <Text style={styles.noResultsText}>Sonuç bulunamadı.</Text> :
+                    <View style={{ padding: 10 }}>
+                      {textFilteredUsers.length > 0 && searchScope !== 'Artwork' && (
+                        <View style={{ marginBottom: 20 }}>
+                          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 10, marginLeft: 5 }}>Sanatçılar</Text>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            {textFilteredUsers.map(user => renderProfileCard(user))}
+                          </ScrollView>
+                        </View>
                       )}
-                    </>
+                      {finalFilteredProducts.length > 0 && (
+                        <View style={{ flexDirection: 'row' }}>
+                          <View style={{ flex: 1, paddingRight: 5 }}>
+                            {filteredLeftColumn.map(item => renderProductCard(item, { width: '100%', marginBottom: 10 }))}
+                          </View>
+                          <View style={{ flex: 1, paddingLeft: 5 }}>
+                            {filteredRightColumn.map(item => renderProductCard(item, { width: '100%', marginBottom: 10 }))}
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  )
               )}
             </View>
           ) : (
-            // --- VARSAYILAN GÖRÜNÜM (Arama yok, Filtre yok) ---
-            <View style={styles.filtersContainer}>
+            // --- PINTEREST STYLE ASYMMETRICAL DEFAULT VIEW ---
+            <View style={{ padding: 10 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 15, marginLeft: 5 }}>Keşfedin</Text>
 
-
-              {/* Recent Searches Section Removed */}
-
-
-              {popularProducts.length > 0 && (<View style={styles.filterSection}><Text style={styles.filterSectionTitle}>Popüler Eserler</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>{popularProducts.map(product => renderProductCard(product, { width: boxSize, marginRight: 16 }))}</ScrollView></View>)}
-              {newProducts.length > 0 && (<View style={styles.filterSection}><Text style={styles.filterSectionTitle}>Yeni Eklenenler</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>{newProducts.map(product => renderProductCard(product, { width: boxSize, marginRight: 16 }))}</ScrollView></View>)}
-              {/* ... Diğer filtre kutuları ... */}
-              <View style={styles.filterSection}><Text style={styles.filterSectionTitle}>Fiyat</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>{renderSmallBox('5.000₺ altı', selectedPriceFilter === '5000', () => setSelectedPriceFilter(selectedPriceFilter === '5000' ? null : '5000'), 'price-5000')}{renderSmallBox('10.000₺ altı', selectedPriceFilter === '10000', () => setSelectedPriceFilter(selectedPriceFilter === '10000' ? null : '10000'), 'price-10000')}{renderSmallBox('50.000₺ altı', selectedPriceFilter === '50000', () => setSelectedPriceFilter(selectedPriceFilter === '50000' ? null : '50000'), 'price-50000')}{renderSmallBox('100.000₺ altı', selectedPriceFilter === '100000', () => setSelectedPriceFilter(selectedPriceFilter === '100000' ? null : '100000'), 'price-100000')}</ScrollView></View>
-              {/* Hızlı boyut filtreleri kaldırıldı */}
-              <View style={styles.filterSection}><Text style={styles.filterSectionTitle}>Eser Tipi</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>{[{ label: 'Tablo', key: 'Tablo' }, { label: 'Heykel', key: 'Heykel' }, { label: 'Fotoğraf', key: 'Fotoğraf' }, { label: 'Baskı', key: 'Baskı' }, { label: 'Çizim', key: 'Çizim' }, { label: 'Dijital', key: 'Dijital' }, { label: 'Seramik', key: 'Seramik' }, { label: 'Enstalasyon', key: 'Enstalasyon' },].map((item) => renderFilterBox(item.label, item.key, item.label === selectedArtworkType, () => setSelectedArtworkType(item.label === selectedArtworkType ? null : item.label), item.key))}</ScrollView></View>
-              <View style={styles.filterSection}><Text style={styles.filterSectionTitle}>Stil / Akım</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>{[{ label: 'Modern', key: 'Modern' }, { label: 'Soyut', key: 'SoyutStil' }, { label: 'Empresyonizm', key: 'Empresyonizm' }, { label: 'Realizm', key: 'Realizm' }, { label: 'Kübizm', key: 'Kübizm' }, { label: 'Sürrealizm', key: 'Sürrealizm' }, { label: 'Pop Art', key: 'Pop Art' }, { label: 'Minimalizm', key: 'Minimalizm' },].map((item) => renderFilterBox(item.label, item.key, item.label === selectedStyle, () => setSelectedStyle(item.label === selectedStyle ? null : item.label), item.key))}</ScrollView></View>
-              <View style={styles.filterSection}><Text style={styles.filterSectionTitle}>Konu / Tema</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>{[{ label: 'Portre', key: 'Portre' }, { label: 'Manzara', key: 'Manzara' }, { label: 'Natürmort', key: 'Natürmort' }, { label: 'Soyut', key: 'SoyutTema' }, { label: 'Figüratif', key: 'Figüratif' }, { label: 'Şehir', key: 'Şehir' }, { label: 'Deniz', key: 'Deniz' },].map((item) => renderFilterBox(item.label, item.key, item.label === selectedTheme, () => setSelectedTheme(item.label === selectedTheme ? null : item.label), item.key))}</ScrollView></View>
-              <View style={styles.filterSection}><Text style={styles.filterSectionTitle}>Teknik / Malzeme</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>{[{ label: 'Yağlıboya', key: 'Yağlıboya' }, { label: 'Akrilik', key: 'Akrilik' }, { label: 'Suluboya', key: 'Suluboya' }, { label: 'Karışık', key: 'Karışık' }, { label: 'Tuval', key: 'Tuval' }, { label: 'Kağıt', key: 'Kağıt' }, { label: 'Ahşap', key: 'Ahşap' }, { label: 'Metal', key: 'Metal' },].map((item) => renderFilterBox(item.label, item.key, item.label === selectedTechnique, () => setSelectedTechnique(item.label === selectedTechnique ? null : item.label), item.key))}</ScrollView></View>
-              {/* Filtreler aktifse temizle butonu */}
-              {/* {hasActiveFilters() && ( <TouchableOpacity style={styles.clearAllFiltersButton} onPress={clearFilters}><Ionicons name="close-circle" size={20} color="#FFFFFF" /><Text style={styles.clearAllFiltersText}>Tüm Filtreleri Temizle</Text></TouchableOpacity> )} */}
+              <View style={{ flexDirection: 'row' }}>
+                {/* Left Column */}
+                <View style={{ flex: 1, paddingRight: 5 }}>
+                  {leftCategories.map(renderCategoryCard)}
+                </View>
+                {/* Right Column */}
+                <View style={{ flex: 1, paddingLeft: 5 }}>
+                  {rightCategories.map(renderCategoryCard)}
+                </View>
+              </View>
             </View>
           )}
         </ScrollView>
       )}
 
+      {/* ... Modals ... */}
       <Modal
         visible={sortModalVisible}
         animationType="fade"
@@ -800,8 +735,7 @@ const SearchScreen = () => {
           </View>
         </View>
       </Modal>
-
-      {/* --- Filtre Modalı (Boyut inputları güncellendi, animationType="fade") --- */}
+      {/* Filter Modal logic assumes separate implementation or standard modal, not shown in full file view previously, but usually at end */}
       <Modal
         visible={filterModalVisible}
         animationType="fade" // "slide" yerine "fade"
