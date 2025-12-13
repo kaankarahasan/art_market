@@ -227,17 +227,21 @@ const OtherProfileScreen = () => {
     // Renk güncellendi
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-      {/* Renk güncellendi */}
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="chevron-back" size={28} color={colors.text} />
-      </TouchableOpacity>
+      {/* Dedike Header Container */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
+        </TouchableOpacity>
+        {/* Username in Header */}
+        <Text style={styles.headerUsername}>@{userData?.username || 'Kullanıcı'}</Text>
+      </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
         {/* Renk güncellendi */}
         <View style={[styles.container, { backgroundColor: colors.background }]}>
           {/* Profile Card */}
           {/* Renk güncellendi */}
-          <View style={[styles.profileCard, { backgroundColor: colors.card, marginTop: 60 }]}>
+          <View style={[styles.profileCard, { backgroundColor: colors.card, marginTop: 10 }]}>
             <TouchableOpacity onPress={() => setModalVisible(true)}>
               {userData?.photoURL ? (
                 <Image source={{ uri: userData.photoURL }} style={styles.avatar} />
@@ -248,8 +252,7 @@ const OtherProfileScreen = () => {
             </TouchableOpacity>
 
             <View style={styles.profileInfo}>
-              {/* Renk güncellendi */}
-              <Text style={[styles.usernameText, { color: colors.text }]}>@{userData?.username || 'Kullanıcı'}</Text>
+              {/* Username removed from here */}
               {/* Renk güncellendi (inline yerine stylesheet'ten alacak) */}
               <Text style={styles.fullNameText}>{userData?.fullName || 'Ad Soyad'}</Text>
 
@@ -340,8 +343,21 @@ export default OtherProfileScreen;
 // --- STYLESHEET GÜNCELLENDİ ---
 const createStyles = (colors: any) => StyleSheet.create({
   safeArea: { flex: 1 },
-  backButton: { position: 'absolute', top: 50, left: 16, zIndex: 10 },
-  container: { flex: 1, paddingHorizontal: 16, paddingTop: 24 },
+  headerContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row', // Align items horizontally
+    alignItems: 'center', // Center vertically
+    // justifyContent removed to allow items to be next to each other
+  },
+  headerUsername: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginLeft: 10, // Spacing from back button
+  },
+  backButton: { padding: 4 }, // Removed absolute positioning
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 10 },
   profileCard: {
     flexDirection: 'row',
     padding: 16,
