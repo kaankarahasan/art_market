@@ -623,7 +623,13 @@ const SearchScreen = () => {
       {loading ? (
         <View style={styles.loadingContainer}><ActivityIndicator size="large" color={colors.text} /></View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView} keyboardShouldPersistTaps="handled" onScrollBeginDrag={Keyboard.dismiss} >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={Keyboard.dismiss}
+        >
           {isSearching || hasActiveFilters() || (isFocused && searchQuery.length === 0) ? (
             <View style={styles.resultsContainer}>
               {/* ... (Existing Results View Code) ... */}
