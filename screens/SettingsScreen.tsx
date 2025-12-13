@@ -15,6 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types'; // relative path
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext'; // relative path
+import { seedDatabase } from '../utils/seedData';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -48,6 +49,27 @@ const SettingsScreen = () => {
         },
       ],
       { cancelable: false }
+    );
+  };
+
+  const handleSeedData = async () => {
+    Alert.alert(
+      'Seed Data',
+      'This will add 50 users and ~600 products to the database. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start Seeding',
+          onPress: async () => {
+            const result = await seedDatabase();
+            if (result.success) {
+              Alert.alert('Success', result.message);
+            } else {
+              Alert.alert('Error', result.message);
+            }
+          },
+        },
+      ]
     );
   };
 
@@ -108,6 +130,14 @@ const SettingsScreen = () => {
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('TermsOfService')}>
             <Text style={[styles.item, { color: colors.text }]}>Kullanım Şartları</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Developer Tools */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Developer Tools</Text>
+          <TouchableOpacity onPress={handleSeedData}>
+            <Text style={[styles.item, { color: '#4caf50' }]}>Seed Data (Generate 50 Users)</Text>
           </TouchableOpacity>
         </View>
 
