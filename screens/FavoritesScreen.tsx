@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { Product } from '../routes/types';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
@@ -17,7 +18,7 @@ import { useThemeContext } from '../contexts/ThemeContext';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 
 const screenWidth = Dimensions.get('window').width;
-const columnWidth = (screenWidth - 70) / 2;
+const columnWidth = (screenWidth - 45) / 2;
 
 const FavoritesScreen = () => {
   const { favoriteItems, removeFavorite } = useFavoriteItems();
@@ -48,7 +49,10 @@ const FavoritesScreen = () => {
 
     favoriteItems.forEach(product => {
       const imageHeight = imageHeights[product.id] || 250;
-      const cardHeight = imageHeight + 130;
+      // Match HomeScreen height estimate
+      const infoHeightEstimate = 12 + 15 + 6 + 20 + 8 + 20 + 12; // approx 93
+      const cardHeight = imageHeight + infoHeightEstimate;
+
       if (leftHeight <= rightHeight) {
         leftColumn.push(product);
         leftHeight += cardHeight;
@@ -130,27 +134,26 @@ const FavoritesScreen = () => {
   if (isLoading) return <ActivityIndicator style={{ marginTop: 40 }} size="large" color={colors.primary} />;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <TouchableOpacity
-        style={[
-          styles.backButton,
-          {
-            top: insets.top + 10,
-            backgroundColor: isDarkTheme ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.9)'
-          }
-        ]}
-        onPress={() => navigation.goBack()}
-      >
-        <Ionicons name="chevron-back" size={24} color={colors.text} />
-      </TouchableOpacity>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Favoriler</Text>
+      </View>
 
       {favoriteItems.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.text }]}>Henüz favori ürün yok.</Text>
       ) : (
-        <View style={[styles.masonryContainer, { paddingTop: insets.top + 70 }]}>
-          <View style={styles.column}>{leftColumn.map(renderProductCard)}</View>
-          <View style={styles.column}>{rightColumn.map(renderProductCard)}</View>
-        </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: 20, paddingTop: 10 }}>
+          <View style={styles.masonryContainer}>
+            <View style={styles.column}>{leftColumn.map(renderProductCard)}</View>
+            <View style={styles.column}>{rightColumn.map(renderProductCard)}</View>
+          </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -159,18 +162,24 @@ const FavoritesScreen = () => {
 export default FavoritesScreen;
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, position: 'relative' },
+  safeArea: { flex: 1 },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
   backButton: {
-    position: 'absolute',
-    left: 15,
-    zIndex: 10,
-
-    borderRadius: 12,
-    padding: 6,
-    elevation: 3,
+    marginRight: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   emptyText: { textAlign: 'center', marginTop: 120, fontSize: 16, fontWeight: '500' },
-  masonryContainer: { flexDirection: 'row', paddingHorizontal: 10, paddingBottom: 30 },
+  masonryContainer: { flexDirection: 'row', paddingHorizontal: 10 },
   column: { flex: 1, paddingHorizontal: 5 },
   card: {
     borderRadius: 12,
