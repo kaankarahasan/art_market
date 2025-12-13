@@ -116,7 +116,7 @@ const SignUpScreen = () => {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
         {/* 🔹 Dinamik arka plan */}
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}
@@ -224,14 +224,14 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, justifyContent: 'center' },
   cardContainer: { flex: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 40 },
   card: {
-    backgroundColor: '#F4F4F4',
-    borderRadius: 20,
-    padding: 30,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 6,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   title: { fontSize: 30, fontWeight: 'bold', color: '#0A0A0A', textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 15, color: '#0A0A0A', textAlign: 'center', opacity: 0.7, marginBottom: 25 },

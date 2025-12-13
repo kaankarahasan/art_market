@@ -50,8 +50,7 @@ function AppContent() {
     <>
       <StatusBar
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
-        backgroundColor="transparent"
-        translucent
+        backgroundColor={theme.colors.background}
       />
       <NavigationContainer theme={theme}>
         <Stack.Navigator initialRouteName="Login">

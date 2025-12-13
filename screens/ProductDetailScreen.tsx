@@ -41,7 +41,7 @@ import {
 import { auth, db } from '../firebase';
 import ImageViewing from 'react-native-image-viewing';
 // YENİ EKLENDİ: Güvenli alan için
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
@@ -236,7 +236,7 @@ const ProductDetailScreen = () => {
     }
 
     return (
-      <View style={{ marginTop: dynamicTopMargin }}>
+      <View>
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -370,11 +370,10 @@ const ProductDetailScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
-        translucent
-        backgroundColor="transparent"
+        backgroundColor={colors.background}
       />
 
       <View style={styles.topButtonsContainer}>
@@ -573,7 +572,7 @@ const ProductDetailScreen = () => {
           </View>
         )}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -582,28 +581,21 @@ export default ProductDetailScreen;
 const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   topButtonsContainer: {
-    position: 'absolute',
-    top:
-      Platform.OS === 'ios'
-        ? 50
-        : StatusBar.currentHeight
-          ? StatusBar.currentHeight + 10
-          : 50,
-    left: 0,
-    right: 0,
-    zIndex: 10,
+    // position: 'absolute' removed
+    // top/left/right/zIndex removed
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 15,
+    paddingVertical: 10, // Added padding for spacing
   },
   backButton: {
     padding: 6,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: isDarkTheme ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
   },
   editButton: {
     padding: 6,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: isDarkTheme ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
   },
   mainImageContainer: { height: height * 0.6 },
@@ -791,7 +783,7 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
   },
   imageCloseButton: {
     padding: 8,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: 'rgba(0,0,0,0.5)', // Semi-transparent background for visibility
     marginTop: 10, // Additional margin from the very top/notch
   },

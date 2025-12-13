@@ -226,7 +226,7 @@ const OtherProfileScreen = () => {
   return (
     // Renk güncellendi
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       {/* Renk güncellendi */}
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={28} color={colors.text} />
@@ -393,5 +393,5 @@ const createStyles = (colors: any) => StyleSheet.create({
   favoriteButton: { padding: 2 },
   title: { fontSize: 15, color: colors.secondaryText, marginBottom: 8, lineHeight: 20 },
   price: { fontSize: 17, fontWeight: 'bold', color: colors.text },
-  closeButton: { position: 'absolute', top: 40, right: 20, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 4, elevation: 5 },
+  closeButton: { position: 'absolute', top: 40, right: 20, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 12, padding: 4, elevation: 5 },
 });

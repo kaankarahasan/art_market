@@ -683,7 +683,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   scopeChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 12,
     borderWidth: 1,
     marginRight: 8,
     backgroundColor: 'transparent',

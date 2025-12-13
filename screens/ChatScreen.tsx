@@ -270,7 +270,7 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     padding: 14,
     marginVertical: 6,
     marginHorizontal: 12,
-    borderRadius: 20,
+    borderRadius: 12,
   },
   myMessage: {
     backgroundColor: isDarkTheme ? '#262626' : '#333333',

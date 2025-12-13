@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     left: 15,
     zIndex: 10,
 
-    borderRadius: 25,
+    borderRadius: 12,
     padding: 6,
     elevation: 3,
   },
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   infoContainer: { paddingHorizontal: 12, paddingBottom: 12, paddingTop: 2 },
   userRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   username: { fontSize: 13, flex: 1 },
-  removeButton: { borderRadius: 20, padding: 4, marginLeft: 6 },
+  removeButton: { borderRadius: 12, padding: 4, marginLeft: 6 },
   title: { fontSize: 15, marginTop: 6, marginBottom: 6 },
   price: { fontSize: 17, fontWeight: 'bold' },
 });

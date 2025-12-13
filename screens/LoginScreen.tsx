@@ -242,7 +242,7 @@ const IOSLoginScreen = ({
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}
           style={[
