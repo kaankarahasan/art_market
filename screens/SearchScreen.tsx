@@ -194,10 +194,10 @@ const SearchScreen = () => {
       setFinalFilteredProducts(productList);
       setTextFilteredProducts(productList);
 
-      const popularList = [...productList].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).slice(0, 6);
+      const popularList = [...productList].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
       setPopularProducts(popularList);
 
-      const newList = [...productList].sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0)).slice(0, 6);
+      const newList = [...productList].sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
       setNewProducts(newList);
     } catch (error) {
       console.error('Veriler alınırken hata:', error);
@@ -657,10 +657,10 @@ const SearchScreen = () => {
                       {finalFilteredProducts.length > 0 && (
                         <View style={{ flexDirection: 'row' }}>
                           <View style={{ flex: 1, paddingRight: 5 }}>
-                            {filteredLeftColumn.map(item => renderProductCard(item, { width: '100%', marginBottom: 10 }))}
+                            {filteredLeftColumn.map(item => renderProductCard(item, { width: (screenWidth - 30) / 2, marginBottom: 10 }))}
                           </View>
                           <View style={{ flex: 1, paddingLeft: 5 }}>
-                            {filteredRightColumn.map(item => renderProductCard(item, { width: '100%', marginBottom: 10 }))}
+                            {filteredRightColumn.map(item => renderProductCard(item, { width: (screenWidth - 30) / 2, marginBottom: 10 }))}
                           </View>
                         </View>
                       )}
