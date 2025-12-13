@@ -524,7 +524,7 @@ const ProductDetailScreen = () => {
         <View style={[
           styles.messageButtonContainer,
           // Güvenli alan (çentik vs.) için alttan boşluk
-          { paddingBottom: insets.bottom > 0 ? insets.bottom + 6 : 12 }
+          { paddingBottom: 12 }
         ]}>
           <TouchableOpacity
             style={styles.messageButton}

@@ -225,7 +225,7 @@ const OtherProfileScreen = () => {
 
   return (
     // Renk güncellendi
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
       <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       {/* Dedike Header Container */}
       <View style={styles.headerContainer}>
@@ -236,7 +236,7 @@ const OtherProfileScreen = () => {
         <Text style={styles.headerUsername}>@{userData?.username || 'Kullanıcı'}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
         {/* Renk güncellendi */}
         <View style={[styles.container, { backgroundColor: colors.background }]}>
           {/* Profile Card */}
@@ -257,7 +257,7 @@ const OtherProfileScreen = () => {
               <Text style={styles.fullNameText}>{userData?.fullName || 'Ad Soyad'}</Text>
 
               <View style={styles.followRow}>
-                <TouchableOpacity onPress={toggleFollow} style={[styles.followButtonCard, { flex: 1, marginRight: 8 }]}>
+                <TouchableOpacity onPress={toggleFollow} style={[styles.followButtonCard, { flex: 1, marginRight: 12 }]}>
                   <Text style={styles.followButtonText}>
                     {isFollowing ? `Following: ${followersCount}` : `Follow: ${followersCount}`}
                   </Text>
@@ -370,14 +370,24 @@ const createStyles = (colors: any) => StyleSheet.create({
   avatar: { width: 120, height: 120, borderRadius: 12 },
   profileInfo: { flex: 1, marginLeft: 16 },
   usernameText: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  fullNameText: { fontSize: 14, marginBottom: 8, color: colors.secondaryText },
+  fullNameText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: colors.text,
+  },
   followRow: { flexDirection: 'row', marginBottom: 8 },
   followButtonCard: {
     backgroundColor: colors.text,
-    paddingVertical: 8,
-    borderRadius: 5,
+    paddingVertical: 12,
+    borderRadius: 24, // Pill shape
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   followButtonText: { color: colors.background, fontSize: 12, fontWeight: 'bold' },
   tabRow: { flexDirection: 'row', marginBottom: 12, borderBottomWidth: 1, borderColor: colors.card },
@@ -386,7 +396,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   activeTab: { borderBottomWidth: 2, borderColor: colors.text },
   activeTabText: { color: colors.text },
   emptyText: { textAlign: 'center', marginTop: 20, fontSize: 15, color: colors.text },
-  masonryContainer: { flexDirection: 'row', paddingHorizontal: 10, paddingBottom: 30 },
+  masonryContainer: { flexDirection: 'row', paddingHorizontal: 10, paddingBottom: 0 },
   column: { flex: 1, paddingHorizontal: 5 },
   card: {
     borderRadius: 12,
