@@ -49,7 +49,7 @@ import { useThemeContext } from '../contexts/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
-const cardWidth = width * 0.45;
+const cardWidth = width * 0.40;
 
 const ProductDetailScreen = () => {
   const { colors, isDarkTheme } = useThemeContext();
@@ -495,9 +495,11 @@ const ProductDetailScreen = () => {
           <ActivityIndicator style={{ marginTop: 20 }} />
         ) : (
           <View style={styles.otherProductsContainer}>
-            <Text style={styles.otherProductsTitle}>
-              {ownerData?.fullName || 'Satıcının'} Diğer Ürünleri
-            </Text>
+            <View style={styles.otherProductsHeader}>
+              <Text style={styles.otherProductsTitle}>
+                {ownerData?.fullName || 'Satıcının'} Diğer Ürünleri
+              </Text>
+            </View>
 
             {otherProducts.length > 0 ? (
               <FlatList
@@ -659,12 +661,19 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     paddingTop: 16,
     minHeight: 100,
   },
+  otherProductsHeader: { // New style
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 20,
+  },
   otherProductsTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 12,
-    paddingHorizontal: 20,
+    // marginBottom: 12, // Moved to header container alignment
+    // paddingHorizontal: 20, // Handled by header container
   },
   noOtherProductsText: {
     fontSize: 14,
