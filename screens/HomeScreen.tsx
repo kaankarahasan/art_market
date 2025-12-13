@@ -31,10 +31,12 @@ const RECENT_SEARCHES_KEY = '@recent_searches_general';
 
 const HomeScreen = () => {
   const [products, setProducts] = useState<any[]>([]);
+  const [originalProducts, setOriginalProducts] = useState<any[]>([]); // To store the base set for looping
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
   const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Search States
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -101,7 +103,10 @@ const HomeScreen = () => {
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
       }));
-      setProducts(shuffleArray(productList));
+
+      const shuffled = shuffleArray(productList);
+      setOriginalProducts(shuffled); // Keep original unique set
+      setProducts(shuffled); // Initial render
 
     } catch (error) {
       console.error('Veriler alınırken hata:', error);
@@ -274,6 +279,27 @@ const HomeScreen = () => {
       [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+  };
+
+  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
+    const paddingToBottom = 1500; // Trigger earlier for smoother infinite feel
+    return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+  };
+
+  const loadMoreData = () => {
+    if (loadingMore || originalProducts.length === 0) return;
+
+    setLoadingMore(true);
+
+    // Simulate network delay for effect or just append immediately (immediate is better for "infinite" feel but might block UI)
+    // We append the original list to the current list, ensuring unique IDs
+    const newBatch = originalProducts.map((item) => ({
+      ...item,
+      id: `${item.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Unique ID for key
+    }));
+
+    setProducts(prev => [...prev, ...newBatch]);
+    setLoadingMore(false);
   };
 
   const handleImageLoad = (productId: string, width: number, height: number) => {
@@ -557,6 +583,12 @@ const HomeScreen = () => {
                 />
               }
               contentContainerStyle={{ paddingBottom: tabBarHeight }}
+              onScroll={({ nativeEvent }) => {
+                if (isCloseToBottom(nativeEvent)) {
+                  loadMoreData();
+                }
+              }}
+              scrollEventThrottle={400} // Check typically every 400ms or so during scroll
             >
               <View style={styles.masonryContainer}>
                 <View style={styles.column}>
