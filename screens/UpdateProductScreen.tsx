@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { updateProduct } from '../utils/updateProduct';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -37,20 +37,18 @@ const UpdateProductScreen = () => {
   const [uploading, setUploading] = useState(false);
 
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('İzin Gerekli', 'Galeriye erişim izni gerekli.');
-      return;
-    }
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 0.7,
+      });
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.7,
-    });
-
-    if (!result.canceled && result.assets.length > 0) {
-      setImageUrls((prev) => [...prev, result.assets[0].uri]);
+      if (!result.didCancel && result.assets && result.assets.length > 0 && result.assets[0].uri) {
+        setImageUrls((prev) => [...prev, result.assets![0].uri as string]);
+      }
+    } catch (err) {
+      console.warn(err);
+      Alert.alert('Hata', 'Resim seçilirken bir hata oluştu');
     }
   };
 

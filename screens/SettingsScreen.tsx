@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,11 @@ import { auth, db } from '../firebase'; // relative path
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types'; // relative path
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+// import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext'; // relative path
 import { seedDatabase } from '../utils/seedData';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();

@@ -17,7 +17,7 @@ import {
 // Sadece 'sendPasswordResetEmail' yeterli
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 // Merkezi tiplerinizi import ettiğinizi varsayıyorum

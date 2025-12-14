@@ -23,8 +23,8 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth, db } from '../firebase';
 
 // İkonlar
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { AntDesign } from '@expo/vector-icons'; // Google logosu için eklendi
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import AntDesign from 'react-native-vector-icons/AntDesign';
 
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';

@@ -16,7 +16,7 @@ import { useRoute, useNavigation, NavigationProp, RouteProp } from '@react-navig
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { RootStackParamList } from '../routes/types';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';

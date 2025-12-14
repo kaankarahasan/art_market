@@ -7,9 +7,10 @@ import {
   Linking,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
 import { useThemeContext } from '../contexts/ThemeContext';
-import { FontAwesome } from '@expo/vector-icons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 const AboutScreen = () => {
   const { colors } = useThemeContext();
@@ -28,7 +29,7 @@ const AboutScreen = () => {
     if (supported) {
       await Linking.openURL(url);
     } else {
-      alert('Bu bağlantı açılamıyor: ' + url);
+      Alert.alert('Hata', 'Bu bağlantı açılamıyor: ' + url);
     }
   };
 

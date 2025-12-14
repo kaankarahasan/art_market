@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Product } from '../routes/types';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../routes/types';
 import { useThemeContext } from '../contexts/ThemeContext';

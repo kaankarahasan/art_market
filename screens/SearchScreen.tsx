@@ -11,13 +11,13 @@ import {
   Modal,
   Image,
   Keyboard,
-  ImageLoadEventData, NativeSyntheticEvent
+  NativeSyntheticEvent
 } from 'react-native';
 import { useNavigation, useFocusEffect, useRoute, RouteProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, Product } from '../routes/types';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // <-- YENİ IMPORT
 import { db, auth } from '../firebase';

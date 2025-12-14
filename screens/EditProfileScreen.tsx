@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { auth, db, storage } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import * as ImagePicker from 'expo-image-picker';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { ThemeContext } from '../contexts/ThemeContext';
 
@@ -51,28 +51,34 @@ const EditProfileScreen = () => {
   }, [userId]);
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.7,
-    });
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 0.7,
+      });
 
-    if (!result.canceled) setImage(result.assets[0].uri);
+      if (!result.didCancel && result.assets && result.assets.length > 0 && result.assets[0].uri) {
+        setImage(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.warn(err);
+    }
   };
 
   const takePhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission denied', 'Camera access is required.');
-      return;
+    try {
+      const result = await launchCamera({
+        mediaType: 'photo',
+        saveToPhotos: true,
+        quality: 0.7,
+      });
+
+      if (!result.didCancel && result.assets && result.assets.length > 0 && result.assets[0].uri) {
+        setImage(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.warn(err);
     }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 0.7,
-    });
-
-    if (!result.canceled) setImage(result.assets[0].uri);
   };
 
   const uploadImage = async (uri: string) => {

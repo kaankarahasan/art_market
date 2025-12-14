@@ -12,7 +12,7 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '../firebase';
@@ -20,7 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { v4 as uuidv4 } from 'uuid';
 import { ThemeContext } from '../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const AddProductScreen = () => {
   const { isDarkTheme } = useContext(ThemeContext);
@@ -60,21 +60,28 @@ const AddProductScreen = () => {
       Alert.alert('Uyarı', 'En fazla 3 fotoğraf ekleyebilirsiniz.');
       return;
     }
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Hata', 'Galeriden resim seçmek için izin gerekli.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      selectionLimit: 3 - images.length,
-      quality: 0.7,
-    });
 
-    if (!result.canceled && result.assets.length > 0) {
-      const uris = result.assets.map((a) => a.uri);
-      setImages((prev) => [...prev, ...uris].slice(0, 3));
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        selectionLimit: 3 - images.length,
+        quality: 0.7,
+      });
+
+      if (result.didCancel) return;
+
+      if (result.errorCode) {
+        Alert.alert('Hata', result.errorMessage || 'Resim seçilirken bir hata oluştu');
+        return;
+      }
+
+      if (result.assets && result.assets.length > 0) {
+        const uris = result.assets.map((a) => a.uri || '').filter(uri => uri);
+        setImages((prev) => [...prev, ...uris].slice(0, 3));
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Hata', 'Galeri açılırken bir sorun oluştu.');
     }
   };
 
@@ -83,19 +90,27 @@ const AddProductScreen = () => {
       Alert.alert('Uyarı', 'En fazla 3 fotoğraf ekleyebilirsiniz.');
       return;
     }
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Hata', 'Kamerayı kullanmak için izin gerekli.');
-      return;
-    }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 0.7,
-    });
+    try {
+      const result = await launchCamera({
+        mediaType: 'photo',
+        saveToPhotos: true,
+        quality: 0.7,
+      });
 
-    if (!result.canceled && result.assets.length > 0) {
-      setImages((prev) => [...prev, result.assets[0].uri].slice(0, 3));
+      if (result.didCancel) return;
+
+      if (result.errorCode) {
+        Alert.alert('Hata', result.errorMessage || 'Kamera açılırken bir hata oluştu');
+        return;
+      }
+
+      if (result.assets && result.assets.length > 0 && result.assets[0].uri) {
+        setImages((prev) => [...prev, result.assets![0].uri as string].slice(0, 3));
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Hata', 'Kamera açılırken bir sorun oluştu.');
     }
   };
 
