@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types'; // relative path
 // import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext'; // relative path
-import { seedDatabase } from '../utils/seedData';
+import { seedDatabase, deleteSeedData } from '../utils/seedData';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -62,6 +62,28 @@ const SettingsScreen = () => {
           text: 'Start Seeding',
           onPress: async () => {
             const result = await seedDatabase();
+            if (result.success) {
+              Alert.alert('Success', result.message);
+            } else {
+              Alert.alert('Error', result.message);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteSeedData = async () => {
+    Alert.alert(
+      'Delete Seed Data',
+      'This will PERMANENTLY delete all users and products marked as seed data. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete All Seed Data',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await deleteSeedData();
             if (result.success) {
               Alert.alert('Success', result.message);
             } else {
@@ -138,6 +160,9 @@ const SettingsScreen = () => {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Developer Tools</Text>
           <TouchableOpacity onPress={handleSeedData}>
             <Text style={[styles.item, { color: '#4caf50' }]}>Seed Data (Generate 50 Users)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleDeleteSeedData}>
+            <Text style={[styles.item, { color: '#ff5252' }]}>Delete Seed Data</Text>
           </TouchableOpacity>
         </View>
 

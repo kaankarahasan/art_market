@@ -24,6 +24,7 @@ export type Product = {
   createdAt?: any;
   updatedAt?: any;
   viewCount?: number; // <--- BU SATIRI EKLEYİN
+  isSeeded?: boolean;
 };
 
 // Root Stack Param Listesi

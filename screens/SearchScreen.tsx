@@ -39,14 +39,25 @@ const columnWidth = (screenWidth - 45) / 2;
 // Define heights for asymmetry: roughly alternating tall/short/medium
 const categoryHeights = [220, 180, 160, 240, 240, 190, 180, 260, 200, 220, 160];
 
-const categories = [
-  'Yağlı Boya', 'Suluboya', 'Akrilik', 'Heykel', 'Fotoğraf',
-  'Dijital Sanat', 'Çizim', 'Grafik Tasarım', 'Seramik',
-  'Kolaj', 'Diğer'
-].map((name, index) => ({
-  name,
+const CATEGORY_DATA = [
+  { label: 'Yağlı Boya', value: 'yagli_boya' },
+  { label: 'Suluboya', value: 'suluboya' },
+  { label: 'Akrilik', value: 'akrilik' },
+  { label: 'Heykel', value: 'heykel' },
+  { label: 'Fotoğraf', value: 'fotograf' },
+  { label: 'Dijital Sanat', value: 'dijital' },
+  { label: 'Çizim', value: 'cizim' },
+  { label: 'Grafik Tasarım', value: 'grafik' },
+  { label: 'Seramik', value: 'seramik' },
+  { label: 'Kolaj', value: 'kolaj' },
+  { label: 'Diğer', value: 'diger' }
+];
+
+const categories = CATEGORY_DATA.map((item, index) => ({
+  name: item.label,
+  value: item.value,
   height: categoryHeights[index % categoryHeights.length],
-  imageUrl: `https://picsum.photos/seed/${name}/300/${200 + (index % 5) * 50}`
+  imageUrl: `https://picsum.photos/seed/${item.value}/300/${200 + (index % 5) * 50}`
 }));
 
 // Split categories into two columns for Masonry
@@ -224,10 +235,35 @@ const SearchScreen = () => {
       minPrice || maxPrice || filterWidth || filterHeight || filterDepth);
   }, [selectedArtworkType, selectedStyle, selectedTheme, selectedTechnique, minPrice, maxPrice, filterWidth, filterHeight, filterDepth]);
 
-  // Debounce useEffect (değişmedi)
+  // Debounce useEffect (Optimized)
   useEffect(() => {
-    if (debounceTimeout.current) { clearTimeout(debounceTimeout.current); } if (searchQuery.trim().length > 0 || hasActiveFilters()) { setFilteringLoader(true); setIsSearching(searchQuery.trim().length > 0); } else { setFilteringLoader(false); setIsSearching(false); setTextFilteredProducts(products); setTextFilteredUsers([]); setFinalFilteredProducts(products); } debounceTimeout.current = setTimeout(() => { setDebouncedSearchQuery(searchQuery); }, 300); return () => { if (debounceTimeout.current) { clearTimeout(debounceTimeout.current); } };
-  }, [searchQuery, products, hasActiveFilters]);
+    if (debounceTimeout.current) { clearTimeout(debounceTimeout.current); }
+
+    // Optimization: If queries match (e.g. immediate click), skip debounce delay
+    if (searchQuery === debouncedSearchQuery) {
+      setIsSearching(searchQuery.trim().length > 0);
+      return;
+    }
+
+    if (searchQuery.trim().length > 0 || hasActiveFilters()) {
+      setFilteringLoader(true);
+      setIsSearching(true);
+    } else {
+      setFilteringLoader(false);
+      setIsSearching(false);
+      setTextFilteredProducts(products);
+      setTextFilteredUsers([]);
+      setFinalFilteredProducts(products);
+    }
+
+    debounceTimeout.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => {
+      if (debounceTimeout.current) { clearTimeout(debounceTimeout.current); }
+    };
+  }, [searchQuery, products, hasActiveFilters, debouncedSearchQuery]);
 
 
   // --- Sadece METİN ARAMA Filtreleme Mantığı (Yıl araması eklendi) ---
@@ -486,7 +522,7 @@ const SearchScreen = () => {
   };
 
   // renderCategoryCard helper
-  const renderCategoryCard = (cat: { name: string, height: number, imageUrl: string }) => (
+  const renderCategoryCard = (cat: { name: string, value: string, height: number, imageUrl: string }) => (
     <TouchableOpacity
       key={cat.name}
       style={{
@@ -499,8 +535,8 @@ const SearchScreen = () => {
         backgroundColor: '#eee'
       }}
       onPress={() => {
-        setSearchQuery(cat.name);
-        setDebouncedSearchQuery(cat.name);
+        setSearchQuery(cat.value);
+        setDebouncedSearchQuery(cat.value);
       }}
     >
       <Image
