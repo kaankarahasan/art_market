@@ -1,7 +1,7 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 // @ts-ignore
 import { initializeAuth, getReactNativePersistence, Auth, getAuth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -38,7 +38,9 @@ export const auth: Auth = initializeAuth(app, {
 // Firestore - React Native için BASİT yapılandırma
 // persistentLocalCache ve persistentMultipleTabManager KULLANMAYIN!
 // Bunlar React Native'de "client is offline" hatasına neden oluyor
-export const db: Firestore = getFirestore(app);
+export const db: Firestore = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
 
 // Firebase Storage
 export const storage: FirebaseStorage = getStorage(app);
