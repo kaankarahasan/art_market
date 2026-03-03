@@ -5,311 +5,344 @@ import {
     TouchableOpacity,
     FlatList,
     Text,
-    Image,
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
     Dimensions,
     ActivityIndicator,
+    Keyboard,
+    Animated,
+    ScrollView,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
-import { GoogleGenerativeAI } from '@google/generative-ai'; // Import SDK
-import { firebaseConfig, db } from '../firebase'; // Import firebase config
-import { collection, getDocs, query, limit, updateDoc, doc } from 'firebase/firestore';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { db, auth } from '../firebase';
+import {
+    collection,
+    getDocs,
+    query,
+    limit,
+    updateDoc,
+    doc,
+    addDoc,
+    orderBy,
+    onSnapshot,
+    Timestamp,
+    serverTimestamp,
+    setDoc,
+    deleteDoc
+} from 'firebase/firestore';
 
 // --- CONFIGURATION ---
-// IMPORTANT: Replace with your actual Gemini API Key.
-// Using the key from firebase.ts labeled as active project.
 const API_KEY = 'AIzaSyC8xcoYDghxwHDALeSI9pBvf7csqcmr_2o';
 
 type Message = {
     id: string;
     text: string;
     sender: 'user' | 'gemini';
-    createdAt: Date;
+    createdAt: any;
+};
+
+type ChatSession = {
+    id: string;
+    title: string;
+    createdAt: any;
 };
 
 export default function GeminiChatScreen() {
     const navigation = useNavigation<any>();
     const [messages, setMessages] = useState<Message[]>([]);
+    const [sessions, setSessions] = useState<ChatSession[]>([]);
+    const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [productsContext, setProductsContext] = useState('');
-    const [isFetchingProducts, setIsFetchingProducts] = useState(true);
 
+    const flatListRef = useRef<FlatList>(null);
+    const sidebarAnim = useRef(new Animated.Value(-300)).current;
+    const currentUser = auth.currentUser;
+
+    const { colors, isDarkTheme } = useThemeContext();
+    const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
+    const { width: screenWidth } = Dimensions.get('window');
+
+    // Sidebar Animation
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const q = query(collection(db, 'products'), limit(15));
-                const querySnapshot = await getDocs(q);
+        Animated.timing(sidebarAnim, {
+            toValue: isSidebarOpen ? 0 : -300,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+    }, [isSidebarOpen]);
 
-                let contextText = '\n\n### MEVCUT ÜRÜNLER (ID|Başlık|Fiyat|AI-Analiz|Etiketler):\n';
-                querySnapshot.forEach((pDoc) => {
-                    const data = pDoc.data();
-                    const title = data.title || '';
-                    const price = data.price ? `${data.price} TL` : '';
+    // 1. Fetch Chat Sessions
+    useEffect(() => {
+        if (!currentUser) return;
+        const sessionsRef = collection(db, 'users', currentUser.uid, 'gemini_sessions');
+        const q = query(sessionsRef, orderBy('createdAt', 'desc'));
 
-                    // ÖNCELİK: Eğer varsa AI tarafından daha önce üretilmiş kısa özeti (aiVibe) kullanıyoruz.
-                    // Yoksa açıklamayı kırpıp kullanıyoruz.
-                    const vibe = data.aiVibe || (data.description ? data.description.substring(0, 50) : '');
-                    const tags = Array.isArray(data.tags) ? data.tags.join(',') : '';
-
-                    contextText += `${pDoc.id}|${title}|${price}|${vibe}|${tags}\n`;
-                });
-
-                if (querySnapshot.size > 0) {
-                    setProductsContext(contextText);
-
-                    // ARKA PLAN ZENGİNLEŞTİRME: Sırayla ve bekleme süresi ekleyerek yapıyoruz
-                    const productsToEnrich = querySnapshot.docs.filter(d => !d.data().aiVibe && d.data().description);
-
-                    if (productsToEnrich.length > 0) {
-                        (async () => {
-                            console.log(`${productsToEnrich.length} ürün için AI zenginleştirme başlatılıyor...`);
-                            for (const pDoc of productsToEnrich) {
-                                try {
-                                    const data = pDoc.data();
-                                    const prompt = `Şu tabloyu 3-4 kelimeyle betimleyen kısa duygu/tarz etiketleri ver (Örn: "sakin, pastel, modern"): ${data.title} - ${data.description.substring(0, 50)}`;
-                                    const result = await model.generateContent(prompt);
-                                    const response = await result.response;
-                                    const generatedVibe = response.text().trim().toLowerCase();
-
-                                    await updateDoc(doc(db, 'products', pDoc.id), {
-                                        aiVibe: generatedVibe
-                                    });
-                                    console.log(`Zenginleştirme başarılı: ${data.title}`);
-
-                                    // Kota aşımını önlemek için 2 saniye bekle
-                                    await new Promise(resolve => setTimeout(resolve, 2000));
-                                } catch (e: any) {
-                                    console.warn("Otomatik zenginleştirme sırasında hata:", e);
-                                    if (e.toString().includes('429') || e.toString().includes('quota')) {
-                                        console.warn("Kota aşıldı, otomatik zenginleştirme durduruluyor.");
-                                        break; // Kotayı daha fazla zorlamamak için döngüden çık
-                                    }
-                                }
-                            }
-                        })();
-                    }
-                } else {
-                    setProductsContext('\n\n### MEVCUT ÜRÜNLER:\nVeritabanında henüz ürün bulunmuyor.');
-                }
-            } catch (error) {
-                console.error("Ürünler çekilirken hata oluştu:", error);
-                setProductsContext('\n\n### MEVCUT ÜRÜNLER:\nŞu an veritabanındaki ürünlere erişilemiyor.');
-            } finally {
-                setIsFetchingProducts(false);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ChatSession));
+            setSessions(fetched);
+            // If no session selected, select the latest one
+            if (!currentSessionId && fetched.length > 0) {
+                // setCurrentSessionId(fetched[0].id);
             }
-        };
+        });
+        return () => unsubscribe();
+    }, [currentUser]);
 
-        fetchProducts();
+    // 2. Listen to Messages for current session
+    useEffect(() => {
+        if (!currentUser || !currentSessionId) {
+            setMessages([]);
+            return;
+        }
+
+        const msgsRef = collection(db, 'users', currentUser.uid, 'gemini_sessions', currentSessionId, 'messages');
+        const q = query(msgsRef, orderBy('createdAt', 'asc'), limit(100));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+            setMessages(fetched);
+            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
+        });
+        return () => unsubscribe();
+    }, [currentUser, currentSessionId]);
+
+    // 3. Context Loading
+    useEffect(() => {
+        const fetchContext = async () => {
+            try {
+                const q = query(collection(db, 'products'), limit(10));
+                const snap = await getDocs(q);
+                let ctx = "\n### ÜRÜNLER:\n";
+                snap.forEach(d => ctx += `${d.data().title}|${d.data().price} TL\n`);
+                setProductsContext(ctx);
+            } catch (e) { }
+        };
+        fetchContext();
     }, []);
 
-    // Initialize Gemini AI
-    // Use the provided API Key directly with explicit v1 API version
-    const activeApiKey = API_KEY;
-    const genAI = useRef(new GoogleGenerativeAI(activeApiKey)).current;
-
-    // Define system instructions
-    const systemInstruction = `Sen "Sanatçı Pazarı" uygulamasının resmi akıllı asistanısın. Görevin, kullanıcılara sanatçıları keşfetmelerinde ve eser satın almalarında yardımcı olmaktır.
-
-### VERİ ERİŞİMİ VE SINIRLAR:
-1. Sadece sana sağlanan [Sanatçılar, Eserler, Kategoriler] koleksiyonlarındaki verilere dayanarak cevap ver.
-2. Eğer bir eserin fiyatı veya stok durumu hakkında bilgin yoksa, uydurma; "Bu bilgiyi şu an kontrol edemiyorum" de.
-3. Uygulama dışı (siyaset, genel dünya haberleri vb.) sorulara "Ben sadece sanat ve pazar yeri konularında yardımcı olabilirim" şeklinde yanıt ver.
-
-### DAVRANIŞ MODU:
-- Bir sanatçıdan bahsederken mutlaka onun [Artist_ID] bilgisini kullanarak "Profilini incelemek için tıklayın" yönlendirmesi yap.
-- Kullanıcı "mavi", "modern" veya "uygun fiyatlı" gibi terimler kullandığında, veritabanındaki [tags] ve [price] alanlarını önceliklendir.
-- Sanatçılar için bir "curator" (küratör) gibi davran; eserleri teknik detayları (yağlı boya, dijital, tuval boyutu) ile açıkla.
-
-### ÇIKTI FORMATI:
-Yanıtlarını Markdown formatında ver. Önemli eser isimlerini **kalın**, fiyatları ise her zaman yanına para birimi ekleyerek yaz.`;
-
-    // GÜNCELLEME: 'gemini-2.5-flash' modelini kullanıyoruz.
-    // Mevcut API anahtarının yetkileri nedeniyle 'systemInstruction' parametresi desteklenmiyor,
-    // bu nedenle sistem talimatlarını doğrudan bağlam (context) metnine ekleyeceğiz.
+    // 4. Gemini Init
+    const genAI = useRef(new GoogleGenerativeAI(API_KEY)).current;
     const model = React.useMemo(() => genAI.getGenerativeModel({
         model: "gemini-2.5-flash"
     }, { apiVersion: 'v1' }), [genAI]);
 
-    // Theme Integration
-    const { colors, isDarkTheme } = useThemeContext();
-    const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
-    const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+    const startNewChat = () => {
+        setCurrentSessionId(null);
+        setMessages([]);
+        setIsSidebarOpen(false);
+    };
+
+    const deleteSession = async (sessionId: string) => {
+        if (!currentUser) return;
+
+        Alert.alert(
+            "Sohbeti Sil",
+            "Bu sohbeti silmek istediğinizden emin misiniz?",
+            [
+                { text: "Vazgeç", style: "cancel" },
+                {
+                    text: "Sil",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const sessionRef = doc(db, 'users', currentUser.uid, 'gemini_sessions', sessionId);
+                            await deleteDoc(sessionRef);
+                            if (currentSessionId === sessionId) {
+                                startNewChat();
+                            }
+                        } catch (e) {
+                            console.warn("Delete error:", e);
+                        }
+                    }
+                }
+            ]
+        );
+    };
 
     const sendMessage = async () => {
-        if (!text.trim()) return;
-
-        const userMessage: Message = {
-            id: Date.now().toString(),
-            text: text,
-            sender: 'user',
-            createdAt: new Date(),
-        };
-
-        setMessages((prev) => [...prev, userMessage]);
+        if (!text.trim() || !currentUser) return;
+        const userText = text.trim();
         setText('');
         setLoading(true);
+        Keyboard.dismiss();
 
         try {
-            // Create chat history for context (optional, but good for chat experience)
-            // For simplicity, we can send just the prompt or build history.
-            // Let's use simple generateContent for now, or startChat if we want history.
+            let sessionID = currentSessionId;
+            const userRef = doc(db, 'users', currentUser.uid);
 
-            // Construct history from previous messages for better context
-            // Filter out the current message we just added (the last one) because sendMessage handles it.
-            // Also filter out any system/debug messages if needed.
-            const historyMessages = messages.filter(msg => msg.id !== userMessage.id);
-
-            const history = historyMessages.map(msg => ({
-                role: msg.sender === 'user' ? 'user' : 'model',
-                parts: [{ text: msg.text }],
-            }));
-
-            // Gemini history must start with a user message.
-            // If the first message is from model (e.g. welcome message or debug log), remove it.
-            while (history.length > 0 && history[0].role === 'model') {
-                history.shift();
+            // A. Create Session if not exists
+            if (!sessionID) {
+                const newSessionRef = await addDoc(collection(userRef, 'gemini_sessions'), {
+                    title: userText.substring(0, 30) + '...',
+                    createdAt: serverTimestamp()
+                });
+                sessionID = newSessionRef.id;
+                setCurrentSessionId(sessionID);
             }
 
-            // Inject the system instruction and products context into the first message
-            // since 'gemini-1.5-flash' via v1beta doesn't support the systemInstruction parameter.
-            const isFirstMessage = history.length === 0;
-            const finalPrompt = isFirstMessage
-                ? `${systemInstruction}\n\n${productsContext}\n\nKullanıcı sorusu: ${userMessage.text}`
-                : userMessage.text;
+            const messagesRef = collection(userRef, 'gemini_sessions', sessionID, 'messages');
 
-            const chat = model.startChat({
-                history: history,
+            // B. User Message
+            await addDoc(messagesRef, {
+                text: userText,
+                sender: 'user',
+                createdAt: Timestamp.now()
             });
 
-            const result = await chat.sendMessage(finalPrompt);
-            const response = await result.response;
-            const responseText = response.text();
+            // C. Gemini Call
+            const history = messages.slice(-6).map(m => ({
+                role: m.sender === 'user' ? 'user' : 'model',
+                parts: [{ text: m.text }]
+            }));
+            if (history.length > 0 && history[0].role === 'model') history.shift();
 
-            const geminiMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                text: responseText,
+            const prompt = `Sen Sanatçı Pazarı asistanısın. ${productsContext}\n\nKullanıcı: ${userText}`;
+            const chat = model.startChat({ history });
+            const result = await chat.sendMessage(prompt);
+            const geminiText = result.response.text();
+
+            // D. Gemini Message
+            await addDoc(messagesRef, {
+                text: geminiText,
                 sender: 'gemini',
-                createdAt: new Date(),
-            };
+                createdAt: Timestamp.now()
+            });
 
-            setMessages((prev) => [...prev, geminiMessage]);
-        } catch (error: any) {
-            console.warn("Gemini Error:", error);
-
-            let errorText = "Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.";
-            const errorString = error.toString();
-
-            if (errorString.includes('API_KEY_INVALID') || errorString.includes('400')) {
-                errorText = "API Anahtarı geçersiz veya eksik. Lütfen geçerli bir Gemini API anahtarı sağlayın.";
-            } else if (errorString.includes('SERVICE_DISABLED') || errorString.includes('403')) {
-                errorText = "Google Generative Language API bu proje için etkinleştirilmemiş. Lütfen Google Cloud Console'dan bu API'yi etkinleştirin.";
-            } else if (errorString.includes('503')) {
-                errorText = "Google Gemini servisi şu anda yoğunluk yaşıyor. Lütfen biraz bekleyip tekrar deneyin.";
-            } else if (errorString.includes('Network request failed') || errorString.includes('fetch failed')) {
-                errorText = "Ağ hatası oluştu. Lütfen internet bağlantınızı kontrol edin.";
-            } else if (errorString.includes('429') || errorString.includes('quota') || errorString.includes('Too Many Requests')) {
-                errorText = "Google Gemini API Ücretsiz Kullanım Kotası aşıldı! (429 Hatası). \n\nÇözüm: Google AI Studio üzerinden 'Pay-as-you-go' planına geçebilir veya yeni bir API Key oluşturabilirsiniz. Şimdilik lütfen 1-2 dakika bekleyip tekrar deneyin.";
-            } else {
-                // For other errors, show the raw error message to help debugging
-                errorText = `Beklenmeyen bir hata oluştu: ${errorString}`;
-            }
-
-            const errorMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                text: errorText,
-                sender: 'gemini',
-                createdAt: new Date(),
-            };
-            setMessages((prev) => [...prev, errorMessage]);
+        } catch (e) {
+            console.warn(e);
         } finally {
             setLoading(false);
         }
     };
 
-    // Dynamic dimensions
-    const avatarSize = Math.min(Math.max(screenHeight * 0.05, 36), 50);
-    const inputFont = Math.min(Math.max(screenHeight * 0.018, 12), 16);
-
     return (
         <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <View style={styles.headerLeft}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                        <Text style={styles.backIcon}>‹</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setIsSidebarOpen(true)}>
+                        <Text style={styles.menuIcon}>☰</Text>
+                    </TouchableOpacity>
+                </View>
+                <Text style={styles.headerTitle}>Gemini</Text>
+                <TouchableOpacity onPress={startNewChat}>
+                    <Text style={styles.newChatBtn}>+</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Sidebar Overlay */}
+            {isSidebarOpen && (
+                <TouchableOpacity
+                    activeOpacity={1}
+                    style={styles.overlay}
+                    onPress={() => setIsSidebarOpen(false)}
+                />
+            )}
+
+            {/* Sidebar Drawer */}
+            <Animated.View style={[styles.sidebar, { transform: [{ translateX: sidebarAnim }] }]}>
+                <View style={styles.sidebarHeader}>
+                    <Text style={styles.sidebarTitle}>Konuşmalar</Text>
+                    <TouchableOpacity onPress={startNewChat} style={styles.sidebarNewChat}>
+                        <Text style={styles.sidebarNewChatText}>+ Yeni Sohbet</Text>
+                    </TouchableOpacity>
+                </View>
+                <ScrollView contentContainerStyle={styles.sidebarList}>
+                    {sessions.map((session) => (
+                        <View
+                            key={session.id}
+                            style={[styles.sessionItemContainer, currentSessionId === session.id && styles.activeSession]}
+                        >
+                            <TouchableOpacity
+                                style={styles.sessionItem}
+                                onPress={() => {
+                                    setCurrentSessionId(session.id);
+                                    setIsSidebarOpen(false);
+                                }}
+                            >
+                                <Text style={styles.sessionItemText} numberOfLines={1}>{session.title}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => deleteSession(session.id)}
+                                style={styles.deleteBtn}
+                            >
+                                <Text style={styles.deleteIcon}>×</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ))}
+                    {sessions.length === 0 && (
+                        <Text style={styles.emptySessions}>Henüz geçmiş sohbet yok.</Text>
+                    )}
+                </ScrollView>
+            </Animated.View>
+
+            {/* Chat Area */}
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={90}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Text style={[styles.backText, { fontSize: 24 }]}>‹</Text>
-                    </TouchableOpacity>
-                    <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerTitle}>Gemini AI</Text>
-                        <Text style={styles.headerSubtitle}>Powered by Google</Text>
+                {messages.length === 0 && !loading && (
+                    <View style={styles.welcomeContainer}>
+                        <Text style={styles.welcomeTitle}>Size nasıl yardımcı olabilirim?</Text>
+                        <Text style={styles.welcomeSubtitle}>Sanatçı Pazarı koleksiyonlarını keşfedin veya bir soru sorun.</Text>
                     </View>
-                </View>
+                )}
 
-                {/* Messages List */}
-                <View style={{ flex: 1, backgroundColor: colors.background }}>
-                    {messages.length === 0 && (
-                        <View style={styles.emptyStateContainer}>
-                            <Text style={styles.emptyStateText}>Gemini'ya bir soru sor...</Text>
-                        </View>
-                    )}
-                    <FlatList
-                        data={messages}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => {
-                            const isUser = item.sender === 'user';
-                            return (
-                                <View
-                                    style={[
-                                        styles.messageBubble,
-                                        isUser ? styles.myMessage : styles.otherMessage,
-                                        { maxWidth: screenWidth * 0.8 },
-                                    ]}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.messageText,
-                                            !isUser && { color: colors.text },
-                                        ]}
-                                    >
+                <FlatList
+                    ref={flatListRef}
+                    data={messages}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.chatList}
+                    renderItem={({ item }) => {
+                        const isUser = item.sender === 'user';
+                        return (
+                            <View style={[styles.msgWrap, isUser ? styles.userWrap : styles.geminiWrap]}>
+                                <View style={[styles.bubble, isUser ? styles.userBubble : styles.geminiBubble]}>
+                                    <Text style={[styles.msgText, isUser ? styles.userText : styles.geminiText]}>
                                         {item.text}
                                     </Text>
                                 </View>
-                            );
-                        }}
-                        contentContainerStyle={{ paddingBottom: 20, paddingTop: 10 }}
-                    />
-                    {loading && (
-                        <View style={{ padding: 10, alignItems: 'flex-start', marginLeft: 20 }}>
-                            <ActivityIndicator size="small" color={colors.text} />
-                        </View>
-                    )}
-                </View>
+                            </View>
+                        );
+                    }}
+                />
 
-                {/* Input Area */}
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        value={text}
-                        onChangeText={setText}
-                        placeholder="Mesaj yazın..."
-                        placeholderTextColor={colors.secondaryText}
-                        style={[styles.input, { fontSize: inputFont }]}
-                        multiline
-                    />
-                    <TouchableOpacity
-                        style={styles.sendButton}
-                        onPress={sendMessage}
-                        disabled={loading || !text.trim()}
-                    >
-                        <Text style={styles.sendButtonText}>Gönder</Text>
-                    </TouchableOpacity>
+                {loading && (
+                    <View style={styles.loadingBox}>
+                        <ActivityIndicator size="small" color="#4285F4" />
+                        <Text style={styles.loadingText}>Gemini yanıtlıyor...</Text>
+                    </View>
+                )}
+
+                <View style={styles.inputArea}>
+                    <View style={styles.inputFieldWrap}>
+                        <TextInput
+                            value={text}
+                            onChangeText={setText}
+                            placeholder="Gemini'ye sorun..."
+                            placeholderTextColor={colors.secondaryText}
+                            style={[styles.input, { maxHeight: 120 }]}
+                            multiline
+                        />
+                        <TouchableOpacity
+                            onPress={sendMessage}
+                            disabled={!text.trim() || loading}
+                            style={[styles.sendBtn, !text.trim() && { opacity: 0.4 }]}
+                        >
+                            <Text style={styles.sendIcon}>↑</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -317,99 +350,121 @@ Yanıtlarını Markdown formatında ver. Önemli eser isimlerini **kalın**, fiy
 }
 
 const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: isDarkTheme ? '#131314' : '#FFFFFF' },
     header: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: 15,
+        height: 56,
         borderBottomWidth: 1,
-        borderBottomColor: colors.border || '#e0e0e0',
-        backgroundColor: colors.background,
+        borderBottomColor: isDarkTheme ? '#303134' : '#F0F4F9',
     },
-    backButton: {
-        paddingRight: 16,
-    },
-    backText: {
-        color: colors.text,
-        fontWeight: '300',
-    },
-    headerTitleContainer: {
-        justifyContent: 'center',
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: colors.text,
-    },
-    headerSubtitle: {
-        fontSize: 12,
-        color: colors.secondaryText,
-    },
-    messageBubble: {
-        padding: 12,
-        marginVertical: 4,
-        marginHorizontal: 12,
-        borderRadius: 16,
-    },
-    myMessage: {
-        backgroundColor: isDarkTheme ? '#4A90E2' : '#007AFF', // Blue for user
-        alignSelf: 'flex-end',
-        borderBottomRightRadius: 4,
-    },
-    otherMessage: {
-        backgroundColor: colors.card,
-        alignSelf: 'flex-start',
-        borderBottomLeftRadius: 4,
-        borderWidth: 1,
-        borderColor: colors.border || '#e0e0e0',
-    },
-    messageText: {
-        fontSize: 15,
-        color: '#FFFFFF', // White for user message
-        lineHeight: 22,
-    },
-    inputContainer: {
+    headerLeft: {
         flexDirection: 'row',
-        padding: 12,
-        borderTopWidth: 1,
-        borderTopColor: colors.border || '#e0e0e0',
-        backgroundColor: colors.background,
-        alignItems: 'flex-end',
-    },
-    input: {
-        flex: 1,
-        backgroundColor: colors.card,
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        marginRight: 10,
-        maxHeight: 100,
-        color: colors.text,
-        borderWidth: 1,
-        borderColor: colors.border || '#e0e0e0',
-    },
-    sendButton: {
-        backgroundColor: isDarkTheme ? '#4A90E2' : '#007AFF',
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        justifyContent: 'center',
         alignItems: 'center',
     },
-    sendButtonText: {
-        color: '#FFFFFF',
-        fontWeight: '600',
+    backBtn: {
+        marginRight: 15,
     },
-    emptyStateContainer: {
-        flex: 1,
-        justifyContent: 'center',
+    backIcon: { fontSize: 32, color: colors.text, fontWeight: '300', marginTop: -4 },
+    menuIcon: { fontSize: 28, color: colors.text, fontWeight: '300' },
+    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+    newChatBtn: { fontSize: 28, color: colors.text, fontWeight: '300', marginRight: 5 },
+
+    // Sidebar
+    overlay: {
+        position: 'absolute',
+        top: 0, bottom: 0, left: 0, right: 0,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        zIndex: 10,
+    },
+    sidebar: {
+        position: 'absolute',
+        top: 0, bottom: 0, left: 0,
+        width: 280,
+        backgroundColor: isDarkTheme ? '#1E1F20' : '#F0F4F9',
+        zIndex: 11,
+        paddingTop: 50,
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 5, height: 0 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+    },
+    sidebarHeader: { paddingHorizontal: 20, marginBottom: 20 },
+    sidebarTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 15 },
+    sidebarNewChat: {
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        backgroundColor: isDarkTheme ? '#2B2C2D' : '#D3E3FD',
+        borderRadius: 20,
         alignItems: 'center',
-        opacity: 0.7,
     },
-    emptyStateText: {
-        fontSize: 18,
+    sidebarNewChatText: { color: isDarkTheme ? '#FFFFFF' : '#041E49', fontWeight: '600' },
+    sidebarList: { paddingHorizontal: 10 },
+    sessionItemContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderRadius: 10,
+        marginVertical: 2,
+    },
+    sessionItem: {
+        flex: 1,
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+    },
+    activeSession: { backgroundColor: isDarkTheme ? '#303134' : '#E0E5EA' },
+    sessionItemText: { color: colors.text, fontSize: 14 },
+    deleteBtn: {
+        padding: 10,
+        marginRight: 5,
+    },
+    deleteIcon: {
         color: colors.secondaryText,
-        fontStyle: 'italic',
-    }
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    emptySessions: { color: colors.secondaryText, textAlign: 'center', marginTop: 30, fontSize: 12 },
+
+    // Chat
+    welcomeContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
+    welcomeTitle: { fontSize: 24, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 10 },
+    welcomeSubtitle: { fontSize: 14, color: colors.secondaryText, textAlign: 'center' },
+    chatList: { paddingHorizontal: 15, paddingBottom: 20 },
+    msgWrap: { marginVertical: 8, flexDirection: 'row', width: '100%' },
+    userWrap: { justifyContent: 'flex-end' },
+    geminiWrap: { justifyContent: 'flex-start' },
+    bubble: { padding: 12, borderRadius: 20, maxWidth: '85%' },
+    userBubble: { backgroundColor: isDarkTheme ? '#2B3D4F' : '#F0F4F9' },
+    geminiBubble: { backgroundColor: 'transparent' },
+    msgText: { fontSize: 16, lineHeight: 24 },
+    userText: { color: colors.text },
+    geminiText: { color: colors.text },
+    loadingBox: { flexDirection: 'row', alignItems: 'center', marginLeft: 20, marginBottom: 15 },
+    loadingText: { marginLeft: 10, fontSize: 13, color: colors.secondaryText },
+
+    inputArea: {
+        paddingHorizontal: 15,
+        paddingBottom: Platform.OS === 'ios' ? 10 : 20,
+    },
+    inputFieldWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: isDarkTheme ? '#2B2C2D' : '#F0F4F9',
+        borderRadius: 28,
+        paddingHorizontal: 15,
+        minHeight: 56,
+    },
+    input: { flex: 1, color: colors.text, fontSize: 16, paddingVertical: 10 },
+    sendBtn: {
+        backgroundColor: '#4285F4',
+        width: 36, height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 10,
+    },
+    sendIcon: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
 });
