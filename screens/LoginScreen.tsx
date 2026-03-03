@@ -15,6 +15,7 @@ import {
   Keyboard,
   Easing,
   StatusBar,
+  Image,
 } from 'react-native';
 // Firebase ve Google Sign-In Importları
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
@@ -323,7 +324,10 @@ const IOSLoginScreen = ({
                   {/* GOOGLE LOGIN BUTTON (iOS) */}
                   <TouchableOpacity onPress={handleGoogleLogin} disabled={isLoading} style={{ marginTop: 12 }}>
                     <View style={styles.googleButton}>
-                      <AntDesign name="google" size={20} color="#DB4437" style={{ marginRight: 10 }} />
+                      <Image
+                        source={require('../assets/google_g_logo.png')}
+                        style={{ width: 22, height: 22, marginRight: 12 }}
+                      />
                       <Text style={styles.googleButtonText}>Sign in with Google</Text>
                     </View>
                   </TouchableOpacity>
@@ -469,7 +473,10 @@ const AndroidLoginScreen = ({
                 {/* GOOGLE LOGIN BUTTON (Android) */}
                 <TouchableOpacity onPress={handleGoogleLogin} disabled={isLoading} style={{ marginTop: 12 }}>
                   <View style={styles.googleButton}>
-                    <AntDesign name="google" size={20} color="#DB4437" style={{ marginRight: 10 }} />
+                    <Image
+                      source={require('../assets/google_g_logo.png')}
+                      style={{ width: 22, height: 22, marginRight: 12 }}
+                    />
                     <Text style={styles.googleButtonText}>Sign in with Google</Text>
                   </View>
                 </TouchableOpacity>
