@@ -53,4 +53,5 @@ export type RootStackParamList = {
   InboxScreen: { currentUserId: string };
   Chat: { currentUserId: string; otherUserId: string };
   Search: undefined;
+  GeminiChat: undefined;
 };

@@ -25,9 +25,9 @@ import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import TermsOfUseScreen from './screens/TermsOfUseScreen';
 import PrivacyFollowerCommentSettingsScreen from './screens/PrivacyFollowerCommentSettingsScreen';
 import ChatScreen from './screens/ChatScreen';
-import SearchScreen from './screens/SearchScreen';
-// 1. ADIM: Yeni ekranı import edin
+import GeminiChatScreen from './screens/GeminiChatScreen';
 import PasswordResetScreen from './screens/PasswordResetScreen';
+import SearchScreen from './screens/SearchScreen';
 
 import { RootStackParamList } from './routes/types';
 import { FavoriteUsersProvider } from './contexts/FavoritesContext';
@@ -76,6 +76,7 @@ function AppContent() {
           <Stack.Screen name="PrivacyFollowerCommentSettings" component={PrivacyFollowerCommentSettingsScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Search" component={SearchScreen} />
+          <Stack.Screen name="GeminiChat" component={GeminiChatScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
       </NavigationContainer>
     </>

@@ -8,7 +8,7 @@ import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 // Firebase yapılandırması - HANGİ PROJEYİ KULLANIYORSANIZ O CONFIG'İ AÇIN
 const firebaseConfig = {
   // AKTIF PROJE: app-market-test
-  apiKey: "AIzaSyA0gtd502S2VxGr6EU3r-pYxoRNyBoz_PM",
+  apiKey: "AIzaSyAKw4iQlmmgcrwTT_qcWknoVENGd7LVTKQ",
   authDomain: "app-market-test-35f90.firebaseapp.com",
   projectId: "app-market-test-35f90",
   storageBucket: "app-market-test-35f90.firebasestorage.app",

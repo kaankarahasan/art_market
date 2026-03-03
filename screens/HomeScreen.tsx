@@ -430,48 +430,70 @@ const HomeScreen = () => {
     <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
       <View style={{ backgroundColor: colors.background, paddingBottom: 8 }}>
         <View style={styles.searchWrapper}>
-          <View style={styles.searchInputContainer}>
-            {/* Left Icon (Back or Search) */}
-            {isSearchActive ? (
-              <TouchableOpacity onPress={handleExitSearch}>
-                <Ionicons name="arrow-back" size={20} color={colors.secondaryText} style={styles.searchIcon} />
-              </TouchableOpacity>
-            ) : (
-              <Ionicons name="search" size={20} color={colors.secondaryText} style={styles.searchIcon} />
-            )}
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={[styles.searchInputContainer, { flex: 1 }]}>
+              {/* Left Icon (Back or Search) */}
+              {isSearchActive ? (
+                <TouchableOpacity onPress={handleExitSearch}>
+                  <Ionicons name="arrow-back" size={20} color={colors.secondaryText} style={styles.searchIcon} />
+                </TouchableOpacity>
+              ) : (
+                <Ionicons name="search" size={20} color={colors.secondaryText} style={styles.searchIcon} />
+              )}
 
-            {/* Input Field */}
-            {isSearchActive ? (
-              <TextInput
-                ref={searchInputRef}
-                style={styles.input}
-                placeholder={
-                  searchScope === 'All' ? "İsim, kategori, yıl, fiyat..." :
-                    searchScope === 'Artwork' ? "Eser adı, açıklama..." :
-                      searchScope === 'Artist' ? "Sanatçı ara..." :
-                        searchScope === 'Price' ? "Fiyat ara..." : "Boyut ara..."
-                }
-                placeholderTextColor={colors.secondaryText}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                onSubmitEditing={handleSearchSubmit}
-                returnKeyType="search"
-                autoFocus
-              />
-            ) : (
+              {/* Input Field */}
+              {isSearchActive ? (
+                <TextInput
+                  ref={searchInputRef}
+                  style={styles.input}
+                  placeholder={
+                    searchScope === 'All' ? "İsim, kategori, yıl, fiyat..." :
+                      searchScope === 'Artwork' ? "Eser adı, açıklama..." :
+                        searchScope === 'Artist' ? "Sanatçı ara..." :
+                          searchScope === 'Price' ? "Fiyat ara..." : "Boyut ara..."
+                  }
+                  placeholderTextColor={colors.secondaryText}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={handleSearchSubmit}
+                  returnKeyType="search"
+                  autoFocus
+                />
+              ) : (
+                <TouchableOpacity
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onPress={() => setIsSearchActive(true)}
+                  activeOpacity={1}
+                >
+                  <Text style={styles.searchPlaceholder}>Ara...</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Clear Button */}
+              {isSearchActive && searchQuery.length > 0 && (
+                <TouchableOpacity style={styles.clearButton} onPress={clearSearchText}>
+                  <Ionicons name="close" size={20} color={colors.secondaryText} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Gemini AI Button */}
+            {!isSearchActive && (
               <TouchableOpacity
-                style={{ flex: 1, justifyContent: 'center' }}
-                onPress={() => setIsSearchActive(true)}
-                activeOpacity={1}
+                style={{
+                  marginLeft: 10,
+                  width: 48,
+                  height: 48,
+                  backgroundColor: colors.card,
+                  borderRadius: 12,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: isDarkTheme ? '#333' : '#F0F0F0',
+                }}
+                onPress={() => navigation.navigate('GeminiChat' as any)}
               >
-                <Text style={styles.searchPlaceholder}>Ara...</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Clear Button */}
-            {isSearchActive && searchQuery.length > 0 && (
-              <TouchableOpacity style={styles.clearButton} onPress={clearSearchText}>
-                <Ionicons name="close" size={20} color={colors.secondaryText} />
+                <Ionicons name="sparkles" size={24} color={colors.text} />
               </TouchableOpacity>
             )}
           </View>

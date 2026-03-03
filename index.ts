@@ -4,3 +4,4 @@ import App from './App';
 
 
 AppRegistry.registerComponent('main', () => App);
+AppRegistry.registerComponent('FireBase', () => App);
