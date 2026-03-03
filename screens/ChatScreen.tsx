@@ -120,6 +120,7 @@ export default function ChatScreen() {
       {
         lastMessage: text,
         lastTimestamp: serverTimestamp(),
+        participants: [currentUserId, otherUserId],
         userInfos: {
           [currentUserId]: {
             displayName: currentUserData.displayName || '',

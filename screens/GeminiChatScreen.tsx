@@ -37,7 +37,7 @@ import {
 } from 'firebase/firestore';
 
 // --- CONFIGURATION ---
-const API_KEY = 'AIzaSyC8xcoYDghxwHDALeSI9pBvf7csqcmr_2o';
+const API_KEY = 'AIzaSyDffLCLEg8h6ySYi-EekB2Re4-dpUs82eE';
 
 type Message = {
     id: string;
@@ -64,6 +64,8 @@ export default function GeminiChatScreen() {
 
     const flatListRef = useRef<FlatList>(null);
     const sidebarAnim = useRef(new Animated.Value(-300)).current;
+    const isMounted = useRef(true);
+    const scrollTimeout = useRef<any>(null);
     const currentUser = auth.currentUser;
 
     const { colors, isDarkTheme } = useThemeContext();
@@ -96,6 +98,14 @@ export default function GeminiChatScreen() {
         return () => unsubscribe();
     }, [currentUser]);
 
+    useEffect(() => {
+        isMounted.current = true;
+        return () => {
+            isMounted.current = false;
+            if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+        };
+    }, []);
+
     // 2. Listen to Messages for current session
     useEffect(() => {
         if (!currentUser || !currentSessionId) {
@@ -107,9 +117,13 @@ export default function GeminiChatScreen() {
         const q = query(msgsRef, orderBy('createdAt', 'asc'), limit(100));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            if (!isMounted.current) return;
             const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Message));
             setMessages(fetched);
-            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
+            if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+            scrollTimeout.current = setTimeout(() => {
+                if (isMounted.current) flatListRef.current?.scrollToEnd({ animated: true });
+            }, 200);
         });
         return () => unsubscribe();
     }, [currentUser, currentSessionId]);
@@ -120,6 +134,7 @@ export default function GeminiChatScreen() {
             try {
                 const q = query(collection(db, 'products'), limit(10));
                 const snap = await getDocs(q);
+                if (!isMounted.current) return;
                 let ctx = "\n### ÜRÜNLER:\n";
                 snap.forEach(d => ctx += `${d.data().title}|${d.data().price} TL\n`);
                 setProductsContext(ctx);
@@ -175,11 +190,12 @@ export default function GeminiChatScreen() {
         Keyboard.dismiss();
 
         try {
+            console.log("Gemini: Start process");
             let sessionID = currentSessionId;
             const userRef = doc(db, 'users', currentUser.uid);
 
-            // A. Create Session if not exists
             if (!sessionID) {
+                console.log("Gemini: Creating session");
                 const newSessionRef = await addDoc(collection(userRef, 'gemini_sessions'), {
                     title: userText.substring(0, 30) + '...',
                     createdAt: serverTimestamp()
@@ -190,34 +206,67 @@ export default function GeminiChatScreen() {
 
             const messagesRef = collection(userRef, 'gemini_sessions', sessionID, 'messages');
 
-            // B. User Message
+            console.log("Gemini: Saving user message");
             await addDoc(messagesRef, {
                 text: userText,
                 sender: 'user',
                 createdAt: Timestamp.now()
             });
 
-            // C. Gemini Call
-            const history = messages.slice(-6).map(m => ({
-                role: m.sender === 'user' ? 'user' : 'model',
-                parts: [{ text: m.text }]
-            }));
-            if (history.length > 0 && history[0].role === 'model') history.shift();
+            console.log("Gemini: Preparing prompt");
+            // Filter and ensure history role constraints
+            const history = messages
+                .filter(m => m.text && m.text.trim().length > 0)
+                .slice(-10)
+                .map(m => ({
+                    role: m.sender === 'user' ? 'user' : 'model',
+                    parts: [{ text: m.text }]
+                }));
 
-            const prompt = `Sen Sanatçı Pazarı asistanısın. ${productsContext}\n\nKullanıcı: ${userText}`;
-            const chat = model.startChat({ history });
-            const result = await chat.sendMessage(prompt);
-            const geminiText = result.response.text();
+            while (history.length > 0 && history[0].role !== 'user') {
+                history.shift();
+            }
 
-            // D. Gemini Message
+            const systemContext = `Sen Sanatçı Pazarı asistanısın. Profesyonel ve yardımsever ol.
+Mevcut ürün verileri: ${productsContext || "Ürün verisi henüz yüklenmedi."}`;
+
+            console.log("Gemini: Calling API...");
+            let geminiText = "";
+
+            try {
+                if (history.length === 0) {
+                    const result = await model.generateContent(`${systemContext}\n\nKullanıcı: ${userText}`);
+                    const response = await result.response;
+                    geminiText = response.text();
+                } else {
+                    const chat = model.startChat({ history });
+                    const result = await chat.sendMessage(`${systemContext}\n\nKullanıcı: ${userText}`);
+                    const response = await result.response;
+                    geminiText = response.text();
+                }
+            } catch (apiError: any) {
+                console.error("Gemini API Call Error:", apiError);
+                throw apiError;
+            }
+
+            if (!geminiText || geminiText.trim().length === 0) {
+                geminiText = "Üzgünüm, şu an bu soruya yanıt veremiyorum.";
+            }
+
+            console.log("Gemini: Saving AI response");
             await addDoc(messagesRef, {
                 text: geminiText,
                 sender: 'gemini',
                 createdAt: Timestamp.now()
             });
+            console.log("Gemini: Flow completed");
+        } catch (e: any) {
+            console.error("Gemini Critical Error:", e);
+            let userFriendlyMsg = "AI yanıt verirken bir sorun oluştu.";
+            if (e.message?.includes("404")) userFriendlyMsg = "Seçilen AI modeli bulunamadı.";
+            else if (e.message?.includes("429")) userFriendlyMsg = "Çok fazla istek gönderildi, lütfen biraz bekleyin.";
 
-        } catch (e) {
-            console.warn(e);
+            Alert.alert("Gemini Hatası", `${userFriendlyMsg}\n\nDetay: ${e.message || "Bilinmeyen hata"}`);
         } finally {
             setLoading(false);
         }

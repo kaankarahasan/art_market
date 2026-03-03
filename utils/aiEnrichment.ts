@@ -11,7 +11,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
  * yollayarak token tasarrufu sağlarız.
  */
 
-const API_KEY = 'AIzaSyC8xcoYDghxwHDALeSI9pBvf7csqcmr_2o';
+const API_KEY = 'AIzaSyDffLCLEg8h6ySYi-EekB2Re4-dpUs82eE';
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: 'v1' });
 

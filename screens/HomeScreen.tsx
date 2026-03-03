@@ -81,22 +81,9 @@ const HomeScreen = () => {
 
   const fetchData = async () => {
     try {
-      const [productSnap, usersSnap] = await Promise.all([
-        getDocs(
-          query(collection(db, 'products'), where('isSold', '==', false), limit(50))
-        ),
-        getDocs(collection(db, 'users'))
-      ]);
-
-      const userNamesMap: { [key: string]: string } = {};
-      const usersList: any[] = [];
-      usersSnap.docs.forEach(userDoc => {
-        const userData = userDoc.data();
-        userNamesMap[userData.username] = userData.fullName || userData.username;
-        usersList.push({ id: userDoc.id, ...userData });
-      });
-      setUserNames(userNamesMap);
-      setAllUsers(usersList);
+      const productSnap = await getDocs(
+        query(collection(db, 'products'), where('isSold', '==', false), limit(50))
+      );
 
       const productList = productSnap.docs.map(doc => ({
         id: doc.id,
@@ -105,8 +92,8 @@ const HomeScreen = () => {
       }));
 
       const shuffled = shuffleArray(productList);
-      setOriginalProducts(shuffled); // Keep original unique set
-      setProducts(shuffled); // Initial render
+      setOriginalProducts(shuffled);
+      setProducts(shuffled);
 
     } catch (error) {
       console.error('Veriler alınırken hata:', error);
@@ -287,15 +274,13 @@ const HomeScreen = () => {
   };
 
   const loadMoreData = () => {
-    if (loadingMore || originalProducts.length === 0) return;
+    if (loadingMore || originalProducts.length === 0 || products.length > 200) return;
 
     setLoadingMore(true);
 
-    // Simulate network delay for effect or just append immediately (immediate is better for "infinite" feel but might block UI)
-    // We append the original list to the current list, ensuring unique IDs
     const newBatch = originalProducts.map((item) => ({
       ...item,
-      id: `${item.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Unique ID for key
+      id: `${item.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     }));
 
     setProducts(prev => [...prev, ...newBatch]);
@@ -315,7 +300,7 @@ const HomeScreen = () => {
   };
 
 
-  const distributeProducts = () => {
+  const distributeProducts = useCallback(() => {
     const leftColumn: any[] = [];
     const rightColumn: any[] = [];
     let leftHeight = 0;
@@ -323,8 +308,7 @@ const HomeScreen = () => {
 
     products.forEach((product) => {
       const imageHeight = imageHeights[product.id] || 250;
-      // GÜNCELLEME: Orijinal koddaki info alanı tahmini (padding hariç ~70-90 idi, padding ile ~110)
-      const infoHeightEstimate = 12 + 15 + 6 + 20 + 8 + 20 + 12; // padding + username + margin + title + margin + price + padding
+      const infoHeightEstimate = 12 + 15 + 6 + 20 + 8 + 20 + 12;
       const cardHeight = imageHeight + infoHeightEstimate;
 
       if (leftHeight <= rightHeight) {
@@ -336,7 +320,7 @@ const HomeScreen = () => {
       }
     });
     return { leftColumn, rightColumn };
-  };
+  }, [products, imageHeights]);
 
   const { leftColumn, rightColumn } = distributeProducts();
 

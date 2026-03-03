@@ -114,7 +114,6 @@ const LoginScreen = () => {
         });
       }
 
-      Alert.alert('Giriş Başarılı', `Hoş geldin, ${userCredential.user.displayName || userCredential.user.email}`);
       navigation.replace('Main');
 
     } catch (error: any) {
@@ -143,7 +142,6 @@ const LoginScreen = () => {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert('Giriş Başarılı', `Hoş geldin, ${userCredential.user.email}`);
       navigation.replace('Main');
     } catch (error: any) {
       const message = error.message || 'Giriş yapılamadı.';

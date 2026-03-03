@@ -101,15 +101,24 @@ const SearchScreen = () => {
 
   // --- Modal Filtre State'leri ---
   const [selectedPriceFilter, setSelectedPriceFilter] = useState<string | null>(null);
+  const [filterDepth, setFilterDepth] = useState<string>('');
+
+  // --- Modal Filter States ---
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
+  const [filterWidth, setFilterWidth] = useState<string>('');
+  const [filterHeight, setFilterHeight] = useState<string>('');
   const [selectedArtworkType, setSelectedArtworkType] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
   const [selectedTechnique, setSelectedTechnique] = useState<string | null>(null);
-  const [filterWidth, setFilterWidth] = useState<string>('');
-  const [filterHeight, setFilterHeight] = useState<string>('');
-  const [filterDepth, setFilterDepth] = useState<string>('');
+
+  // --- Modal Temp States (to avoid live-filtering during typing) ---
+  const [tempMinPrice, setTempMinPrice] = useState<string>('');
+  const [tempMaxPrice, setTempMaxPrice] = useState<string>('');
+  const [tempWidth, setTempWidth] = useState<string>('');
+  const [tempHeight, setTempHeight] = useState<string>('');
+  const [tempDepth, setTempDepth] = useState<string>('');
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<SearchScreenRouteProp>();
@@ -122,15 +131,20 @@ const SearchScreen = () => {
   const { colors, isDarkTheme } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
 
+  // Optimization: Create a user map for O(1) lookups
+  const userMap = React.useMemo(() => {
+    const map: { [key: string]: UserSearchResult } = {};
+    allUsers.forEach(u => map[u.id] = u);
+    return map;
+  }, [allUsers]);
+
   useFocusEffect(
     useCallback(() => {
       navigation.getParent<BottomTabNavigationProp<any>>()?.setOptions({
         tabBarStyle: { display: 'none' }
       });
-      // Refresh Recent Searches on Focus
       loadRecentSearches();
 
-      // Only auto-focus if we have an initial query passed from navigation (e.g. from Home)
       if (route.params?.initialQuery) {
         const timer = setTimeout(() => {
           inputRef.current?.focus();
@@ -186,8 +200,8 @@ const SearchScreen = () => {
       setLoading(true);
       // Verileri yükle
       const [productSnap, usersSnap] = await Promise.all([
-        getDocs(query(collection(db, 'products'), where('isSold', '==', false))),
-        getDocs(collection(db, 'users'))
+        getDocs(query(collection(db, 'products'), where('isSold', '==', false), limit(100))),
+        getDocs(query(collection(db, 'users'), limit(100)))
       ]);
 
       const userList: UserSearchResult[] = usersSnap.docs.map(doc => {
@@ -231,9 +245,9 @@ const SearchScreen = () => {
 
   // hasActiveFilters güncellendi
   const hasActiveFilters = useCallback(() => {
-    return !!(selectedArtworkType || selectedStyle || selectedTheme || selectedTechnique ||
-      minPrice || maxPrice || filterWidth || filterHeight || filterDepth);
-  }, [selectedArtworkType, selectedStyle, selectedTheme, selectedTechnique, minPrice, maxPrice, filterWidth, filterHeight, filterDepth]);
+    return !!(minPrice || maxPrice || filterWidth || filterHeight || filterDepth ||
+      selectedArtworkType || selectedStyle || selectedTheme || selectedTechnique);
+  }, [minPrice, maxPrice, filterWidth, filterHeight, filterDepth, selectedArtworkType, selectedStyle, selectedTheme, selectedTechnique]);
 
   // Debounce useEffect (Optimized)
   useEffect(() => {
@@ -290,7 +304,7 @@ const SearchScreen = () => {
         const descriptionMatch = product.description?.toLowerCase().includes(queryLower) ?? false;
         const categoryMatch = product.category?.toLowerCase().includes(queryLower) ?? false;
         const usernameMatch = product.username?.toLowerCase().includes(queryLower) ?? false;
-        const owner = allUsers.find(u => u.id === product.ownerId);
+        const owner = userMap[product.ownerId];
         const fullNameMatch = owner?.fullName?.toLowerCase().includes(queryLower) ?? false;
         const priceMatch = product.price?.toString().includes(queryLower) ?? false;
         const yearMatch = product.year?.toString().includes(queryLower) ?? false;
@@ -316,7 +330,7 @@ const SearchScreen = () => {
         return usernameMatch || fullNameMatch;
       });
       const artistProducts = products.filter(p => {
-        const owner = allUsers.find(u => u.id === p.ownerId);
+        const owner = userMap[p.ownerId];
         const nameMatch = owner?.fullName?.toLowerCase().includes(queryLower) ?? false;
         const usernameMatch = p.username?.toLowerCase().includes(queryLower) ?? false;
         return nameMatch || usernameMatch;
@@ -399,18 +413,22 @@ const SearchScreen = () => {
   ]);
 
 
-  // --- Sütun Dağıtma Fonksiyonu (değişmedi) ---
-  const distributeColumns = (items: Product[]) => {
+  // --- Sütun Dağıtma Fonksiyonu (Memoized & Robust) ---
+  const distributeColumns = useCallback((items: Product[]) => {
+    if (!Array.isArray(items)) return { leftColumn: [], rightColumn: [] };
+
     const leftColumn: Product[] = [];
     const rightColumn: Product[] = [];
     let leftHeight = 0;
     let rightHeight = 0;
+
     items.forEach(product => {
-      // Use aspect ratio to estimate height. Default 1.2 if unknown.
       const aspectRatio = imageAspectRatios[product.id] || 1.2;
-      // Image container has padding: 10, so effective width is columnWidth - 20
       const imageWidth = columnWidth - 20;
-      const imageHeight = imageWidth * aspectRatio;
+      let imageHeight = imageWidth * aspectRatio;
+
+      // NaN guard
+      if (isNaN(imageHeight)) imageHeight = imageWidth * 1.2;
 
       const infoHeightEstimate = 110;
       const cardHeight = imageHeight + infoHeightEstimate;
@@ -424,15 +442,14 @@ const SearchScreen = () => {
       }
     });
     return { leftColumn, rightColumn };
-  };
+  }, [imageAspectRatios, columnWidth]);
 
   // --- Nihai Ürünleri Sütunlara Dağıt ---
   useEffect(() => {
-    // Re-trigger distribution when products or aspect ratios change
     const { leftColumn, rightColumn } = distributeColumns(finalFilteredProducts);
     setFilteredLeftColumn(leftColumn);
     setFilteredRightColumn(rightColumn);
-  }, [finalFilteredProducts, imageAspectRatios]);
+  }, [finalFilteredProducts, distributeColumns]);
 
   // handleImageLoad updated to store Aspect Ratio
   const handleImageLoad = (productId: string, event: NativeSyntheticEvent<{ source: { width: number; height: number } }>) => {
@@ -466,9 +483,32 @@ const SearchScreen = () => {
 
   // clearFilters güncellendi
   const clearFilters = () => {
-    setSelectedPriceFilter(null); setMinPrice(''); setMaxPrice(''); setSelectedArtworkType(null); setSelectedStyle(null); setSelectedTheme(null); setSelectedTechnique(null);
-    setFilterWidth(''); setFilterHeight(''); setFilterDepth('');
+    setTempMinPrice(''); setTempMaxPrice('');
+    setTempWidth(''); setTempHeight(''); setTempDepth('');
+    // Clear active ones too
+    setMinPrice(''); setMaxPrice(''); setFilterWidth(''); setFilterHeight(''); setFilterDepth('');
+    // Modalı kapatmaya gerek yok, kullanıcı temizleyip devam edebilir
   };
+
+  const applyFilters = () => {
+    setMinPrice(tempMinPrice);
+    setMaxPrice(tempMaxPrice);
+    setFilterWidth(tempWidth);
+    setFilterHeight(tempHeight);
+    setFilterDepth(tempDepth);
+    setFilterModalVisible(false);
+  };
+
+  // Sync temp states when modal opens
+  useEffect(() => {
+    if (filterModalVisible) {
+      setTempMinPrice(minPrice);
+      setTempMaxPrice(maxPrice);
+      setTempWidth(filterWidth);
+      setTempHeight(filterHeight);
+      setTempDepth(filterDepth);
+    }
+  }, [filterModalVisible]);
 
   const sortProducts = (productsToSort: Product[]): Product[] => {
     if (!selectedSort) return productsToSort;
@@ -483,9 +523,17 @@ const SearchScreen = () => {
       case 'date_old':
         return sorted.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
       case 'year_new':
-        return sorted.sort((a, b) => parseInt(b.year?.toString() || '0', 10) - parseInt(a.year?.toString() || '0', 10));
+        return sorted.sort((a, b) => {
+          const yrA = parseInt(a.year?.toString() || '0', 10);
+          const yrB = parseInt(b.year?.toString() || '0', 10);
+          return (yrB || 0) - (yrA || 0);
+        });
       case 'year_old':
-        return sorted.sort((a, b) => parseInt(a.year?.toString() || '9999', 10) - parseInt(b.year?.toString() || '9999', 10));
+        return sorted.sort((a, b) => {
+          const yrA = parseInt(a.year?.toString() || '9999', 10);
+          const yrB = parseInt(b.year?.toString() || '9999', 10);
+          return (yrA || 0) - (yrB || 0);
+        });
       case 'name_az':
         return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'tr'));
       case 'name_za':
@@ -557,26 +605,22 @@ const SearchScreen = () => {
   const renderProductCard = (item: Product, cardStyle?: object) => {
     const isFavorite = favoriteItems.some(fav => fav.id === item.id);
     const firstImage = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls;
-    const owner = allUsers.find(u => u.id === item.ownerId);
+    const owner = userMap[item.ownerId];
     const displayName = owner?.fullName || owner?.username || item.username || 'Bilinmeyen';
 
-    // Calculate Height based on Aspect Ratio and current Width
     const targetWidth = (cardStyle && (cardStyle as any).width) ? (cardStyle as any).width : columnWidth;
-    const aspectRatio = imageAspectRatios[item.id] || 1.2; // Default aspect ratio
-    // Clamp height to reasonable limits
-    // Use targetWidth * aspectRatio - Padding if needed. If width is boxSize (Horizontal), use calculated.
-    // BoxSize calculation:
-    const calculatedHeight = targetWidth * aspectRatio;
-    // For horizontal scroll views, height is usually dynamic or container restricted?
-    // In horizontal scroll we set width to boxSize. Height will be calculated.
-    // IMPORTANT: In "Popular/New" horizontal list, we want flexible height for the CARD?
-    // But HorizontalScrollView usually aligns items.
-    // If items have different heights, it's fine.
-    // Max height constraint to prevent massive vertical expansion.
+    const aspectRatio = imageAspectRatios[item.id] || 1.2;
+    let calculatedHeight = targetWidth * aspectRatio;
+
+    // Crash prevention: Ensure finalHeight is a valid number
+    if (isNaN(calculatedHeight)) calculatedHeight = targetWidth * 1.2;
     const finalHeight = Math.max(100, Math.min(calculatedHeight, screenWidth * 1.5));
 
     const handlePress = () => {
-      const serializableProduct = { ...item, createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString(), };
+      const serializableProduct = {
+        ...item,
+        createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : (typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString()),
+      };
       navigation.navigate('ProductDetail', { product: serializableProduct });
     };
 
@@ -589,7 +633,7 @@ const SearchScreen = () => {
               style={[styles.image, { height: finalHeight }]}
               resizeMode="cover"
               onLoad={(e) => handleImageLoad(item.id, e)}
-              onError={(e) => console.log(`Ürün görseli yüklenemedi: ${item.id}`, e.nativeEvent.error)}
+              onError={(e) => console.log(`Ürün görseli yüklenemedi: ${item.id}`)}
             />
           ) : (
             <View style={[styles.noImage, { height: finalHeight }]}>
@@ -605,7 +649,7 @@ const SearchScreen = () => {
             </TouchableOpacity>
           </View>
           <Text style={styles.title} numberOfLines={2}>{item.title}{item.year ? `, ${item.year}` : ''}</Text>
-          <Text style={styles.price}>₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}</Text>
+          <Text style={styles.price}>₺{item.price ? Number(item.price).toLocaleString('tr-TR') : '0'}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -799,9 +843,9 @@ const SearchScreen = () => {
               <View style={styles.inputSection}>
                 <Text style={styles.filterSectionTitle}>Özel Fiyat Aralığı (₺)</Text>
                 <View style={styles.priceInputRow}>
-                  <TextInput style={styles.priceInput} placeholder="Min" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={minPrice} onChangeText={setMinPrice} />
+                  <TextInput style={styles.priceInput} placeholder="Min" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={tempMinPrice} onChangeText={setTempMinPrice} />
                   <Text style={styles.priceSeparator}>-</Text>
-                  <TextInput style={styles.priceInput} placeholder="Max" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={maxPrice} onChangeText={setMaxPrice} />
+                  <TextInput style={styles.priceInput} placeholder="Max" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={tempMaxPrice} onChangeText={setTempMaxPrice} />
                 </View>
               </View>
               {/* Boyut Alanı (GÜNCELLENDİ) */}
@@ -810,17 +854,17 @@ const SearchScreen = () => {
                 {/* Genişlik */}
                 <View style={styles.dimensionInputContainer}>
                   <Text style={styles.dimensionLabel}>Genişlik:</Text>
-                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={filterWidth} onChangeText={setFilterWidth} />
+                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={tempWidth} onChangeText={setTempWidth} />
                 </View>
                 {/* Yükseklik */}
                 <View style={styles.dimensionInputContainer}>
                   <Text style={styles.dimensionLabel}>Yükseklik:</Text>
-                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={filterHeight} onChangeText={setFilterHeight} />
+                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={tempHeight} onChangeText={setTempHeight} />
                 </View>
                 {/* Derinlik */}
                 <View style={styles.dimensionInputContainer}>
                   <Text style={styles.dimensionLabel}>Derinlik:</Text>
-                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme (Opsiyonel)" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={filterDepth} onChangeText={setFilterDepth} />
+                  <TextInput style={styles.dimensionInput} placeholder="Tam eşleşme" placeholderTextColor={colors.secondaryText} keyboardType="numeric" value={tempDepth} onChangeText={setTempDepth} />
                 </View>
               </View>
               {/* Yorum formatı düzeltildi */}
@@ -830,7 +874,7 @@ const SearchScreen = () => {
               <TouchableOpacity style={styles.clearFiltersButtonModal} onPress={clearFilters}>
                 <Text style={styles.clearFiltersTextModal}>Temizle</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.applyFiltersButton} onPress={() => setFilterModalVisible(false)}>
+              <TouchableOpacity style={styles.applyFiltersButton} onPress={applyFilters}>
                 <Text style={styles.applyFiltersText}>Uygula</Text>
               </TouchableOpacity>
             </View>

@@ -15,6 +15,7 @@ import {
   orderBy,
   doc as docRef,
   getDoc,
+  where,
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -48,44 +49,54 @@ export default function InboxScreen() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const q = query(collection(db, 'chats'), orderBy('lastTimestamp', 'desc'));
+    const q = query(
+      collection(db, 'chats'),
+      where('participants', 'array-contains', currentUser.uid),
+      orderBy('lastTimestamp', 'desc')
+    );
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const userChatsRaw = snapshot.docs.filter((doc) =>
-        doc.id.includes(currentUser.uid)
-      );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const chatsWithDetails = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        const users = doc.id.split('_');
+        const otherUserId = users.find((u) => u !== currentUser.uid) ?? '';
 
-      const chatsWithDetails = await Promise.all(
-        userChatsRaw.map(async (doc) => {
-          const data = doc.data();
-          const users = doc.id.split('_');
-          const otherUserId = users.find((u) => u !== currentUser.uid) ?? '';
+        const info = data.userInfos?.[otherUserId] || {};
+        const unreadCount = data.unreadCounts?.[currentUser.uid] || 0;
 
-          const userDocRef = docRef(db, 'users', otherUserId);
-          const userDocSnap = await getDoc(userDocRef);
-
-          let otherUserName = 'Bilinmeyen';
-          let otherUserPhoto = undefined;
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data() as { fullName?: string; photoURL?: string };
-            if (userData.fullName) otherUserName = userData.fullName;
-            if (userData.photoURL) otherUserPhoto = userData.photoURL;
-          }
-
-          const unreadCount = data.unreadCounts?.[currentUser.uid] || 0;
-
-          return {
-            id: doc.id,
-            lastMessage: data.lastMessage || '',
-            otherUserId,
-            otherUserName,
-            otherUserPhoto,
-            unreadCount,
-          };
-        })
-      );
+        return {
+          id: doc.id,
+          lastMessage: data.lastMessage || '',
+          otherUserId,
+          otherUserName: info.displayName || info.fullName || info.username || 'Bilinmeyen',
+          otherUserPhoto: info.photoURL || undefined,
+          unreadCount,
+        };
+      });
 
       setChats(chatsWithDetails);
+    }, (error) => {
+      console.warn("Snapshot error in Inbox, falling back to legacy filtering:", error);
+      const fallbackQuery = query(collection(db, 'chats'), orderBy('lastTimestamp', 'desc'));
+      onSnapshot(fallbackQuery, (snap) => {
+        const legacyChats = snap.docs
+          .filter(d => d.id.includes(currentUser!.uid))
+          .map(d => {
+            const data = d.data();
+            const users = d.id.split('_');
+            const otherUid = users.find(u => u !== currentUser!.uid) || '';
+            const info = data.userInfos?.[otherUid] || {};
+            return {
+              id: d.id,
+              lastMessage: data.lastMessage || '',
+              otherUserId: otherUid,
+              otherUserName: info.displayName || info.fullName || info.username || 'Bilinmeyen',
+              otherUserPhoto: info.photoURL || undefined,
+              unreadCount: data.unreadCounts?.[currentUser!.uid] || 0,
+            };
+          });
+        setChats(legacyChats);
+      });
     });
 
     return () => unsubscribe();
