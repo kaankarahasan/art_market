@@ -138,16 +138,15 @@ export default function InboxScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Geri Butonu */}
-      <TouchableOpacity
-        style={[
-          styles.backButton,
-          { marginTop: screenHeight * 0.02, marginBottom: screenHeight * 0.02 },
-        ]}
-        onPress={() => navigation.goBack()}
-      >
-        <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
-      </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Mesajlar</Text>
+      </View>
 
       <FlatList
         data={chats}
@@ -166,6 +165,19 @@ export default function InboxScreen() {
 
 const createStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 10 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginLeft: 5,
+  },
   backButton: {
     width: 40,
     height: 40,
