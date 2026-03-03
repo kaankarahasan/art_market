@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,8 @@ const FavoritesScreen = () => {
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
   const [isLoading, setIsLoading] = useState(true);
 
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   useEffect(() => {
     // small delay to ensure AsyncStorage loaded items
     const timer = setTimeout(() => setIsLoading(false), 200);
@@ -41,7 +43,7 @@ const FavoritesScreen = () => {
     setImageHeights(prev => ({ ...prev, [productId]: calculatedHeight }));
   };
 
-  const distributeProducts = () => {
+  const distributeProducts = useCallback(() => {
     const leftColumn: FavoriteItem[] = [];
     const rightColumn: FavoriteItem[] = [];
     let leftHeight = 0;
@@ -63,84 +65,86 @@ const FavoritesScreen = () => {
     });
 
     return { leftColumn, rightColumn };
-  };
+  }, [favoriteItems, imageHeights]);
 
   const { leftColumn, rightColumn } = distributeProducts();
-
-  const goToProductDetail = (product: FavoriteItem) => {
-    const productForDetail: Product = {
-      ...product,
-      description: product.description || '',
-      ownerId: product.ownerId || '',
-      imageUrls: product.imageUrls || [],
-      year: product.year ? Number(product.year) : null,
-    };
-    navigation.navigate('ProductDetail', { product: productForDetail });
-  };
 
   const renderProductCard = (item: FavoriteItem) => {
     const imageHeight = imageHeights[item.id] || 250;
     const firstImage = item.imageUrls?.[0] || item.imageUrl;
 
-    return (
-      <TouchableOpacity
-        key={item.id}
-        activeOpacity={0.8}
-        onPress={() => goToProductDetail(item)}
-        style={[styles.card, { width: columnWidth, backgroundColor: colors.card }]}
-      >
-        <View style={styles.imageContainer}>
-          {firstImage ? (
-            <Image
-              source={{ uri: firstImage }}
-              style={[styles.image, { height: imageHeight }]}
-              onLoad={(e) => {
-                const { width, height } = e.nativeEvent.source;
-                handleImageLoad(item.id, width, height);
-              }}
-            />
-          ) : (
-            <View style={[styles.image, styles.noImage, { height: 200 }]}>
-              <Text style={styles.noImageText}>Resim yok</Text>
-            </View>
-          )}
-        </View>
+    const handlePress = () => {
+      const productForDetail: Product = {
+        ...item,
+        description: item.description || '',
+        ownerId: item.ownerId || '',
+        imageUrls: item.imageUrls || (item.imageUrl ? [item.imageUrl] : []),
+        year: item.year ? Number(item.year) : null,
+        // Match HomeScreen serialization
+        createdAt: new Date().toISOString(),
+      };
+      navigation.navigate('ProductDetail', { product: productForDetail });
+    };
 
-        <View style={styles.infoContainer}>
-          <View style={styles.userRow}>
-            <Text style={[styles.username, { color: colors.text }]} numberOfLines={1}>
-              {item.username || 'Bilinmeyen'}
-            </Text>
-            <TouchableOpacity
-              onPress={() => removeFavorite(item.id)}
-              style={[styles.removeButton, { backgroundColor: isDarkTheme ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)' }]}
-            >
-              <Ionicons name="close" size={18} color={colors.text} />
-            </TouchableOpacity>
+    return (
+      <View key={item.id} style={[styles.card, { width: columnWidth }]}>
+        <TouchableOpacity
+          onPress={handlePress}
+          activeOpacity={0.7}
+        >
+          <View style={styles.imageContainer}>
+            {firstImage ? (
+              <Image
+                source={{ uri: firstImage }}
+                style={[styles.image, { height: imageHeight }]}
+                onLoad={(e) => {
+                  const { width, height } = e.nativeEvent.source;
+                  handleImageLoad(item.id, width, height);
+                }}
+              />
+            ) : (
+              <View style={[styles.image, styles.noImage, { height: 200 }]}>
+                <Text style={styles.noImageText}>Resim yok</Text>
+              </View>
+            )}
           </View>
 
-          <Text style={[styles.title, { color: colors.secondaryText }]} numberOfLines={2}>
-            {item.title}{item.year ? `, ${item.year}` : ''}
-          </Text>
+          <View style={styles.infoContainer}>
+            <View style={styles.userRow}>
+              <Text style={styles.username} numberOfLines={1}>
+                {item.username || 'Bilinmeyen'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => removeFavorite(item.id)}
+                style={styles.favoriteButton}
+              >
+                <Ionicons name="heart" size={20} color={colors.text} />
+              </TouchableOpacity>
+            </View>
 
-          <Text style={[styles.price, { color: colors.text }]}>
-            ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
-          </Text>
-        </View>
-      </TouchableOpacity>
+            <Text style={styles.title} numberOfLines={2}>
+              {item.title}{item.year ? `, ${item.year}` : ''}
+            </Text>
+
+            <Text style={styles.price}>
+              ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   };
 
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.text} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
       <View style={styles.headerContainer}>
         <TouchableOpacity
           style={styles.backButton}
@@ -154,21 +158,24 @@ const FavoritesScreen = () => {
       {favoriteItems.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.text }]}>Henüz favori ürün yok.</Text>
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: 20, paddingTop: 10 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 20, paddingTop: 10 }} showsVerticalScrollIndicator={false}>
           <View style={styles.masonryContainer}>
             <View style={styles.column}>{leftColumn.map(renderProductCard)}</View>
             <View style={styles.column}>{rightColumn.map(renderProductCard)}</View>
           </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
 export default FavoritesScreen;
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
+const createStyles = (colors: any) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background
+  },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -191,20 +198,26 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 12,
+    backgroundColor: colors.card,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1.5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   imageContainer: { padding: 10 },
   image: { width: '100%', resizeMode: 'contain', borderRadius: 8 },
-  noImage: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8E8E8' },
-  noImageText: { color: '#6E6E6E' },
-  infoContainer: { paddingHorizontal: 12, paddingBottom: 12, paddingTop: 2 },
-  userRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  username: { fontSize: 13, flex: 1 },
-  removeButton: { borderRadius: 12, padding: 4, marginLeft: 6 },
-  title: { fontSize: 15, marginTop: 6, marginBottom: 6 },
-  price: { fontSize: 17, fontWeight: 'bold' },
+  noImage: { justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
+  noImageText: { color: colors.secondaryText },
+  infoContainer: { padding: 12, paddingTop: 0, backgroundColor: colors.card },
+  userRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6
+  },
+  username: { fontSize: 13, color: colors.text, flex: 1 },
+  favoriteButton: { padding: 2 },
+  title: { fontSize: 15, color: colors.secondaryText, marginBottom: 8, lineHeight: 20 },
+  price: { fontSize: 17, fontWeight: 'bold', color: colors.text },
 });
