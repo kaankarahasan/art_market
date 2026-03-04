@@ -191,7 +191,7 @@ export default function GeminiChatScreen() {
             }
 
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.1-flash" }, { apiVersion: 'v1beta' });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: 'v1beta' });
 
             const history = messages
                 .slice(-10)

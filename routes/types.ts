@@ -1,6 +1,3 @@
-// UUID modülü TypeScript tarafından bilinmediği için declare ediyoruz
-declare module 'uuid';
-
 // Ürün tipi
 export type Product = {
   id: string;

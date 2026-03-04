@@ -19,7 +19,7 @@ const getApiKey = () => {
 const modelWrapper = () => {
     const apiKey = getApiKey();
     const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({ model: "gemini-2.1-flash" }, { apiVersion: 'v1beta' });
+    return genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: 'v1beta' });
 };
 
 export const enrichExistingProducts = async () => {
