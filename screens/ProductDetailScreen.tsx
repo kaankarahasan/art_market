@@ -29,18 +29,9 @@ import {
   useFavoriteItems,
   FavoriteItem,
 } from '../contexts/FavoritesContext';
-import {
-  getDoc,
-  doc,
-  collection,
-  query,
-  where,
-  getDocs,
-  limit,
-} from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, limit, getDocs } from '@react-native-firebase/firestore';
 import { auth, db } from '../firebase';
 import ImageViewing from 'react-native-image-viewing';
-// YENİ EKLENDİ: Güvenli alan için
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
@@ -62,7 +53,7 @@ const ProductDetailScreen = () => {
     useFavoriteUsers();
   const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
 
-  const insets = useSafeAreaInsets(); // YENİ EKLENDİ
+  const insets = useSafeAreaInsets();
   const currentUser = auth.currentUser;
 
   const [productData, setProductData] = useState<Product>(() => {
@@ -119,21 +110,21 @@ const ProductDetailScreen = () => {
         const userDoc = await getDoc(doc(db, 'users', productData.ownerId));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          setOwnerData({
-            username: data.username,
-            email: data.email,
-            profilePicture: data.photoURL || '',
-            fullName: data.fullName,
-          });
+          if (data) {
+            setOwnerData({
+              username: data.username,
+              email: data.email,
+              profilePicture: data.photoURL || '',
+              fullName: data.fullName,
+            });
+          }
         }
-        const productsQuery = query(
-          collection(db, 'products'),
-          where('ownerId', '==', productData.ownerId),
-          limit(10)
-        );
-        const querySnapshot = await getDocs(productsQuery);
+
+        const q = query(collection(db, 'products'), where('ownerId', '==', productData.ownerId), limit(10));
+        const querySnapshot = await getDocs(q);
+
         const fetchedProducts: Product[] = [];
-        querySnapshot.forEach((doc) => {
+        querySnapshot.forEach((doc: any) => {
           if (doc.id !== productData.id) {
             const data: any = { id: doc.id, ...doc.data() };
             Object.keys(data).forEach((key) => {
@@ -159,8 +150,7 @@ const ProductDetailScreen = () => {
     useCallback(() => {
       const fetchProduct = async () => {
         try {
-          const docRef = doc(db, 'products', product.id);
-          const docSnap = await getDoc(docRef);
+          const docSnap = await getDoc(doc(db, 'products', product.id));
           if (docSnap.exists()) {
             const data: any = { id: docSnap.id, ...docSnap.data() };
             Object.keys(data).forEach((key) => {
@@ -197,7 +187,6 @@ const ProductDetailScreen = () => {
     else navigation.navigate('OtherProfile', { userId: productData.ownerId });
   };
 
-  // YENİ EKLENDİ: Mesaj gönderme navigasyonu
   const handleSendMessage = () => {
     if (!currentUser || !productData.ownerId || isOwner) {
       return;
@@ -400,8 +389,6 @@ const ProductDetailScreen = () => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        // YENİ: Butonun yer kaplaması için contentContainer'a paddingBottom eklendi
-        // 80 (buton yüksekliği) + 20 (boşluk)
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         {renderImages()}
@@ -490,7 +477,6 @@ const ProductDetailScreen = () => {
           )}
         </View>
 
-        {/* --- Diğer Ürünler Bölümü --- */}
         {loadingOtherProducts ? (
           <ActivityIndicator style={{ marginTop: 20 }} />
         ) : (
@@ -519,11 +505,9 @@ const ProductDetailScreen = () => {
         )}
       </ScrollView>
 
-      {/* --- YENİ EKLENDİ: Sabit Mesaj Butonu --- */}
       {!isOwner && productData.ownerId && currentUser && (
         <View style={[
           styles.messageButtonContainer,
-          // Güvenli alan (çentik vs.) için alttan boşluk
           { paddingBottom: 12 }
         ]}>
           <TouchableOpacity
@@ -536,8 +520,6 @@ const ProductDetailScreen = () => {
           </TouchableOpacity>
         </View>
       )}
-      {/* --- YENİ BÖLÜM SONU --- */}
-
 
       <ImageViewing
         images={imagesArray}
@@ -583,12 +565,10 @@ export default ProductDetailScreen;
 const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   topButtonsContainer: {
-    // position: 'absolute' removed
-    // top/left/right/zIndex removed
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 15,
-    paddingVertical: 10, // Added padding for spacing
+    paddingVertical: 10,
   },
   backButton: {
     padding: 6,
@@ -661,7 +641,7 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     paddingTop: 16,
     minHeight: 100,
   },
-  otherProductsHeader: { // New style
+  otherProductsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -672,8 +652,6 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
-    // marginBottom: 12, // Moved to header container alignment
-    // paddingHorizontal: 20, // Handled by header container
   },
   noOtherProductsText: {
     fontSize: 14,
@@ -682,7 +660,6 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     fontStyle: 'italic',
   },
 
-  // --- KART STİLLERİ ---
   card: {
     borderRadius: 12,
     overflow: 'hidden',
@@ -746,7 +723,6 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     color: colors.text,
   },
 
-  // --- Mesaj Butonu Stilleri ---
   messageButtonContainer: {
     position: 'absolute',
     bottom: 0,
@@ -764,7 +740,7 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     borderTopColor: colors.card,
   },
   messageButton: {
-    backgroundColor: colors.text, // Zıt renk
+    backgroundColor: colors.text,
     paddingVertical: 14,
     borderRadius: 12,
     flexDirection: 'row',
@@ -772,42 +748,36 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     justifyContent: 'center',
   },
   messageButtonText: {
-    // Rengi inline style ile veriyoruz
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 10,
   },
 
-  // --- Tam Ekran Resim Stilleri ---
   imageHeaderContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 9999, // Ensure it's above everything
+    zIndex: 9999,
     flexDirection: 'row',
-    justifyContent: 'flex-start', // Align to left/start
+    justifyContent: 'flex-start',
     paddingHorizontal: 20,
-    // paddingTop is handled dynamically via inline style
   },
   imageCloseButton: {
     padding: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.5)', // Semi-transparent background for visibility
-    marginTop: 10, // Additional margin from the very top/notch
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    marginTop: 10,
   },
   squareIndicatorContainerFullScreen: {
     paddingVertical: 10,
     flexDirection: 'row',
     justifyContent: 'center',
-    width: '100%',
-    position: 'absolute',
-    bottom: 0,
+    gap: 10,
   },
   squareDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 0,
   },
 });

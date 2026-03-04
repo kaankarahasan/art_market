@@ -8,25 +8,20 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
-import { signOut } from 'firebase/auth';
-import { auth, db } from '../firebase'; // relative path
+import { auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../routes/types'; // relative path
-// import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { useThemeContext } from '../contexts/ThemeContext'; // relative path
+import { RootStackParamList } from '../routes/types';
+import { useThemeContext } from '../contexts/ThemeContext';
 import { seedDatabase, deleteSeedData } from '../utils/seedData';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const userId = auth.currentUser?.uid;
 
   const { isDarkTheme, toggleTheme, colors } = useThemeContext();
   const insets = useSafeAreaInsets();
-
-
 
   const onToggleTheme = () => {
     toggleTheme();
@@ -42,7 +37,7 @@ const SettingsScreen = () => {
         {
           text: 'Çıkış Yap',
           onPress: () => {
-            signOut(auth)
+            auth.signOut()
               .then(() => navigation.replace('Login'))
               .catch(error => Alert.alert('Hata', error.message));
           },
@@ -104,8 +99,6 @@ const SettingsScreen = () => {
         <Text style={[styles.headerTitle, { color: colors.text }]}>Ayarlar</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-
-        {/* Hesap Bölümü */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Hesap</Text>
           <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
@@ -116,9 +109,6 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         </View>
 
-
-
-        {/* Görünüm */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Görünüm</Text>
           <View style={styles.privacyRow}>
@@ -134,14 +124,12 @@ const SettingsScreen = () => {
           </View>
         </View>
 
-        {/* Bildirimler */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Bildirimler</Text>
           <Text style={[styles.item, { color: colors.text }]}>Push Bildirimleri</Text>
           <Text style={[styles.item, { color: colors.text }]}>Ürün Bildirimleri</Text>
         </View>
 
-        {/* Hakkında */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Hakkında</Text>
           <TouchableOpacity onPress={() => navigation.navigate('About')}>
@@ -155,7 +143,6 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Developer Tools */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Developer Tools</Text>
           <TouchableOpacity onPress={handleSeedData}>
@@ -166,7 +153,6 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Çıkış Yap */}
         <TouchableOpacity
           style={[styles.signOutButton, { backgroundColor: '#ff5252' }]}
           onPress={handleSignOut}

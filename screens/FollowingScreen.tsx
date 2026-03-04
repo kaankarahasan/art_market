@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { db } from '../firebase';
+import { onSnapshot, collection, doc, getDoc } from '@react-native-firebase/firestore';
+import { db, auth } from '../firebase';
 import { RootStackParamList } from '../routes/types';
 import { useThemeContext } from '../contexts/ThemeContext';
 
@@ -14,7 +13,6 @@ type User = {
   email?: string;
 };
 
-// Route ve Navigation tipleri
 type FollowingScreenRouteProp = RouteProp<RootStackParamList, 'Following'>;
 type FollowingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Following'>;
 
@@ -27,16 +25,13 @@ const FollowingScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const auth = getAuth();
   const currentUser = auth.currentUser;
-
   const { colors } = useThemeContext();
 
   useEffect(() => {
     if (!userId) return;
 
-    const unsubscribe = onSnapshot(
-      collection(db, 'users', userId, 'following'),
+    const unsubscribe = onSnapshot(collection(db, 'users', userId, 'following'),
       async (snapshot) => {
         const fetchedFollowing: User[] = [];
 
@@ -44,12 +39,14 @@ const FollowingScreen = () => {
           const followingId = docSnap.id;
           const userDoc = await getDoc(doc(db, 'users', followingId));
           if (userDoc.exists()) {
-            const data = userDoc.data();
-            fetchedFollowing.push({
-              uid: followingId,
-              username: data.username,
-              email: data.email,
-            });
+            const data = userDoc.data() as any;
+            if (data) {
+              fetchedFollowing.push({
+                uid: followingId,
+                username: data.username,
+                email: data.email,
+              });
+            }
           }
         }
 
@@ -106,7 +103,7 @@ const FollowingScreen = () => {
               style={[styles.userCard, { backgroundColor: colors.card }]}
               onPress={() =>
                 item.uid === currentUser?.uid
-                  ? navigation.navigate('Profile', {}) // <-- Burayı düzelttik
+                  ? navigation.navigate('Profile', {})
                   : navigation.navigate('OtherProfile', { userId: item.uid })
               }
             >

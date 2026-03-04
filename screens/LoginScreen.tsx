@@ -17,15 +17,14 @@ import {
   StatusBar,
   Image,
 } from 'react-native';
-// Firebase ve Google Sign-In Importları
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+// Native Firebase Importları
+import { signInWithEmailAndPassword, signInWithCredential, GoogleAuthProvider } from '@react-native-firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth, db } from '../firebase';
 
 // İkonlar
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
 
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,7 +32,6 @@ import { useThemeContext } from '../contexts/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
-// 1. RootStackParamList
 type RootStackParamList = {
   Login: undefined;
   Main: undefined;
@@ -62,7 +60,6 @@ const LoginScreen = () => {
   // --- GOOGLE SIGN-IN AYARLARI ---
   useEffect(() => {
     GoogleSignin.configure({
-      // DİKKAT: Buraya Firebase Console -> Authentication -> Google -> Web Client ID'yi yapıştır.
       webClientId: '955753428630-5rk8spap7hc4biqhintbqnl8tq832pkf.apps.googleusercontent.com',
     });
   }, []);
@@ -72,35 +69,26 @@ const LoginScreen = () => {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      // 1. Play Services kontrolü
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-
-      // 2. Giriş Yap
       const response = await GoogleSignin.signIn();
-
-      // DÜZELTME BURADA:
-      // TypeScript hatasını çözmek için sadece 'data' içinden okuyoruz.
-      // response.data?.idToken yeni standarttır.
       const idToken = response.data?.idToken;
 
       if (!idToken) {
         throw new Error('Google ID Token bulunamadı.');
       }
 
-      // 3. Firebase Credential oluştur
+      // 3. Firebase Credential oluştur (NATIVE)
       const googleCredential = GoogleAuthProvider.credential(idToken);
 
-      // 4. Firebase'e giriş yap
-      // 4. Firebase'e giriş yap
+      // 4. Firebase'e giriş yap (NATIVE)
       const userCredential = await signInWithCredential(auth, googleCredential);
       const user = userCredential.user;
 
-      // 5. Firestore'da kullanıcı kaydı var mı kontrol et
+      // 5. Firestore'da kullanıcı kaydı var mı kontrol et (NATIVE)
       const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
+      const userDocSnapshot = await getDoc(userDocRef);
 
-      if (!userDoc.exists()) {
-        // Kayıt yoksa oluştur (SignUp mantığıyla aynı)
+      if (!userDocSnapshot.exists()) {
         await setDoc(userDocRef, {
           uid: user.uid,
           email: user.email,
@@ -117,7 +105,6 @@ const LoginScreen = () => {
       navigation.replace('Main');
 
     } catch (error: any) {
-      // Kullanıcı vazgeçerse (iptal ederse) hata mesajı gösterme
       if (error.code !== 'SIGN_IN_CANCELLED') {
         console.error("Google Sign-In Hatası:", error);
         setErrorMessage('Google girişi başarısız: ' + (error.message || error.toString()));
@@ -141,7 +128,8 @@ const LoginScreen = () => {
     setErrorMessage('');
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Native Sign In
+      await signInWithEmailAndPassword(auth, email, password);
       navigation.replace('Main');
     } catch (error: any) {
       const message = error.message || 'Giriş yapılamadı.';
@@ -204,7 +192,7 @@ const LoginScreen = () => {
       isPasswordVisible={isPasswordVisible}
       togglePasswordVisibility={togglePasswordVisibility}
       handleLogin={handleLogin}
-      handleGoogleLogin={handleGoogleLogin} // Prop olarak gönderildi
+      handleGoogleLogin={handleGoogleLogin}
       isLoading={isLoading}
       errorMessage={errorMessage}
       navigation={navigation}
@@ -222,7 +210,7 @@ const LoginScreen = () => {
     isPasswordVisible={isPasswordVisible}
     togglePasswordVisibility={togglePasswordVisibility}
     handleLogin={handleLogin}
-    handleGoogleLogin={handleGoogleLogin} // Prop olarak gönderildi
+    handleGoogleLogin={handleGoogleLogin}
     isLoading={isLoading}
     errorMessage={errorMessage}
     navigation={navigation}
@@ -235,7 +223,7 @@ const LoginScreen = () => {
 // 🍎 iOS Login Screen
 const IOSLoginScreen = ({
   email, setEmail, password, setPassword, isPasswordVisible,
-  togglePasswordVisibility, handleLogin, handleGoogleLogin, // Parametre eklendi
+  togglePasswordVisibility, handleLogin, handleGoogleLogin,
   isLoading, errorMessage, navigation, translateX, translateY, scaleAnim
 }: any) => {
   return (
@@ -310,7 +298,6 @@ const IOSLoginScreen = ({
                     <Text style={styles.forgotPasswordText}>Forgot Your Password?</Text>
                   </TouchableOpacity>
 
-                  {/* Email Login Button */}
                   <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
                     <View style={styles.loginButton}>
                       <Text style={styles.loginButtonText}>
@@ -319,7 +306,6 @@ const IOSLoginScreen = ({
                     </View>
                   </TouchableOpacity>
 
-                  {/* GOOGLE LOGIN BUTTON (iOS) */}
                   <TouchableOpacity onPress={handleGoogleLogin} disabled={isLoading} style={{ marginTop: 12 }}>
                     <View style={styles.googleButton}>
                       <Image
@@ -357,7 +343,7 @@ const IOSLoginScreen = ({
 // 🤖 Android Login Screen
 const AndroidLoginScreen = ({
   email, setEmail, password, setPassword, isPasswordVisible,
-  togglePasswordVisibility, handleLogin, handleGoogleLogin, // Parametre eklendi
+  togglePasswordVisibility, handleLogin, handleGoogleLogin,
   isLoading, errorMessage, navigation, translateX, translateY, scaleAnim
 }: any) => {
   const translateYAnim = useRef(new Animated.Value(0)).current;
@@ -459,7 +445,6 @@ const AndroidLoginScreen = ({
                   <Text style={styles.forgotPasswordText}>Forgot Your Password?</Text>
                 </TouchableOpacity>
 
-                {/* Email Login Button */}
                 <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
                   <View style={styles.loginButton}>
                     <Text style={styles.loginButtonText}>
@@ -468,7 +453,6 @@ const AndroidLoginScreen = ({
                   </View>
                 </TouchableOpacity>
 
-                {/* GOOGLE LOGIN BUTTON (Android) */}
                 <TouchableOpacity onPress={handleGoogleLogin} disabled={isLoading} style={{ marginTop: 12 }}>
                   <View style={styles.googleButton}>
                     <Image
@@ -559,7 +543,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // --- GOOGLE BUTTON STYLE ---
   googleButton: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 14,

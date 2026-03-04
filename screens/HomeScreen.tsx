@@ -18,9 +18,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { db } from '../firebase';
-import { collection, query, where, orderBy, limit, getDocs, startAfter, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
-import { auth } from '../firebase';
+import { getDocs, collection, query, where, limit } from '@react-native-firebase/firestore';
+import { db, auth } from '../firebase';
 import { useThemeContext } from '../contexts/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
@@ -81,14 +80,15 @@ const HomeScreen = () => {
 
   const fetchData = async () => {
     try {
-      const productSnap = await getDocs(
-        query(collection(db, 'products'), where('isSold', '==', false), limit(50))
-      );
+      // Modular Native Firestore Fetch
+      const productsRef = collection(db, 'products');
+      const q = query(productsRef, where('isSold', '==', false), limit(50));
+      const productSnap = await getDocs(q);
 
-      const productList = productSnap.docs.map(doc => ({
+      const productList = productSnap.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
+        createdAt: (doc.data() as any).createdAt?.toDate ? (doc.data() as any).createdAt.toDate() : new Date()
       }));
 
       const shuffled = shuffleArray(productList);
@@ -100,7 +100,6 @@ const HomeScreen = () => {
     }
   };
 
-  // Veri çekme efekti
   useFocusEffect(
     useCallback(() => {
       const loadData = async () => {
@@ -111,8 +110,7 @@ const HomeScreen = () => {
       loadData();
     }, [])
   );
-  // Load Recent Searches
-  // Load Recent Searches
+
   useFocusEffect(
     useCallback(() => {
       const loadRecentSearches = async () => {
@@ -141,7 +139,6 @@ const HomeScreen = () => {
     }
   };
 
-  // --- FILTER LOGIC (Mirrored from SearchScreen) ---
   useEffect(() => {
     if (!isSearchActive) return;
 
@@ -155,18 +152,12 @@ const HomeScreen = () => {
     let currentProductResults: any[] = [];
     let currentUserResults: any[] = [];
 
-    // Using 'products' (which has 50 items). 
-    // User awareness: Only searches loaded products.
-
     if (searchScope === 'All') {
       currentProductResults = products.filter(product => {
         const titleMatch = product.title?.toLowerCase().includes(queryLower) ?? false;
         const descriptionMatch = product.description?.toLowerCase().includes(queryLower) ?? false;
         const categoryMatch = product.category?.toLowerCase().includes(queryLower) ?? false;
         const usernameMatch = product.username?.toLowerCase().includes(queryLower) ?? false;
-        // Owner name match needs looking up owner in allUsers or userNames?
-        // products has ownerId? HomeScreen products might not have ownerId mapped, or it assumes username is valid.
-        // Let's use username match from product.
         const priceMatch = product.price?.toString().includes(queryLower) ?? false;
         const yearMatch = product.year?.toString().includes(queryLower) ?? false;
         return titleMatch || descriptionMatch || categoryMatch || usernameMatch || priceMatch || yearMatch;
@@ -180,9 +171,7 @@ const HomeScreen = () => {
       currentProductResults = products.filter(p => p.title?.toLowerCase().includes(queryLower) || p.description?.toLowerCase().includes(queryLower) || p.category?.toLowerCase().includes(queryLower));
     } else if (searchScope === 'Artist') {
       currentUserResults = allUsers.filter(user => user.username?.toLowerCase().includes(queryLower) || user.fullName?.toLowerCase().includes(queryLower));
-      // Products by artist?
       const artistProducts = products.filter(p => p.username?.toLowerCase().includes(queryLower));
-      // Note: HomeScreen products might rely on `username` field.
       currentProductResults = artistProducts;
     } else if (searchScope === 'Price') {
       currentProductResults = products.filter(p => p.price?.toString().includes(queryLower));
@@ -203,14 +192,6 @@ const HomeScreen = () => {
       setRecentSearches(newSearches);
       saveRecentSearches(newSearches);
 
-      // If user hits enter, maybe we STILL go to SearchScreen for FULL results?
-      // "Clicking one of these buttons should list the search results accordingly." -> This referred to Filter Chips.
-      // "In HomeScreen... Filtering should begin...". 
-      // If I am typing, I see results. If I hit Enter, what happens?
-      // Usually "Search" button on keyboard commits search. 
-      // Navigating to SearchScreen is a safe bet for "Global Search". 
-      // The inline results are a preview of visible data.
-
       navigation.navigate('SearchTab' as any, {
         screen: 'Search',
         params: {
@@ -219,7 +200,6 @@ const HomeScreen = () => {
         }
       });
 
-      // Reset Home Search state
       setIsSearchActive(false);
       setSearchQuery('');
       setSearchScope('All');
@@ -250,7 +230,6 @@ const HomeScreen = () => {
 
   const clearSearchText = () => {
     setSearchQuery('');
-    // If cleared, logic above sets filtered to empty.
     searchInputRef.current?.focus();
   };
 
@@ -269,7 +248,7 @@ const HomeScreen = () => {
   };
 
   const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
-    const paddingToBottom = 1500; // Trigger earlier for smoother infinite feel
+    const paddingToBottom = 1500;
     return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
   };
 
@@ -288,7 +267,7 @@ const HomeScreen = () => {
   };
 
   const handleImageLoad = (productId: string, width: number, height: number) => {
-    const imageWidth = columnWidth - 20; // card padding (10+10)
+    const imageWidth = columnWidth - 20;
     if (width > 0) {
       const aspectRatio = height / width;
       const calculatedHeight = imageWidth * aspectRatio;
@@ -339,8 +318,6 @@ const HomeScreen = () => {
     isFav ? removeFavorite(item.id) : addFavorite(favItem);
   };
 
-  // --- GÜNCELLEME: renderProductCard Orijinal Haline Döndürüldü ---
-  // (createdAt için handlePress eklendi)
   const renderProductCard = (item: any) => {
     const isFavorite = favoriteItems.some(fav => fav.id === item.id);
     const imageHeight = imageHeights[item.id] || 250;
@@ -348,12 +325,10 @@ const HomeScreen = () => {
 
     const displayName = userNames[item.username] || item.username || 'Bilinmeyen';
 
-    // Non-serializable hatasını önlemek için handlePress
     const handlePress = () => {
       const serializableProduct = {
         ...item,
-        // createdAt'in Date objesi olup olmadığını kontrol et ve string'e çevir
-        createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString(), // Eğer Date değilse şimdiki zamanı kullan
+        createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString(),
       };
       navigation.navigate('ProductDetail', { product: serializableProduct });
     };
@@ -361,7 +336,7 @@ const HomeScreen = () => {
     return (
       <View key={item.id} style={[styles.card, { width: columnWidth }]}>
         <TouchableOpacity
-          onPress={handlePress} // handlePress kullanılıyor
+          onPress={handlePress}
           activeOpacity={0.7}
         >
           <View style={styles.imageContainer}>
@@ -376,7 +351,6 @@ const HomeScreen = () => {
               />
             ) : (
               <View style={[styles.image, styles.noImage, { height: 200 }]}>
-                {/* Orijinalde Text kullanılıyordu */}
                 <Text style={styles.noImageText}>Resim yok</Text>
               </View>
             )}
@@ -407,7 +381,6 @@ const HomeScreen = () => {
       </View>
     );
   };
-  // --- GÜNCELLEME Sonu ---
 
 
   return (
@@ -416,7 +389,6 @@ const HomeScreen = () => {
         <View style={styles.searchWrapper}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={[styles.searchInputContainer, { flex: 1 }]}>
-              {/* Left Icon (Back or Search) */}
               {isSearchActive ? (
                 <TouchableOpacity onPress={handleExitSearch}>
                   <Ionicons name="arrow-back" size={20} color={colors.secondaryText} style={styles.searchIcon} />
@@ -425,7 +397,6 @@ const HomeScreen = () => {
                 <Ionicons name="search" size={20} color={colors.secondaryText} style={styles.searchIcon} />
               )}
 
-              {/* Input Field */}
               {isSearchActive ? (
                 <TextInput
                   ref={searchInputRef}
@@ -453,7 +424,6 @@ const HomeScreen = () => {
                 </TouchableOpacity>
               )}
 
-              {/* Clear Button */}
               {isSearchActive && searchQuery.length > 0 && (
                 <TouchableOpacity style={styles.clearButton} onPress={clearSearchText}>
                   <Ionicons name="close" size={20} color={colors.secondaryText} />
@@ -461,7 +431,6 @@ const HomeScreen = () => {
               )}
             </View>
 
-            {/* Gemini AI Button */}
             {!isSearchActive && (
               <TouchableOpacity
                 style={{
@@ -483,7 +452,6 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        {/* Scope Chips */}
         {isSearchActive && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
             {(['All', 'Artwork', 'Artist', 'Price', 'Size'] as const).map((scope) => (
@@ -509,13 +477,10 @@ const HomeScreen = () => {
         )}
       </View>
 
-      {/* Main Content Area */}
       {isSearchActive ? (
         <ScrollView style={{ flex: 1, backgroundColor: colors.background }} keyboardShouldPersistTaps="handled">
           {searchQuery.length > 0 ? (
-            /* --- FILTERED RESULTS VIEW --- */
             <View style={{ padding: 16 }}>
-              {/* Users Horizontal Scroll */}
               {filteredUsers.length > 0 && (
                 <View style={{ marginBottom: 20 }}>
                   <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>Kullanıcılar</Text>
@@ -530,7 +495,6 @@ const HomeScreen = () => {
                 </View>
               )}
 
-              {/* Products List */}
               {filteredProducts.length > 0 ? (
                 <View>
                   <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>Eserler</Text>
@@ -551,7 +515,6 @@ const HomeScreen = () => {
               )}
             </View>
           ) : (
-            /* --- RECENT SEARCHES --- */
             recentSearches.length > 0 && (
               <View style={{ padding: 16 }}>
                 <Text style={{ color: colors.secondaryText, marginBottom: 10, fontSize: 14 }}>Son Aramalar</Text>
@@ -571,7 +534,6 @@ const HomeScreen = () => {
           )}
         </ScrollView>
       ) : (
-        /* --- DEFAULT HOMESCREEN CONTENT --- */
         <>
           {loading ? (
             <View style={styles.loadingContainer}>
@@ -594,7 +556,7 @@ const HomeScreen = () => {
                   loadMoreData();
                 }
               }}
-              scrollEventThrottle={400} // Check typically every 400ms or so during scroll
+              scrollEventThrottle={400}
             >
               <View style={styles.masonryContainer}>
                 <View style={styles.column}>
@@ -614,7 +576,6 @@ const HomeScreen = () => {
 
 export default HomeScreen;
 
-// --- GÜNCELLEME: Stiller Orijinal Haline Döndürüldü ---
 const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
@@ -738,4 +699,3 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontWeight: '700',
   },
 });
-// --- GÜNCELLEME Sonu ---

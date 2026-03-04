@@ -20,17 +20,9 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import Feather from 'react-native-vector-icons/Feather';
-import { getAuth } from 'firebase/auth';
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  onSnapshot,
-  getDocs,
-} from 'firebase/firestore';
+import { signOut } from '@react-native-firebase/auth';
+import { doc, getDoc, onSnapshot, query, collection, where, getDocs } from '@react-native-firebase/firestore';
+import { auth, db } from '../firebase';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../routes/types';
 import { ThemeContext } from '../contexts/ThemeContext';
@@ -76,8 +68,6 @@ const FullScreenImageModal = ({
 const ProfileScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<ProfileRouteProp>();
-  const auth = getAuth();
-  const firestore = getFirestore();
   const insets = useSafeAreaInsets();
   const { colors } = useContext(ThemeContext);
   const styles = React.useMemo(() => createStyles(colors), [colors]);
@@ -99,23 +89,22 @@ const ProfileScreen = () => {
   useEffect(() => {
     if (!profileId) return;
 
-    const followersRef = collection(firestore, 'users', profileId, 'followers');
-    const followingRef = collection(firestore, 'users', profileId, 'following');
-
-    const unsubFollowers = onSnapshot(followersRef, async (snapshot) => {
+    // Follower list snapshot
+    const unsubFollowers = onSnapshot(collection(db, 'users', profileId, 'followers'), async (snapshot) => {
       const data = await Promise.all(
-        snapshot.docs.map(async (docSnap) => {
-          const userSnap = await getDoc(doc(firestore, 'users', docSnap.id));
+        snapshot.docs.map(async (docSnap: any) => {
+          const userSnap = await getDoc(doc(db, 'users', docSnap.id));
           return { uid: docSnap.id, username: userSnap.data()?.username || 'Unknown' };
         })
       );
       setFollowers(data);
     });
 
-    const unsubFollowing = onSnapshot(followingRef, async (snapshot) => {
+    // Following list snapshot
+    const unsubFollowing = onSnapshot(collection(db, 'users', profileId, 'following'), async (snapshot) => {
       const data = await Promise.all(
-        snapshot.docs.map(async (docSnap) => {
-          const userSnap = await getDoc(doc(firestore, 'users', docSnap.id));
+        snapshot.docs.map(async (docSnap: any) => {
+          const userSnap = await getDoc(doc(db, 'users', docSnap.id));
           return { uid: docSnap.id, username: userSnap.data()?.username || 'Unknown' };
         })
       );
@@ -131,13 +120,13 @@ const ProfileScreen = () => {
   const fetchUserData = useCallback(async () => {
     setLoading(true);
     try {
-      const userSnap = await getDoc(doc(firestore, 'users', profileId));
+      const userSnap = await getDoc(doc(db, 'users', profileId));
       if (userSnap.exists()) setUserData(userSnap.data());
 
-      const productsSnap = await getDocs(
-        query(collection(firestore, 'products'), where('ownerId', '==', profileId))
-      );
-      setProducts(productsSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const q = query(collection(db, 'products'), where('ownerId', '==', profileId));
+      const productsSnap = await getDocs(q);
+
+      setProducts(productsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() })));
     } catch (e) {
       console.error('Kullanıcı verisi alınamadı:', e);
     } finally {
@@ -222,7 +211,6 @@ const ProfileScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header with username and buttons */}
       <View
         style={{
           flexDirection: 'row',
@@ -254,7 +242,6 @@ const ProfileScreen = () => {
           paddingBottom: 60,
         }}
       >
-        {/* Profile Card */}
         <View style={[styles.profileCard, { marginTop: 8 }]}>
           <TouchableOpacity onPress={() => setProfileModalVisible(true)}>
             <Image
@@ -268,12 +255,10 @@ const ProfileScreen = () => {
           </TouchableOpacity>
 
           <View style={styles.profileInfo}>
-            {/* Full Name */}
             <Text style={styles.fullNameText} numberOfLines={1}>
               {userData?.fullName || 'Ad Soyad'}
             </Text>
 
-            {/* Followers / Following */}
             <View style={styles.followStatsContainer}>
               <TouchableOpacity
                 onPress={() => navigation.navigate('Followers', { userId: profileId })}
@@ -296,7 +281,6 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        {/* Tabs */}
         <View style={styles.tabRow}>
           <TouchableOpacity
             style={[styles.tabItem, selectedTab === 'Artworks' && styles.activeTabLarge]}
@@ -387,13 +371,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     marginLeft: 14,
     justifyContent: 'center',
-    alignItems: 'flex-start', // Sola yaslı
-  },
-
-  nameAndStatsWrapper: {
-    flex: 1,
-    alignItems: 'center', // FullName ve stats hizalansın
-    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
 
   fullNameText: {
@@ -401,14 +379,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 8,
-    textAlign: 'left', // Sola hizala
+    textAlign: 'left',
     width: '100%',
-  },
-
-  followStatsRow: {
-    flexDirection: 'row',
-    gap: 24,
-    marginTop: 4,
   },
 
   followStatItemRow: {
@@ -429,9 +401,9 @@ const createStyles = (colors: any) => StyleSheet.create({
 
   followStatsContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-start', // Sola yaslı
-    gap: 24, // İki öğe arası boşluk
-    width: '80%', // hizalamayı dengeler
+    justifyContent: 'flex-start',
+    gap: 24,
+    width: '80%',
   },
 
   tabRow: {
@@ -468,6 +440,5 @@ const createStyles = (colors: any) => StyleSheet.create({
   infoContainer: { padding: 12, paddingTop: 0 },
   title: { fontSize: 15, color: colors.secondaryText, marginBottom: 8, lineHeight: 20 },
   price: { fontSize: 17, fontWeight: 'bold', color: colors.text },
-  // modalBackground kaldırıldı, inline kullanılıyor.
   closeButton: { position: 'absolute', top: 40, right: 20, zIndex: 10 },
 });

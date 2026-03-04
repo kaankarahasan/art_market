@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getDoc, doc, updateDoc } from '@react-native-firebase/firestore';
 import { auth, db } from '../firebase';
- // Relative path düzeltildi
 
-// Geçerli izin türleri
 type FollowerPermission = 'everyone' | 'approved' | 'none';
 type CommentPermission = 'everyone' | 'following' | 'none';
 
-// Seçenekler ve etiketler
 const options = {
   follower: ['everyone', 'approved', 'none'] as const,
   comment: ['everyone', 'following', 'none'] as const,
@@ -37,11 +34,13 @@ const PrivacyFollowerCommentSettingsScreen = () => {
       if (!uid) return;
 
       try {
-        const userDoc = await getDoc(doc(db, 'users', uid));
-        const data = userDoc.data();
-        if (data?.privacySettings) {
-          setFollowerSetting(data.privacySettings.followerPermission);
-          setCommentSetting(data.privacySettings.commentPermission);
+        const userSnap = await getDoc(doc(db, 'users', uid));
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          if (data?.privacySettings) {
+            setFollowerSetting(data.privacySettings.followerPermission);
+            setCommentSetting(data.privacySettings.commentPermission);
+          }
         }
       } catch (err) {
         console.error('Ayarlar alınamadı:', err);

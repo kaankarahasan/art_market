@@ -8,15 +8,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import {
-  collection,
-  query,
-  onSnapshot,
-  orderBy,
-  doc as docRef,
-  getDoc,
-  where,
-} from 'firebase/firestore';
+import { query, collection, where, orderBy, onSnapshot, getDoc, doc } from '@react-native-firebase/firestore';
 import { db, auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -45,11 +37,10 @@ export default function InboxScreen() {
   const [chats, setChats] = useState<ChatItem[]>([]);
   const [profileCache, setProfileCache] = useState<{ [key: string]: { photoURL?: string, displayName?: string } }>({});
 
-  const screenHeight = Dimensions.get('window').height;
-
   useEffect(() => {
     if (!currentUser) return;
 
+    // Real-time listener using modular Native SDK syntax
     const q = query(
       collection(db, 'chats'),
       where('participants', 'array-contains', currentUser.uid),
@@ -57,10 +48,10 @@ export default function InboxScreen() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const chatsWithDetails = snapshot.docs.map((doc) => {
+      const chatsWithDetails = snapshot.docs.map((doc: any) => {
         const data = doc.data();
         const users = doc.id.split('_');
-        const otherUserId = users.find((u) => u !== currentUser.uid) ?? '';
+        const otherUserId = users.find((u: string) => u !== currentUser.uid) ?? '';
 
         const info = data.userInfos?.[otherUserId] || {};
         const unreadCount = data.unreadCounts?.[currentUser.uid] || 0;
@@ -77,27 +68,7 @@ export default function InboxScreen() {
 
       setChats(chatsWithDetails);
     }, (error) => {
-      console.warn("Snapshot error in Inbox, falling back to legacy filtering:", error);
-      const fallbackQuery = query(collection(db, 'chats'), orderBy('lastTimestamp', 'desc'));
-      onSnapshot(fallbackQuery, (snap) => {
-        const legacyChats = snap.docs
-          .filter(d => d.id.includes(currentUser!.uid))
-          .map(d => {
-            const data = d.data();
-            const users = d.id.split('_');
-            const otherUid = users.find(u => u !== currentUser!.uid) || '';
-            const info = data.userInfos?.[otherUid] || {};
-            return {
-              id: d.id,
-              lastMessage: data.lastMessage || '',
-              otherUserId: otherUid,
-              otherUserName: info.displayName || info.fullName || info.username || 'Bilinmeyen',
-              otherUserPhoto: info.photoURL || undefined,
-              unreadCount: data.unreadCounts?.[currentUser!.uid] || 0,
-            };
-          });
-        setChats(legacyChats);
-      });
+      console.warn("Snapshot error in Inbox:", error);
     });
 
     return () => unsubscribe();
@@ -112,19 +83,20 @@ export default function InboxScreen() {
 
       if (missingIds.length === 0) return;
 
-      // Unique IDs to fetch
       const uniqueMissing = Array.from(new Set(missingIds));
       const newProfiles: { [key: string]: any } = {};
 
-      await Promise.all(uniqueMissing.map(async (uid) => {
+      await Promise.all(uniqueMissing.map(async (uid: string) => {
         try {
-          const userSnap = await getDoc(docRef(db, 'users', uid));
+          const userSnap = await getDoc(doc(db, 'users', uid));
           if (userSnap.exists()) {
-            const userData = userSnap.data();
-            newProfiles[uid] = {
-              photoURL: userData.photoURL || userData.profileImage,
-              displayName: userData.displayName || userData.fullName || userData.username || 'Kullanıcı'
-            };
+            const userData = userSnap.data() as any;
+            if (userData) {
+              newProfiles[uid] = {
+                photoURL: userData.photoURL || userData.profileImage,
+                displayName: userData.displayName || userData.fullName || userData.username || 'Kullanıcı'
+              };
+            }
           }
         } catch (e) {
           console.error("Error fetching user profile:", e);

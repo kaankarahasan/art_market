@@ -8,18 +8,12 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import {
-  getAuth,
-  updateEmail,
-  updatePassword,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-} from 'firebase/auth';
+import ReactNativeFirebaseAuth from '@react-native-firebase/auth';
+import { auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { ThemeContext } from '../contexts/ThemeContext';
 
 const ChangeEmailAndPasswordScreen = () => {
-  const auth = getAuth();
   const user = auth.currentUser;
   const navigation = useNavigation();
 
@@ -33,14 +27,14 @@ const ChangeEmailAndPasswordScreen = () => {
 
   const reauthenticate = async (password: string) => {
     if (!user || !user.email) throw new Error('Kullanıcı bulunamadı');
-    const credential = EmailAuthProvider.credential(user.email, password);
-    await reauthenticateWithCredential(user, credential);
+    const credential = ReactNativeFirebaseAuth.EmailAuthProvider.credential(user.email, password);
+    await user.reauthenticateWithCredential(credential);
   };
 
   const handleUpdate = async () => {
     if (!user) {
       Alert.alert('Hata', 'Kullanıcı oturumu bulunamadı.');
-      return; // user null ise işlemi durdur
+      return;
     }
 
     if (!currentPassword) {
@@ -51,10 +45,10 @@ const ChangeEmailAndPasswordScreen = () => {
     setLoading(true);
 
     try {
-      await reauthenticate(currentPassword); // artık user null olamaz
+      await reauthenticate(currentPassword);
 
       if (newEmail && newEmail !== user.email) {
-        await updateEmail(user, newEmail);
+        await user.updateEmail(newEmail);
       }
 
       if (newPassword) {
@@ -63,12 +57,13 @@ const ChangeEmailAndPasswordScreen = () => {
           setLoading(false);
           return;
         }
-        await updatePassword(user, newPassword);
+        await user.updatePassword(newPassword);
       }
 
       Alert.alert('Başarılı', 'Bilgileriniz başarıyla güncellendi.');
       navigation.goBack();
     } catch (error: any) {
+      console.error("Update credentials error:", error);
       let message = 'Güncelleme başarısız.';
       if (error.code === 'auth/wrong-password') message = 'Mevcut şifre yanlış.';
       else if (error.code === 'auth/invalid-email') message = 'Geçersiz e-posta adresi.';

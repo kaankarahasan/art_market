@@ -1,72 +1,66 @@
-import { initializeApp, FirebaseApp } from 'firebase/app';
-// @ts-ignore
-import { initializeAuth, getReactNativePersistence, Auth } from 'firebase/auth';
-import { Firestore, initializeFirestore } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getAuth } from '@react-native-firebase/auth';
+import { getFirestore } from '@react-native-firebase/firestore';
+import { getStorage } from '@react-native-firebase/storage';
 import {
   getRemoteConfig,
   setConfigSettings,
   setDefaults,
   fetchAndActivate,
-  getValue
+  getValue,
+  getAll
 } from '@react-native-firebase/remote-config';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
-// Firebase yapılandırması
-const firebaseConfig = {
-  apiKey: "AIzaSyAKw4iQlmmgcrwTT_qcWknoVENGd7LVTKQ",
-  authDomain: "app-market-test-35f90.firebaseapp.com",
-  projectId: "app-market-test-35f90",
-  storageBucket: "app-market-test-35f90.firebasestorage.app",
-  messagingSenderId: "955753428630",
-  appId: "1:955753428630:web:8e6d79add0c44b7cae34b7",
-  measurementId: "G-LFH1Z7XF7F"
-};
-
-// Firebase (Web SDK - Firestore & Auth için)
-const app: FirebaseApp = initializeApp(firebaseConfig);
+// Modular Firebase Service Instances
+export const auth = getAuth();
+export const db = getFirestore();
+export const storage = getStorage();
 
 // Remote Config (Modular Native SDK)
 export const fetchRemoteConfig = async () => {
+  console.log("------------------------------------------");
+  console.log("🚀 [FIREBASE] Remote Config Başlatılıyor (Modular Native)...");
   try {
     const config = getRemoteConfig();
 
-    // Önbellek süresini geliştirme için 0 yapıyoruz
     await setConfigSettings(config, {
       minimumFetchIntervalMillis: 0,
     });
 
-    // Varsayılanları ayarla
     await setDefaults(config, {
       GEMINI_API_KEY: 'DEFAULT_IF_NONE'
     });
 
-    // Tek seferde çek ve aktif et
+    console.log("📡 [FIREBASE] Sunucudan veri çekiliyor...");
     await fetchAndActivate(config);
-  } catch (err) {
-    console.warn("Remote Config SDK Hatası:", err);
+
+    const allValues = getAll(config);
+    const keys = Object.keys(allValues);
+    console.log("✅ [FIREBASE] Mevcut Anahtarlar:", keys);
+
+    const geminiVal = getValue(config, 'GEMINI_API_KEY');
+    console.log(`🔑 [FIREBASE] GEMINI_API_KEY: ${geminiVal.asString().substring(0, 5)}...`);
+    console.log(`📊 [FIREBASE] Kaynak: ${geminiVal.getSource()}`);
+
+    if (geminiVal.getSource() === 'default') {
+      console.warn("⚠️ [FIREBASE] DİKKAT: Anahtar sunucudan DEĞİL, varsayılan geliyor!");
+    } else {
+      console.log("✨ [FIREBASE] Anahtar başarıyla sunucudan alındı.");
+    }
+  } catch (err: any) {
+    console.error("❌ [FIREBASE] Kritik Hata:", err);
   }
+  console.log("------------------------------------------");
 };
 
 export const getRemoteValue = (key: string) => {
   try {
     const config = getRemoteConfig();
-    return getValue(config, key).asString();
-  } catch (e) { }
+    const val = getValue(config, key);
+    return val.asString();
+  } catch (e) {
+    console.warn(`❌ [FIREBASE] Okuma Hatası "${key}":`, e);
+  }
   return 'DEFAULT_IF_NONE';
 };
 
-// Authentication...
-export const auth: Auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-});
-
-// Firestore...
-export const db: Firestore = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-});
-
-// Firebase Storage
-export const storage: FirebaseStorage = getStorage(app);
-
-export default app;
+export default db;

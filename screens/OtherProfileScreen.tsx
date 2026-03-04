@@ -13,8 +13,8 @@ import {
   StatusBar,
 } from 'react-native';
 import { useRoute, useNavigation, NavigationProp, RouteProp } from '@react-navigation/native';
+import { doc, getDoc, collection, getDocs, query, where, deleteDoc, setDoc } from '@react-native-firebase/firestore';
 import { auth, db } from '../firebase';
-import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImageViewer from 'react-native-image-zoom-viewer';
@@ -26,9 +26,6 @@ type OtherProfileRouteProp = RouteProp<RootStackParamList, 'OtherProfile'>;
 const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 70) / 2;
 const imageInnerWidth = columnWidth - 20;
-
-
-
 
 const OtherProfileScreen = () => {
   const { colors, isDarkTheme } = useThemeContext();
@@ -49,7 +46,6 @@ const OtherProfileScreen = () => {
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
   const [modalVisible, setModalVisible] = useState(false);
 
-  // HEADER’I HER ZAMAN GİZLE
   useEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
@@ -69,11 +65,13 @@ const OtherProfileScreen = () => {
       const followingDoc = await getDoc(doc(db, 'users', userId, 'followers', currentUser.uid));
       setIsFollowing(followingDoc.exists());
 
-      const productsSnap = await getDocs(query(collection(db, 'products'), where('ownerId', '==', userId)));
-      setProducts(productsSnap.docs.map(doc => ({
+      const q = query(collection(db, 'products'), where('ownerId', '==', userId));
+      const productsSnap = await getDocs(q);
+
+      setProducts(productsSnap.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
+        createdAt: (doc.data() as any).createdAt?.toDate ? (doc.data() as any).createdAt.toDate() : new Date()
       })));
     } catch (e) {
       console.error(e);
@@ -106,7 +104,6 @@ const OtherProfileScreen = () => {
     }
   };
 
-
   const handleImageLoad = (productId: string, width: number, height: number) => {
     if (width > 0) {
       const aspectRatio = height / width;
@@ -117,7 +114,6 @@ const OtherProfileScreen = () => {
       setImageHeights(prev => ({ ...prev, [productId]: 200 }));
     }
   };
-
 
   const distributeProducts = () => {
     const leftColumn: any[] = [];
@@ -201,7 +197,6 @@ const OtherProfileScreen = () => {
                 onPress={() => handleFavoriteToggle(item)}
                 style={styles.favoriteButton}
               >
-                {/* Renk güncellendi */}
                 <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
@@ -220,7 +215,6 @@ const OtherProfileScreen = () => {
   };
 
   if (loading)
-    // Renk güncellendi
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.text} />
@@ -228,36 +222,27 @@ const OtherProfileScreen = () => {
     );
 
   return (
-    // Renk güncellendi
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
       <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-      {/* Dedike Header Container */}
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        {/* Username in Header */}
         <Text style={styles.headerUsername}>@{userData?.username || 'Kullanıcı'}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
-        {/* Renk güncellendi */}
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-          {/* Profile Card */}
-          {/* Renk güncellendi */}
           <View style={[styles.profileCard, { backgroundColor: colors.card, marginTop: 10 }]}>
             <TouchableOpacity onPress={() => setModalVisible(true)}>
               {userData?.photoURL ? (
                 <Image source={{ uri: userData.photoURL }} style={styles.avatar} />
               ) : (
-                // Renk güncellendi
                 <View style={[styles.avatar, { backgroundColor: colors.card }]} />
               )}
             </TouchableOpacity>
 
             <View style={styles.profileInfo}>
-              {/* Username removed from here */}
-              {/* Renk güncellendi (inline yerine stylesheet'ten alacak) */}
               <Text style={styles.fullNameText}>{userData?.fullName || 'Ad Soyad'}</Text>
 
               <View style={styles.followRow}>
@@ -281,13 +266,11 @@ const OtherProfileScreen = () => {
             </View>
           </View>
 
-          {/* Tabs */}
           <View style={styles.tabRow}>
             <TouchableOpacity
               onPress={() => setActiveTab('Artworks')}
               style={[styles.tabButton, activeTab === 'Artworks' && styles.activeTab]}
             >
-              {/* Renk güncellendi */}
               <Ionicons name="albums-outline" size={18} color={activeTab === 'Artworks' ? colors.text : colors.secondaryText} />
               <Text style={[styles.tabText, activeTab === 'Artworks' && styles.activeTabText]}> Artworks</Text>
             </TouchableOpacity>
@@ -295,16 +278,13 @@ const OtherProfileScreen = () => {
               onPress={() => setActiveTab('About')}
               style={[styles.tabButton, activeTab === 'About' && styles.activeTab]}
             >
-              {/* Renk güncellendi */}
               <Ionicons name="information-circle-outline" size={18} color={activeTab === 'About' ? colors.text : colors.secondaryText} />
               <Text style={[styles.tabText, activeTab === 'About' && styles.activeTabText]}> About</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Tab İçeriği */}
           {activeTab === 'Artworks' ? (
             products.length === 0 ? (
-              // Renk güncellendi
               <Text style={[styles.emptyText, { color: colors.text }]}>Henüz ürün eklememiş.</Text>
             ) : (
               <View style={styles.masonryContainer}>
@@ -314,23 +294,19 @@ const OtherProfileScreen = () => {
             )
           ) : (
             <View style={{ padding: 16 }}>
-              {/* Renk güncellendi */}
               <Text style={{ color: colors.text }}>{userData?.about || 'No information provided.'}</Text>
             </View>
           )}
 
-          {/* Profil Fotoğrafı Modal */}
           <Modal visible={modalVisible} transparent>
-            {/* Renk güncellendi */}
             <View style={{ flex: 1, backgroundColor: colors.background }}>
               <ImageViewer
                 imageUrls={[{ url: userData?.photoURL || '' }]}
                 onCancel={() => setModalVisible(false)}
                 enableSwipeDown
                 renderIndicator={() => <View />}
-                backgroundColor={colors.background} // Renk güncellendi
+                backgroundColor={colors.background}
               />
-              {/* Renk güncellendi */}
               <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={28} color={colors.text} />
               </TouchableOpacity>
@@ -344,23 +320,21 @@ const OtherProfileScreen = () => {
 
 export default OtherProfileScreen;
 
-// --- STYLESHEET GÜNCELLENDİ ---
 const createStyles = (colors: any) => StyleSheet.create({
   safeArea: { flex: 1 },
   headerContainer: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    flexDirection: 'row', // Align items horizontally
-    alignItems: 'center', // Center vertically
-    // justifyContent removed to allow items to be next to each other
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   headerUsername: {
     fontSize: 18,
     fontWeight: 'bold',
     color: colors.text,
-    marginLeft: 10, // Spacing from back button
+    marginLeft: 10,
   },
-  backButton: { padding: 4 }, // Removed absolute positioning
+  backButton: { padding: 4 },
   container: { flex: 1, paddingHorizontal: 16, paddingTop: 10 },
   profileCard: {
     flexDirection: 'row',
@@ -373,7 +347,6 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   avatar: { width: 120, height: 120, borderRadius: 12 },
   profileInfo: { flex: 1, marginLeft: 16 },
-  usernameText: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   fullNameText: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -384,7 +357,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   followButtonCard: {
     backgroundColor: colors.text,
     paddingVertical: 12,
-    borderRadius: 24, // Pill shape
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

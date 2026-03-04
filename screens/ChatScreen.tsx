@@ -12,18 +12,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { doc, getDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, setDoc } from '@react-native-firebase/firestore';
 import { db } from '../firebase';
-import {
-  collection,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
-  doc,
-  setDoc,
-  getDoc,
-} from 'firebase/firestore';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
 
@@ -74,8 +64,10 @@ export default function ChatScreen() {
         const snap = await getDoc(doc(db, 'users', otherUserId));
         if (snap.exists()) {
           const data = snap.data() as any;
-          const name = data.displayName || data.fullName || data.username || 'Bilinmeyen';
-          setOtherUser({ displayName: name, photoURL: data.photoURL });
+          if (data) {
+            const name = data.displayName || data.fullName || data.username || 'Bilinmeyen';
+            setOtherUser({ displayName: name, photoURL: data.photoURL });
+          }
         } else {
           setOtherUser({ displayName: 'Bilinmeyen' });
         }
@@ -86,14 +78,16 @@ export default function ChatScreen() {
     };
     fetchOtherUser();
 
-    const messagesRef = collection(db, 'chats', chatId, 'messages');
-    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+    // Messages snapshot listener
+    const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('createdAt', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<Message, 'id'>),
-      }));
-      setMessages(msgs);
+      if (snapshot) {
+        const msgs = snapshot.docs.map((doc: any) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<Message, 'id'>),
+        }));
+        setMessages(msgs);
+      }
     });
 
     return () => unsubscribe();
@@ -111,8 +105,8 @@ export default function ChatScreen() {
 
     const currentUserSnap = await getDoc(doc(db, 'users', currentUserId));
     const otherUserSnap = await getDoc(doc(db, 'users', otherUserId));
-    const currentUserData = currentUserSnap.exists() ? currentUserSnap.data() : {};
-    const otherUserData = otherUserSnap.exists() ? otherUserSnap.data() : {};
+    const currentUserData = currentUserSnap.exists() ? (currentUserSnap.data() || {}) : {};
+    const otherUserData = otherUserSnap.exists() ? (otherUserSnap.data() || {}) : {};
 
     const chatDocRef = doc(db, 'chats', chatId);
     await setDoc(
@@ -123,12 +117,12 @@ export default function ChatScreen() {
         participants: [currentUserId, otherUserId],
         userInfos: {
           [currentUserId]: {
-            displayName: currentUserData.displayName || '',
-            username: currentUserData.username || '',
+            displayName: (currentUserData as any).displayName || '',
+            username: (currentUserData as any).username || '',
           },
           [otherUserId]: {
-            displayName: otherUserData.displayName || '',
-            username: otherUserData.username || '',
+            displayName: (otherUserData as any).displayName || '',
+            username: (otherUserData as any).username || '',
           },
         },
       },
@@ -291,7 +285,7 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
-  messageText: { color: '#FFFFFF' }, // myMessage text color, otherMessage overrides this inline
+  messageText: { color: '#FFFFFF' },
   inputContainer: {
     flexDirection: 'row',
     backgroundColor: colors.background,

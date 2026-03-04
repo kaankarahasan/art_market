@@ -1,7 +1,6 @@
-
 import { faker } from '@faker-js/faker';
-import { db, auth } from '../firebase';
-import { collection, doc, setDoc, addDoc, writeBatch, serverTimestamp, Timestamp, query, where, getDocs, documentId } from 'firebase/firestore';
+import { serverTimestamp, Timestamp, documentId, doc, writeBatch, getDocs, collection, query, where } from '@react-native-firebase/firestore';
+import { db } from '../firebase';
 import { Product } from '../routes/types';
 
 // Categories matching AddProductScreen.tsx
@@ -84,10 +83,9 @@ export const seedDatabase = async () => {
                 const width = faker.number.int({ min: 300, max: 800 });
                 const height = faker.number.int({ min: 300, max: 800 });
 
-                // Pick a random category from the allowed list
                 const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
 
-                const productData: Product = {
+                const productData: any = {
                     id: productId,
                     title: finalTitle,
                     description: faker.commerce.productDescription(),
@@ -149,22 +147,17 @@ export const deleteSeedData = async () => {
         let batch = writeBatch(db);
         let opCount = 0;
 
-        // 1. Delete Products (by flag OR by ID prefix)
-        // Note: Firestore doesn't support logical OR across different field types in one query easily.
-        // We will run two queries and they might overlap, but deleting a deleted doc is a no-op or handled by the batch (actually we should dedup if possible, but simpler to just run sequentially. If it's already deleted, it won't be in the second snapshot preferably, or we catch errors).
-        // Actually, if we fetch all snapshots first, we might try to delete twice. To avoid this, we can track IDs.
-
         const productsRef = collection(db, 'products');
 
-        // Query 1: isSeeded == true
         const productsByFlag = await getDocs(query(productsRef, where('isSeeded', '==', true)));
 
-        // Query 2: ID starts with 'prod_'
-        const productsByPrefix = await getDocs(query(productsRef, where(documentId(), '>=', 'prod_'), where(documentId(), '<=', 'prod_\uf8ff')));
+        const productsByPrefix = await getDocs(query(productsRef,
+            where(documentId(), '>=', 'prod_'),
+            where(documentId(), '<=', 'prod_\uf8ff')));
 
         const allProductDocs = new Map();
-        productsByFlag.docs.forEach(d => allProductDocs.set(d.id, d));
-        productsByPrefix.docs.forEach(d => allProductDocs.set(d.id, d));
+        productsByFlag.docs.forEach((d: any) => allProductDocs.set(d.id, d));
+        productsByPrefix.docs.forEach((d: any) => allProductDocs.set(d.id, d));
 
         for (const docSnapshot of allProductDocs.values()) {
             batch.delete(docSnapshot.ref);
@@ -178,18 +171,17 @@ export const deleteSeedData = async () => {
             }
         }
 
-        // 2. Delete Users (by flag OR by ID prefix)
         const usersRef = collection(db, 'users');
 
-        // Query 1: isSeeded == true
         const usersByFlag = await getDocs(query(usersRef, where('isSeeded', '==', true)));
 
-        // Query 2: ID starts with 'user_'
-        const usersByPrefix = await getDocs(query(usersRef, where(documentId(), '>=', 'user_'), where(documentId(), '<=', 'user_\uf8ff')));
+        const usersByPrefix = await getDocs(query(usersRef,
+            where(documentId(), '>=', 'user_'),
+            where(documentId(), '<=', 'user_\uf8ff')));
 
         const allUserDocs = new Map();
-        usersByFlag.docs.forEach(d => allUserDocs.set(d.id, d));
-        usersByPrefix.docs.forEach(d => allUserDocs.set(d.id, d));
+        usersByFlag.docs.forEach((d: any) => allUserDocs.set(d.id, d));
+        usersByPrefix.docs.forEach((d: any) => allUserDocs.set(d.id, d));
 
         for (const docSnapshot of allUserDocs.values()) {
             batch.delete(docSnapshot.ref);
@@ -203,7 +195,6 @@ export const deleteSeedData = async () => {
             }
         }
 
-        // Commit remaining deletions
         if (opCount > 0) {
             await batch.commit();
         }

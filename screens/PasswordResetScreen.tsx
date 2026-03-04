@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  Alert,
   StyleSheet,
   TouchableOpacity,
   Animated,
@@ -14,18 +13,14 @@ import {
   Easing,
   StatusBar,
 } from 'react-native';
-// Sadece 'sendPasswordResetEmail' yeterli
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-// Merkezi tiplerinizi import ettiğinizi varsayıyorum
 import type { RootStackParamList } from '../routes/types';
 
 const { width, height } = Dimensions.get('window');
 
-// Navigasyon tip tanımı (artık 'oobCode' parametresine gerek yok)
 type PasswordResetScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'PasswordReset'
@@ -38,7 +33,6 @@ const PasswordResetScreen = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // 🔹 Şifre sıfırlama fonksiyonu (Basitleştirilmiş)
   const handlePasswordReset = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -52,13 +46,11 @@ const PasswordResetScreen = () => {
     setSuccessMessage('');
 
     try {
-      // Sadece 'auth' ve 'email' gönderiyoruz.
-      // 'actionCodeSettings' göndermeyince Firebase varsayılan web akışını kullanır.
-      await sendPasswordResetEmail(auth, email);
-
+      await auth.sendPasswordResetEmail(email);
       setSuccessMessage('Şifre sıfırlama e-postası gönderildi. Lütfen gelen kutunuzu (ve spam klasörünü) kontrol edin.');
-      setEmail(''); // Başarılı olunca input'u temizle
+      setEmail('');
     } catch (error: any) {
+      console.error("Password reset error:", error);
       let friendlyMessage = 'Bir hata oluştu. Lütfen tekrar deneyin.';
       if (error.code === 'auth/user-not-found') {
         friendlyMessage = 'Bu e-posta adresine kayıtlı bir kullanıcı bulunamadı.';
@@ -69,7 +61,6 @@ const PasswordResetScreen = () => {
     }
   };
 
-  // 🔹 Arka plan animasyonu (Değişiklik yok)
   const moveAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -91,7 +82,6 @@ const PasswordResetScreen = () => {
   const translateX = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 15] });
   const translateY = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 10] });
 
-  // 🔹 Klavye animasyonu (Değişiklik yok)
   const translateYAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -144,12 +134,7 @@ const PasswordResetScreen = () => {
               { transform: [{ translateY: translateYAnim }] }
             ]}
           >
-            {/* Artık "MOD" kontrolüne gerek yok.
-              Ekran her zaman e-posta isteme formunu gösterecek.
-            */}
             <View style={styles.card}>
-
-              {/* Geri Dön Butonu */}
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => navigation.goBack()}
@@ -188,21 +173,17 @@ const PasswordResetScreen = () => {
                   </View>
                 </TouchableOpacity>
 
-                {/* Hata Mesajı */}
                 {errorMessage ? (
                   <View style={styles.errorMessageContainer}>
                     <Text style={styles.errorMessage}>{errorMessage}</Text>
                   </View>
                 ) : null}
 
-                {/* Başarı Mesajı */}
                 {successMessage ? (
                   <View style={styles.successMessageContainer}>
                     <Text style={styles.successMessage}>{successMessage}</Text>
                   </View>
                 ) : null}
-
-                {/* "Giriş Ekranına Dön" butonu kaldırıldı. */}
               </View>
             </View>
           </Animated.View>
@@ -214,7 +195,6 @@ const PasswordResetScreen = () => {
 
 export default PasswordResetScreen;
 
-// Stiller (Değişiklik yok, sadece 'registerContainer' artık kullanılmıyor)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   backgroundImage: {
@@ -287,7 +267,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
   },
-  // Bu stiller artık kullanılmıyor ama zararı da yok
   registerContainer: { justifyContent: 'center', alignItems: 'center', marginTop: 15, borderTopWidth: 1, borderTopColor: '#E0E0E0', paddingTop: 20 },
   registerText: {
     fontSize: 14,

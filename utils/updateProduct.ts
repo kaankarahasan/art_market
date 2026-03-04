@@ -1,6 +1,5 @@
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { serverTimestamp, doc, updateDoc } from '@react-native-firebase/firestore';
 import { db } from '../firebase';
-import { Product } from '../routes/types';
 
 type UpdateProductFields = {
   title?: string;
@@ -16,8 +15,7 @@ export const updateProduct = async (
   updatedFields: UpdateProductFields
 ) => {
   try {
-    const productRef = doc(db, 'products', productId);
-    await updateDoc(productRef, {
+    await updateDoc(doc(db, 'products', productId), {
       ...updatedFields,
       updatedAt: serverTimestamp(),
     });

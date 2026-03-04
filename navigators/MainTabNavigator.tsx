@@ -4,8 +4,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { onAuthStateChanged } from '@react-native-firebase/auth';
+import { doc, getDoc } from '@react-native-firebase/firestore';
 import { auth, db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -178,7 +179,7 @@ export default function MainTabNavigator() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         setUserData(null);
         setLoading(false);

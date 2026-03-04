@@ -13,10 +13,10 @@ import {
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { updateProduct } from '../utils/updateProduct';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref } from '@react-native-firebase/storage';
 import { storage } from '../firebase';
 import { RootStackParamList } from '../routes/types';
-import { v4 as uuidv4 } from 'uuid';
+import uuid from 'react-native-uuid';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { Product } from '../routes/types';
 
@@ -54,12 +54,10 @@ const UpdateProductScreen = () => {
 
   const uploadImageAsync = async (uri: string): Promise<string> => {
     try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const imageId = uuidv4();
-      const imageRef = ref(storage, `product_images/${imageId}.jpg`);
-      await uploadBytes(imageRef, blob);
-      const downloadURL = await getDownloadURL(imageRef);
+      const imageId = uuid.v4();
+      const storageRef = ref(storage, `product_images/${imageId}.jpg`);
+      await storageRef.putFile(uri);
+      const downloadURL = await storageRef.getDownloadURL();
       return downloadURL;
     } catch (error) {
       console.error('Resim yükleme hatası:', error);
@@ -76,29 +74,34 @@ const UpdateProductScreen = () => {
 
     setUploading(true);
 
-    // 🔹 Yeni yüklenen görselleri storage'a yükle
-    const uploadedUrls: string[] = [];
-    for (const img of imageUrls) {
-      if (!img.startsWith('https://')) {
-        const url = await uploadImageAsync(img);
-        if (url) uploadedUrls.push(url);
-      } else {
-        uploadedUrls.push(img); // zaten URL ise atla
+    try {
+      const uploadedUrls: string[] = [];
+      for (const img of imageUrls) {
+        if (!img.startsWith('http')) {
+          const url = await uploadImageAsync(img);
+          if (url) uploadedUrls.push(url);
+        } else {
+          uploadedUrls.push(img);
+        }
       }
+
+      await updateProduct(product.id, {
+        title,
+        description,
+        price: parseFloat(price),
+        category,
+        imageUrls: uploadedUrls,
+        mainImageUrl: uploadedUrls[0] || '',
+      });
+
+      Alert.alert('Başarılı', 'Ürün güncellendi.');
+      navigation.goBack();
+    } catch (error: any) {
+      console.error('Update product error:', error);
+      Alert.alert('Hata', 'Ürün güncellenemedi.');
+    } finally {
+      setUploading(false);
     }
-
-    await updateProduct(product.id, {
-      title,
-      description,
-      price: parseFloat(price),
-      category,
-      imageUrls: uploadedUrls,
-      mainImageUrl: uploadedUrls[0] || '', // ana görsel
-    });
-
-    setUploading(false);
-    Alert.alert('Başarılı', 'Ürün güncellendi.');
-    navigation.goBack();
   };
 
   const removeImage = (index: number) => {
@@ -157,7 +160,6 @@ const UpdateProductScreen = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* 🔹 Görseller preview ve silme */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 15 }}>
         {imageUrls.map((img, index) => (
           <View key={index} style={{ marginRight: 10, position: 'relative' }}>

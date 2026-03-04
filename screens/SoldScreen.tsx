@@ -8,8 +8,8 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
-import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from '@react-native-firebase/firestore';
+import { db, auth } from '../firebase';
 import { useThemeContext } from '../contexts/ThemeContext';
 
 const numColumns = 2;
@@ -32,16 +32,13 @@ const SoldScreen = () => {
   useEffect(() => {
     const fetchSoldProducts = async () => {
       try {
-        const auth = getAuth();
-        const firestore = getFirestore();
         const user = auth.currentUser;
 
         if (!user) return;
 
-        const userRef = doc(firestore, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
+        const userSnap = await getDoc(doc(db, 'users', user.uid));
 
-        const userData = userSnap.data();
+        const userData = userSnap.data() as any;
         const sold = Array.isArray(userData?.soldProducts) ? userData.soldProducts : [];
 
         setSoldProducts(sold);

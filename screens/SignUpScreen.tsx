@@ -15,8 +15,8 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from '@react-native-firebase/auth';
+import { doc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import { auth, db } from '../firebase'; // relative path
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -90,24 +90,26 @@ const SignUpScreen = () => {
     }
 
     try {
+      // Native Sign Up
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      const userDocRef = doc(db, 'users', user.uid);
-      await setDoc(userDocRef, {
-        uid: user.uid,
-        email: user.email,
-        fullName,
-        username,
-        profilePicture: '',
-        bio: '',
-        followersCount: 0,
-        followingCount: 0,
-        createdAt: serverTimestamp(),
-      });
+      if (user) {
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          email: user.email,
+          fullName,
+          username,
+          profilePicture: '',
+          bio: '',
+          followersCount: 0,
+          followingCount: 0,
+          createdAt: serverTimestamp(),
+        });
 
-      Alert.alert('Başarılı', 'Hesap oluşturuldu ve profil kaydedildi!');
-      navigation.navigate('Main');
+        Alert.alert('Başarılı', 'Hesap oluşturuldu ve profil kaydedildi!');
+        navigation.navigate('Main');
+      }
     } catch (error: any) {
       Alert.alert('Hata', error.message);
     }
@@ -117,7 +119,6 @@ const SignUpScreen = () => {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#000" />
-        {/* 🔹 Dinamik arka plan */}
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}
           style={[
@@ -129,10 +130,8 @@ const SignUpScreen = () => {
           resizeMode="cover"
         />
 
-        {/* 🔹 Karartma efekti */}
         <View style={styles.overlay} />
 
-        {/* 🔹 Klavye dinamik yapısı */}
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -226,7 +225,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 6,
+    padding: 24,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

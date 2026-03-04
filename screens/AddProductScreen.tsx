@@ -13,11 +13,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { doc, getDoc, collection, addDoc, serverTimestamp } from '@react-native-firebase/firestore';
+import { ref } from '@react-native-firebase/storage';
 import { auth, db, storage } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
-import { v4 as uuidv4 } from 'uuid';
+import uuid from 'react-native-uuid';
 import { ThemeContext } from '../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -115,13 +115,13 @@ const AddProductScreen = () => {
   };
 
   const uploadImageAsync = async (uri: string): Promise<string> => {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const imageId = uuidv4();
+    const imageId = uuid.v4();
     const imagePath = `product_images/${imageId}.jpg`;
     const imageRef = ref(storage, imagePath);
-    await uploadBytes(imageRef, blob, { contentType: 'image/jpeg' });
-    const downloadURL = await getDownloadURL(imageRef);
+
+    // Native putFile çok daha hızlıdır (blob'a gerek duymaz)
+    await imageRef.putFile(uri);
+    const downloadURL = await imageRef.getDownloadURL();
     return downloadURL;
   };
 

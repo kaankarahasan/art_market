@@ -12,10 +12,10 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
+import { getDoc, doc, updateDoc } from '@react-native-firebase/firestore';
+import { ref } from '@react-native-firebase/storage';
 import { auth, db, storage } from '../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { ThemeContext } from '../contexts/ThemeContext';
 
 const EditProfileScreen = () => {
@@ -34,14 +34,17 @@ const EditProfileScreen = () => {
     const fetchProfile = async () => {
       if (!userId) return;
       try {
-        const userDoc = await getDoc(doc(db, 'users', userId));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setUsername(data.username || '');
-          setBio(data.bio || '');
-          setImage(data.photoURL || null);
+        const userSnap = await getDoc(doc(db, 'users', userId));
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          if (data) {
+            setUsername(data.username || '');
+            setBio(data.bio || '');
+            setImage(data.photoURL || null);
+          }
         }
-      } catch {
+      } catch (err) {
+        console.error("Profile load error:", err);
         Alert.alert('Error', 'Failed to load profile');
       } finally {
         setLoading(false);
@@ -86,12 +89,11 @@ const EditProfileScreen = () => {
     setUploading(true);
 
     try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
       const storageRef = ref(storage, `profilePictures/${userId}.jpg`);
-      await uploadBytes(storageRef, blob);
-      return await getDownloadURL(storageRef);
+      await storageRef.putFile(uri);
+      return await storageRef.getDownloadURL();
     } catch (error: any) {
+      console.error("Upload error:", error);
       Alert.alert('Upload Error', error.message || 'Failed to upload image');
       return null;
     } finally {
@@ -103,10 +105,11 @@ const EditProfileScreen = () => {
     if (!userId) return;
     try {
       const storageRef = ref(storage, `profilePictures/${userId}.jpg`);
-      await deleteObject(storageRef);
+      await storageRef.delete();
       setImage(null);
     } catch (error: any) {
       console.log('Image removal error:', error.message);
+      setImage(null); // Even if it fails to delete (might not exist), clear local state
     }
   };
 
@@ -128,6 +131,7 @@ const EditProfileScreen = () => {
       Alert.alert('Success', 'Profile updated!');
       navigation.goBack();
     } catch (error: any) {
+      console.error("Profile update error:", error);
       Alert.alert('Error', error.message || 'Failed to update profile.');
     }
   };

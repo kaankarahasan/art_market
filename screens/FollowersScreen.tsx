@@ -8,11 +8,10 @@ import {
   StyleSheet,
 } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
-import { doc, getDoc, collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { onSnapshot, collection, doc, getDoc } from '@react-native-firebase/firestore';
+import { db, auth } from '../firebase';
 import { RootStackParamList } from '../routes/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { getAuth } from 'firebase/auth';
 import { useThemeContext } from '../contexts/ThemeContext';
 
 type User = {
@@ -33,14 +32,13 @@ const FollowersScreen = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const auth = getAuth();
   const currentUser = auth.currentUser;
 
   const { colors } = useThemeContext();
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, 'users', userId, 'followers'),
+    // Modular Native onSnapshot usage
+    const unsubscribe = onSnapshot(collection(db, 'users', userId, 'followers'),
       async (snapshot) => {
         const fetchedFollowers: User[] = [];
 
@@ -48,12 +46,14 @@ const FollowersScreen = () => {
           const followerId = docSnap.id;
           const userDoc = await getDoc(doc(db, 'users', followerId));
           if (userDoc.exists()) {
-            const data = userDoc.data();
-            fetchedFollowers.push({
-              uid: followerId,
-              username: data.username,
-              email: data.email,
-            });
+            const data = userDoc.data() as any;
+            if (data) {
+              fetchedFollowers.push({
+                uid: followerId,
+                username: data.username,
+                email: data.email,
+              });
+            }
           }
         }
 

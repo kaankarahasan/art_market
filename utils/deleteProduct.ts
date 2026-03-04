@@ -1,5 +1,5 @@
-import { deleteDoc, doc } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
+import { doc, deleteDoc } from '@react-native-firebase/firestore';
+import { ref } from '@react-native-firebase/storage';
 import { db, storage } from '../firebase';
 
 export const deleteProduct = async (
@@ -8,8 +8,6 @@ export const deleteProduct = async (
   isSold: boolean
 ) => {
   try {
-    const productRef = doc(db, 'products', productId);
-
     // Eğer ürünün bir görseli varsa sil
     if (imageUrl) {
       let imagePath: string | null = imageUrl;
@@ -27,7 +25,7 @@ export const deleteProduct = async (
 
       if (imagePath !== null) {
         const imageRef = ref(storage, imagePath);
-        await deleteObject(imageRef).catch((error) => {
+        await imageRef.delete().catch((error: any) => {
           if (error.code === 'storage/object-not-found') {
             console.warn(
               'Silinecek dosya bulunamadı, zaten silinmiş olabilir.'
@@ -40,7 +38,7 @@ export const deleteProduct = async (
     }
 
     // Ürünü Firestore'dan sil
-    await deleteDoc(productRef);
+    await deleteDoc(doc(db, 'products', productId));
     console.log('✅ Ürün silindi');
   } catch (error) {
     console.error('❌ Ürün silinirken hata:', error);

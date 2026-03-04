@@ -1,5 +1,5 @@
+import { doc, updateDoc, arrayUnion, arrayRemove } from '@react-native-firebase/firestore';
 import { db, auth } from './firebase';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 /**
  * Kullanıcıyı takip et
@@ -11,17 +11,14 @@ export const followUser = async (userId: string) => {
 
   const currentUserId = currentUser.uid;
 
-  const userRef = doc(db, 'users', userId);
-  const currentUserRef = doc(db, 'users', currentUserId);
-
   try {
     // Takip edilen kullanıcının followers listesine ekle
-    await updateDoc(userRef, {
+    await updateDoc(doc(db, 'users', userId), {
       followers: arrayUnion(currentUserId),
     });
 
     // Takip eden kullanıcının following listesine ekle
-    await updateDoc(currentUserRef, {
+    await updateDoc(doc(db, 'users', currentUserId), {
       following: arrayUnion(userId),
     });
   } catch (error) {
@@ -39,17 +36,14 @@ export const unfollowUser = async (userId: string) => {
 
   const currentUserId = currentUser.uid;
 
-  const userRef = doc(db, 'users', userId);
-  const currentUserRef = doc(db, 'users', currentUserId);
-
   try {
     // Takip edilen kullanıcının followers listesinden çıkar
-    await updateDoc(userRef, {
+    await updateDoc(doc(db, 'users', userId), {
       followers: arrayRemove(currentUserId),
     });
 
     // Takip eden kullanıcının following listesinden çıkar
-    await updateDoc(currentUserRef, {
+    await updateDoc(doc(db, 'users', currentUserId), {
       following: arrayRemove(userId),
     });
   } catch (error) {
