@@ -166,17 +166,16 @@ const SearchScreen = () => {
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      // Modular Native Firestore Fetches
-      const [productSnap, usersSnap] = await Promise.all([
-        getDocs(query(collection(db, 'products'), where('isSold', '==', false), limit(100))),
-        getDocs(query(collection(db, 'users'), limit(100)))
-      ]);
 
-      const userList: UserSearchResult[] = usersSnap.docs.map((doc: any) => {
-        const data = doc.data();
-        return { id: doc.id, username: data.username, fullName: data.fullName, photoURL: data.photoURL };
-      });
-      setAllUsers(userList);
+      // Project ID kontrolü (Script ile aynı mı?)
+      console.log(`🔗 [DEBUG] Firebase Project ID: ${db.app.options.projectId}`);
+
+      // Modular Native Firestore Fetches - Cache'i atlayıp doğrudan sunucudan çekelim
+      // @ts-ignore
+      const productSnap = await collection(db, 'products')
+        .where('isSold', '==', false)
+        .limit(1000)
+        .get(); // Not: Native SDK varsayılan olarak taze veriyi çekmeye çalışır
 
       const productList = productSnap.docs.map((doc: any) => {
         const dataFromFirestore = doc.data();
@@ -187,9 +186,31 @@ const SearchScreen = () => {
           viewCount: dataFromFirestore.viewCount || 0
         } as unknown as Product;
       });
+
       setProducts(productList);
+
+      // --- KRİTİK DEBUG LOGLARI ---
+      const taggedProducts = productList.filter(p => p.aiVisualTags && p.aiVisualTags.length > 0);
+      console.log(`📦 Toplam Yüklenen: ${productList.length} ürün.`);
+      console.log(`✨ Etiketli Ürün Sayısı: ${taggedProducts.length}`);
+
+      if (taggedProducts.length > 0) {
+        console.log(`🎯 İlk Etiketli Ürün (${taggedProducts[0].title}):`, taggedProducts[0].aiVisualTags);
+      } else {
+        console.warn('⚠️ DİKKAT: Hiçbir üründe aiVisualTags bulunamadı!');
+      }
+      // ----------------------------
+
       setFinalFilteredProducts(productList);
       setTextFilteredProducts(productList);
+
+      // Kullanıcı verileri
+      const usersSnap = await getDocs(query(collection(db, 'users'), limit(500)));
+      const userList: UserSearchResult[] = usersSnap.docs.map((doc: any) => {
+        const data = doc.data();
+        return { id: doc.id, username: data.username, fullName: data.fullName, photoURL: data.photoURL };
+      });
+      setAllUsers(userList);
 
       const popularList = [...productList].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
       setPopularProducts(popularList);
@@ -270,7 +291,18 @@ const SearchScreen = () => {
         const fullNameMatch = owner?.fullName?.toLowerCase().includes(queryLower) ?? false;
         const priceMatch = product.price?.toString().includes(queryLower) ?? false;
         const yearMatch = product.year?.toString().includes(queryLower) ?? false;
-        const aiTagsMatch = product.aiVisualTags?.some(tag => tag.toLowerCase().includes(queryLower)) ?? false;
+
+        // AI Tag matching - handles both array of tags and single string containing tags
+        const aiTagsMatch = product.aiVisualTags ? (
+          Array.isArray(product.aiVisualTags)
+            ? product.aiVisualTags.some(tag => {
+              const match = tag?.toLowerCase().includes(queryLower);
+              if (match) console.log(`🎯 Match found in tag: "${tag}" for product: ${product.title}`);
+              return match;
+            })
+            : String(product.aiVisualTags).toLowerCase().includes(queryLower)
+        ) : false;
+
         return titleMatch || descriptionMatch || categoryMatch || usernameMatch || fullNameMatch || priceMatch || yearMatch || aiTagsMatch;
       });
       currentUserResults = allUsers.filter(user => {
@@ -284,7 +316,11 @@ const SearchScreen = () => {
         const titleMatch = product.title?.toLowerCase().includes(queryLower) ?? false;
         const descriptionMatch = product.description?.toLowerCase().includes(queryLower) ?? false;
         const categoryMatch = product.category?.toLowerCase().includes(queryLower) ?? false;
-        const aiTagsMatch = product.aiVisualTags?.some(tag => tag.toLowerCase().includes(queryLower)) ?? false;
+        const aiTagsMatch = product.aiVisualTags ? (
+          Array.isArray(product.aiVisualTags)
+            ? product.aiVisualTags.some(tag => tag?.toLowerCase().includes(queryLower))
+            : String(product.aiVisualTags).toLowerCase().includes(queryLower)
+        ) : false;
         return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch;
       });
     } else if (searchScope === 'Artist') {
@@ -316,6 +352,7 @@ const SearchScreen = () => {
 
     setTextFilteredProducts(currentProductResults);
     setTextFilteredUsers(currentUserResults);
+    console.log(`🔍 Search Results: Found ${currentProductResults.length} products for query "${queryLower}"`);
 
   }, [debouncedSearchQuery, products, allUsers, loading, searchScope]);
 

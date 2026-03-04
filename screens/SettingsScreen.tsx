@@ -13,7 +13,6 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { useThemeContext } from '../contexts/ThemeContext';
-import { seedDatabase, deleteSeedData } from '../utils/seedData';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -47,48 +46,6 @@ const SettingsScreen = () => {
     );
   };
 
-  const handleSeedData = async () => {
-    Alert.alert(
-      'Seed Data',
-      'This will add 50 users and ~600 products to the database. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Start Seeding',
-          onPress: async () => {
-            const result = await seedDatabase();
-            if (result.success) {
-              Alert.alert('Success', result.message);
-            } else {
-              Alert.alert('Error', result.message);
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleDeleteSeedData = async () => {
-    Alert.alert(
-      'Delete Seed Data',
-      'This will PERMANENTLY delete all users and products marked as seed data. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete All Seed Data',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await deleteSeedData();
-            if (result.success) {
-              Alert.alert('Success', result.message);
-            } else {
-              Alert.alert('Error', result.message);
-            }
-          },
-        },
-      ]
-    );
-  };
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -143,15 +100,6 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Developer Tools</Text>
-          <TouchableOpacity onPress={handleSeedData}>
-            <Text style={[styles.item, { color: '#4caf50' }]}>Seed Data (Generate 50 Users)</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleDeleteSeedData}>
-            <Text style={[styles.item, { color: '#ff5252' }]}>Delete Seed Data</Text>
-          </TouchableOpacity>
-        </View>
 
         <TouchableOpacity
           style={[styles.signOutButton, { backgroundColor: '#ff5252' }]}

@@ -83,7 +83,14 @@ const HomeScreen = () => {
       // Modular Native Firestore Fetch
       const productsRef = collection(db, 'products');
       const q = query(productsRef, where('isSold', '==', false), limit(50));
-      const productSnap = await getDocs(q);
+
+      const usersRef = collection(db, 'users');
+      const uq = query(usersRef, limit(100));
+
+      const [productSnap, usersSnap] = await Promise.all([
+        getDocs(q),
+        getDocs(uq)
+      ]);
 
       const productList = productSnap.docs.map((doc: any) => ({
         id: doc.id,
@@ -91,9 +98,15 @@ const HomeScreen = () => {
         createdAt: (doc.data() as any).createdAt?.toDate ? (doc.data() as any).createdAt.toDate() : new Date()
       }));
 
+      const userList = usersSnap.docs.map((doc: any) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
       const shuffled = shuffleArray(productList);
       setOriginalProducts(shuffled);
       setProducts(shuffled);
+      setAllUsers(userList);
 
     } catch (error) {
       console.error('Veriler alınırken hata:', error);
@@ -160,7 +173,14 @@ const HomeScreen = () => {
         const usernameMatch = product.username?.toLowerCase().includes(queryLower) ?? false;
         const priceMatch = product.price?.toString().includes(queryLower) ?? false;
         const yearMatch = product.year?.toString().includes(queryLower) ?? false;
-        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || priceMatch || yearMatch;
+
+        const aiTagsMatch = product.aiVisualTags ? (
+          Array.isArray(product.aiVisualTags)
+            ? product.aiVisualTags.some((tag: string) => tag?.toLowerCase().includes(queryLower))
+            : String(product.aiVisualTags).toLowerCase().includes(queryLower)
+        ) : false;
+
+        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || priceMatch || yearMatch || aiTagsMatch;
       });
       currentUserResults = allUsers.filter(user => {
         const usernameMatch = user.username?.toLowerCase().includes(queryLower) ?? false;
@@ -168,7 +188,17 @@ const HomeScreen = () => {
         return usernameMatch || fullNameMatch;
       });
     } else if (searchScope === 'Artwork') {
-      currentProductResults = products.filter(p => p.title?.toLowerCase().includes(queryLower) || p.description?.toLowerCase().includes(queryLower) || p.category?.toLowerCase().includes(queryLower));
+      currentProductResults = products.filter(p => {
+        const titleMatch = p.title?.toLowerCase().includes(queryLower) ?? false;
+        const descriptionMatch = p.description?.toLowerCase().includes(queryLower) ?? false;
+        const categoryMatch = p.category?.toLowerCase().includes(queryLower) ?? false;
+        const aiTagsMatch = p.aiVisualTags ? (
+          Array.isArray(p.aiVisualTags)
+            ? p.aiVisualTags.some((tag: string) => tag?.toLowerCase().includes(queryLower))
+            : String(p.aiVisualTags).toLowerCase().includes(queryLower)
+        ) : false;
+        return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch;
+      });
     } else if (searchScope === 'Artist') {
       currentUserResults = allUsers.filter(user => user.username?.toLowerCase().includes(queryLower) || user.fullName?.toLowerCase().includes(queryLower));
       const artistProducts = products.filter(p => p.username?.toLowerCase().includes(queryLower));

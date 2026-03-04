@@ -7,7 +7,9 @@
     "start": "react-native start",
     "android": "react-native run-android",
     "ios": "react-native run-ios",
-    "dev": "react-native run-android --device R68Y6011NAL"
+    "dev": "react-native run-android --device R68Y6011NAL",
+    "seed": "node seed.js",
+    "seed:clean": "node seed.js --clean"
   },
   "dependencies": {
     "@faker-js/faker": "^10.1.0",
@@ -25,9 +27,12 @@
     "@react-navigation/bottom-tabs": "^6.5.20",
     "@react-navigation/native": "^6.1.8",
     "@react-navigation/native-stack": "^6.9.22",
+    "axios": "^1.13.6",
     "dayjs": "^1.11.18",
+    "dotenv": "^17.3.1",
     "expo": "~54.0.0",
     "fast-text-encoding": "^1.0.6",
+    "firebase-admin": "^13.7.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
