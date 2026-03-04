@@ -71,3 +71,39 @@ export const enrichExistingProducts = async () => {
         throw error;
     }
 };
+
+/**
+ * Görseli Gemini'a gönderir ve analiz sonucunu döner
+ * @param base64Image - Görselin base64 formatındaki hali (örn: resim seçiciden veya FileSystem'den alınmış)
+ * @param mimeType - Görselin tipi (genellikle 'image/jpeg' veya 'image/png')
+ */
+export const analyzeArtworkImage = async (base64Image: string, mimeType: string = 'image/jpeg') => {
+    try {
+        console.log("🎨 [AI] Görsel analizi başlıyor...");
+
+        const model = modelWrapper();
+
+        const prompt = "Sen bir sanat eleştirmenisin. Bu sanat eserini incele ve aşağıdaki formatta, virgülle ayrılmış kısa etiketler üret: Ana renkler, sanat akımı, teknik (yağlıboya, dijital vb.), hissettirdiği duygu ve resimdeki ana objeler. Başka hiçbir açıklama ekleme.";
+
+        const imagePart = {
+            inlineData: {
+                data: base64Image,
+                mimeType: mimeType
+            }
+        };
+
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = await result.response;
+
+        const visualKeywords = response.text().trim().toLowerCase();
+        console.log("✨ [AI] Görsel Analiz Sonucu:", visualKeywords);
+
+        // Dönem metni virgüllerden ayırıp temiz bir diziye dönüştürüyoruz
+        const tagsArray = visualKeywords.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        return tagsArray;
+
+    } catch (error) {
+        console.error("❌ [AI] Görsel analiz hatası:", error);
+        throw error;
+    }
+};

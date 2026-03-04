@@ -270,7 +270,8 @@ const SearchScreen = () => {
         const fullNameMatch = owner?.fullName?.toLowerCase().includes(queryLower) ?? false;
         const priceMatch = product.price?.toString().includes(queryLower) ?? false;
         const yearMatch = product.year?.toString().includes(queryLower) ?? false;
-        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || fullNameMatch || priceMatch || yearMatch;
+        const aiTagsMatch = product.aiVisualTags?.some(tag => tag.toLowerCase().includes(queryLower)) ?? false;
+        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || fullNameMatch || priceMatch || yearMatch || aiTagsMatch;
       });
       currentUserResults = allUsers.filter(user => {
         const usernameMatch = user.username?.toLowerCase().includes(queryLower) ?? false;
@@ -283,7 +284,8 @@ const SearchScreen = () => {
         const titleMatch = product.title?.toLowerCase().includes(queryLower) ?? false;
         const descriptionMatch = product.description?.toLowerCase().includes(queryLower) ?? false;
         const categoryMatch = product.category?.toLowerCase().includes(queryLower) ?? false;
-        return titleMatch || descriptionMatch || categoryMatch;
+        const aiTagsMatch = product.aiVisualTags?.some(tag => tag.toLowerCase().includes(queryLower)) ?? false;
+        return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch;
       });
     } else if (searchScope === 'Artist') {
       currentUserResults = allUsers.filter(user => {

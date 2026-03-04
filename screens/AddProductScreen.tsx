@@ -18,6 +18,8 @@ import { ref } from '@react-native-firebase/storage';
 import { auth, db, storage } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import uuid from 'react-native-uuid';
+import RNFS from 'react-native-fs';
+import { analyzeArtworkImage } from '../utils/aiEnrichment';
 import { ThemeContext } from '../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -154,6 +156,17 @@ const AddProductScreen = () => {
         imageUrls.push(url);
       }
 
+      let aiVisualTags: string[] = [];
+      if (images.length > 0) {
+        try {
+          console.log("📸 İlk görsel analiz için hazırlanıyor...");
+          const base64Image = await RNFS.readFile(images[0], 'base64');
+          aiVisualTags = await analyzeArtworkImage(base64Image, 'image/jpeg');
+        } catch (analyzeError) {
+          console.error('Görsel analizi sırasında hata (görmezden geliniyor):', analyzeError);
+        }
+      }
+
       const dimensions = {
         height: height ? parseFloat(height) : null,
         width: width ? parseFloat(width) : null,
@@ -175,6 +188,7 @@ const AddProductScreen = () => {
         updatedAt: serverTimestamp(),
         imageUrls,
         mainImageUrl: imageUrls[0] || '',
+        aiVisualTags,
       });
 
       Alert.alert('Başarılı', 'Ürün başarıyla eklendi.');

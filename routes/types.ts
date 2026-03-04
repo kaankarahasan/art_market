@@ -22,6 +22,7 @@ export type Product = {
   updatedAt?: any;
   viewCount?: number; // <--- BU SATIRI EKLEYİN
   isSeeded?: boolean;
+  aiVisualTags?: string[];      // AI görsel analiz etiketleri
 };
 
 // Root Stack Param Listesi
