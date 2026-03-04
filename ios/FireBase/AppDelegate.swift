@@ -1,11 +1,15 @@
 import UIKit
 import Expo
+import FirebaseCore // Added FirebaseCore
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
 
 @main
 class AppDelegate: RCTAppDelegate {
   override func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+    // ⚠️ Firebase Yapılandırması ⚠️
+    FirebaseApp.configure() // Call FirebaseApp.configure() before anything else
+
     // ⚠️ DİKKAT: app.json dosyanın içindeki "name" değeri neyse buraya onu yazmalısın.
     // Proje adın "FireBase" olduğu için muhtemelen budur. Eğer "main" ise "main" yaz.
     self.moduleName = "FireBase"
@@ -18,8 +22,7 @@ class AppDelegate: RCTAppDelegate {
   }
 
   override func sourceURL(for bridge: RCTBridge) -> URL? {
-    return    // needed to return the correct URL for expo-dev-client.
-    bridge.bundleURL ?? bundleURL()
+    return bridge.bundleURL ?? bundleURL()
   }
 
   override func bundleURL() -> URL? {

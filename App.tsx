@@ -1,3 +1,4 @@
+import 'fast-text-encoding';
 import 'react-native-gesture-handler';
 import React from 'react';
 import { StatusBar } from 'react-native';
@@ -39,12 +40,17 @@ import './firebase';
 
 import { DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { useThemeContext } from './contexts/ThemeContext';
+import { fetchRemoteConfig } from './firebase';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function AppContent() {
   const { isDarkTheme } = useThemeContext();
   const theme = isDarkTheme ? DarkTheme : DefaultTheme;
+
+  React.useEffect(() => {
+    fetchRemoteConfig();
+  }, []);
 
   return (
     <>

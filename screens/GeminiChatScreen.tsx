@@ -19,7 +19,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { db, auth } from '../firebase';
+import { db, auth, getRemoteValue } from '../firebase';
+// @ts-ignore (sadece derleme hatasını engellemek için)
+import { GEMINI_API_KEY as ENV_GEMINI_KEY } from '@env';
 import {
     collection,
     getDocs,
@@ -37,7 +39,7 @@ import {
 } from 'firebase/firestore';
 
 // --- CONFIGURATION ---
-const API_KEY = 'AIzaSyDffLCLEg8h6ySYi-EekB2Re4-dpUs82eE';
+// Top-level API_KEY kaldırıldı, bileşen içinde dinamik alınacak.
 
 type Message = {
     id: string;
@@ -143,12 +145,6 @@ export default function GeminiChatScreen() {
         fetchContext();
     }, []);
 
-    // 4. Gemini Init
-    const genAI = useRef(new GoogleGenerativeAI(API_KEY)).current;
-    const model = React.useMemo(() => genAI.getGenerativeModel({
-        model: "gemini-2.5-flash"
-    }, { apiVersion: 'v1' }), [genAI]);
-
     const startNewChat = () => {
         setCurrentSessionId(null);
         setMessages([]);
@@ -233,6 +229,22 @@ Mevcut ürün verileri: ${productsContext || "Ürün verisi henüz yüklenmedi."
             console.log("Gemini: Calling API...");
             let geminiText = "";
 
+            // Önce Remote Config, sonra .env, sonra fallback kontrolü
+            let apiKey = getRemoteValue('GEMINI_API_KEY')?.trim();
+            if (!apiKey || apiKey === 'DEFAULT_IF_NONE' || !apiKey.startsWith('AIza')) {
+                console.log("Remote Config anahtarı geçersiz, .env anahtarına bakılıyor...");
+                apiKey = ENV_GEMINI_KEY?.trim();
+            }
+
+            if (!apiKey || apiKey === 'PLACEHOLDER' || !apiKey.startsWith('AIza')) {
+                throw new Error("Geçerli bir API Anahtarı bulunamadı (Firebase Remote Config veya .env dosyanızı kontrol edin).");
+            }
+
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({
+                model: "gemini-2.5-flash"
+            }, { apiVersion: 'v1beta' });
+
             try {
                 if (history.length === 0) {
                     const result = await model.generateContent(`${systemContext}\n\nKullanıcı: ${userText}`);
@@ -265,6 +277,7 @@ Mevcut ürün verileri: ${productsContext || "Ürün verisi henüz yüklenmedi."
             let userFriendlyMsg = "AI yanıt verirken bir sorun oluştu.";
             if (e.message?.includes("404")) userFriendlyMsg = "Seçilen AI modeli bulunamadı.";
             else if (e.message?.includes("429")) userFriendlyMsg = "Çok fazla istek gönderildi, lütfen biraz bekleyin.";
+            else if (e.message?.includes("400") || e.message?.includes("invalid API key")) userFriendlyMsg = "API anahtarı geçersiz. Lütfen Remote Config ayarlarını kontrol edin.";
 
             Alert.alert("Gemini Hatası", `${userFriendlyMsg}\n\nDetay: ${e.message || "Bilinmeyen hata"}`);
         } finally {

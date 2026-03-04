@@ -1,13 +1,19 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 // @ts-ignore
-import { initializeAuth, getReactNativePersistence, Auth, getAuth } from 'firebase/auth';
-import { getFirestore, Firestore, initializeFirestore } from 'firebase/firestore';
+import { initializeAuth, getReactNativePersistence, Auth } from 'firebase/auth';
+import { Firestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import {
+  getRemoteConfig,
+  setConfigSettings,
+  setDefaults,
+  fetchAndActivate,
+  getValue
+} from '@react-native-firebase/remote-config';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
-// Firebase yapılandırması - HANGİ PROJEYİ KULLANIYORSANIZ O CONFIG'İ AÇIN
+// Firebase yapılandırması
 const firebaseConfig = {
-  // AKTIF PROJE: app-market-test
   apiKey: "AIzaSyAKw4iQlmmgcrwTT_qcWknoVENGd7LVTKQ",
   authDomain: "app-market-test-35f90.firebaseapp.com",
   projectId: "app-market-test-35f90",
@@ -17,27 +23,45 @@ const firebaseConfig = {
   measurementId: "G-LFH1Z7XF7F"
 };
 
-// DİĞER PROJE CONFIG'İ (Gerekirse yukarıdakiyle değiştirin)
-// const firebaseConfig = {
-//   apiKey: 'AIzaSyBxqQGr9HYsDNdiv8BNjUwy8NDoD1ZQjEM',
-//   authDomain: 'loginscreenfirebase-55198.firebaseapp.com',
-//   projectId: 'loginscreenfirebase-55198',
-//   storageBucket: 'loginscreenfirebase-55198.appspot.com',
-//   messagingSenderId: '63361277261',
-//   appId: '1:63361277261:web:1478cb146aaa5147966b04',
-// };
-
-// Firebase uygulamasını başlat
+// Firebase (Web SDK - Firestore & Auth için)
 const app: FirebaseApp = initializeApp(firebaseConfig);
 
-// Authentication - Initialize with AsyncStorage for persistence
+// Remote Config (Modular Native SDK)
+export const fetchRemoteConfig = async () => {
+  try {
+    const config = getRemoteConfig();
+
+    // Önbellek süresini geliştirme için 0 yapıyoruz
+    await setConfigSettings(config, {
+      minimumFetchIntervalMillis: 0,
+    });
+
+    // Varsayılanları ayarla
+    await setDefaults(config, {
+      GEMINI_API_KEY: 'DEFAULT_IF_NONE'
+    });
+
+    // Tek seferde çek ve aktif et
+    await fetchAndActivate(config);
+  } catch (err) {
+    console.warn("Remote Config SDK Hatası:", err);
+  }
+};
+
+export const getRemoteValue = (key: string) => {
+  try {
+    const config = getRemoteConfig();
+    return getValue(config, key).asString();
+  } catch (e) { }
+  return 'DEFAULT_IF_NONE';
+};
+
+// Authentication...
 export const auth: Auth = initializeAuth(app, {
   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
 });
 
-// Firestore - React Native için BASİT yapılandırma
-// persistentLocalCache ve persistentMultipleTabManager KULLANMAYIN!
-// Bunlar React Native'de "client is offline" hatasına neden oluyor
+// Firestore...
 export const db: Firestore = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 });
@@ -45,13 +69,4 @@ export const db: Firestore = initializeFirestore(app, {
 // Firebase Storage
 export const storage: FirebaseStorage = getStorage(app);
 
-// Varsayılan export
 export default app;
-
-// Named export - gerekirse kullanılabilir
-export function initializeFirebase(): FirebaseApp {
-  return app;
-}
-
-// Config'i export et (ihtiyaç duyulursa)
-export { firebaseConfig };

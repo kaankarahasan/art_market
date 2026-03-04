@@ -43,6 +43,7 @@ export default function InboxScreen() {
   const currentUser = auth.currentUser;
   const navigation = useNavigation<ChatScreenNavigationProp>();
   const [chats, setChats] = useState<ChatItem[]>([]);
+  const [profileCache, setProfileCache] = useState<{ [key: string]: { photoURL?: string, displayName?: string } }>({});
 
   const screenHeight = Dimensions.get('window').height;
 
@@ -102,6 +103,42 @@ export default function InboxScreen() {
     return () => unsubscribe();
   }, [currentUser]);
 
+  // 2. Fetch User Profiles (Performance Optimized)
+  useEffect(() => {
+    const fetchMissingProfiles = async () => {
+      const missingIds = chats
+        .map(c => c.otherUserId)
+        .filter(id => id && !profileCache[id]);
+
+      if (missingIds.length === 0) return;
+
+      // Unique IDs to fetch
+      const uniqueMissing = Array.from(new Set(missingIds));
+      const newProfiles: { [key: string]: any } = {};
+
+      await Promise.all(uniqueMissing.map(async (uid) => {
+        try {
+          const userSnap = await getDoc(docRef(db, 'users', uid));
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            newProfiles[uid] = {
+              photoURL: userData.photoURL || userData.profileImage,
+              displayName: userData.displayName || userData.fullName || userData.username || 'Kullanıcı'
+            };
+          }
+        } catch (e) {
+          console.error("Error fetching user profile:", e);
+        }
+      }));
+
+      if (Object.keys(newProfiles).length > 0) {
+        setProfileCache(prev => ({ ...prev, ...newProfiles }));
+      }
+    };
+
+    fetchMissingProfiles();
+  }, [chats]);
+
   const { colors } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
 
@@ -113,39 +150,45 @@ export default function InboxScreen() {
     );
   }
 
-  const renderChatItem = ({ item }: { item: ChatItem }) => (
-    <TouchableOpacity
-      onPress={() =>
-        navigation.navigate('Chat', {
-          currentUserId: currentUser.uid,
-          otherUserId: item.otherUserId,
-        })
-      }
-      style={styles.chatCard}
-    >
-      <Image
-        source={
-          item.otherUserPhoto
-            ? { uri: item.otherUserPhoto }
-            : require('../assets/default-avatar.png')
+  const renderChatItem = ({ item }: { item: ChatItem }) => {
+    const cachedUser = profileCache[item.otherUserId];
+    const photoURL = cachedUser?.photoURL || item.otherUserPhoto;
+    const displayName = cachedUser?.displayName || item.otherUserName;
+
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate('Chat', {
+            currentUserId: currentUser.uid,
+            otherUserId: item.otherUserId,
+          })
         }
-        style={styles.avatar}
-      />
-      <View style={styles.textContainer}>
-        <Text style={styles.name}>{item.otherUserName}</Text>
-        <View style={styles.messageRow}>
-          <Text style={styles.message} numberOfLines={1}>
-            {item.lastMessage}
-          </Text>
-          {item.unreadCount && item.unreadCount > 0 ? (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadText}>{item.unreadCount}</Text>
-            </View>
-          ) : null}
+        style={styles.chatCard}
+      >
+        <Image
+          source={
+            photoURL
+              ? { uri: photoURL }
+              : require('../assets/default-avatar.png')
+          }
+          style={styles.avatar}
+        />
+        <View style={styles.textContainer}>
+          <Text style={styles.name}>{displayName}</Text>
+          <View style={styles.messageRow}>
+            <Text style={styles.message} numberOfLines={1}>
+              {item.lastMessage}
+            </Text>
+            {item.unreadCount && item.unreadCount > 0 ? (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadText}>{item.unreadCount}</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>

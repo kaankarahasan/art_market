@@ -1,6 +1,8 @@
-import { db } from '../firebase';
 import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { db, getRemoteValue } from '../firebase';
+// @ts-ignore
+import { GEMINI_API_KEY as ENV_GEMINI_KEY } from '@env';
 
 /**
  * AI ENRICHMENT UTILITY
@@ -11,9 +13,19 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
  * yollayarak token tasarrufu sağlarız.
  */
 
-const API_KEY = 'AIzaSyDffLCLEg8h6ySYi-EekB2Re4-dpUs82eE';
-const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: 'v1' });
+const getApiKey = () => {
+    const remoteKey = getRemoteValue('GEMINI_API_KEY')?.trim();
+    if (remoteKey && remoteKey !== 'DEFAULT_IF_NONE' && remoteKey.startsWith('AIza')) {
+        return remoteKey;
+    }
+    return ENV_GEMINI_KEY?.trim();
+};
+
+const modelWrapper = () => {
+    const apiKey = getApiKey();
+    const genAI = new GoogleGenerativeAI(apiKey);
+    return genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: 'v1beta' });
+};
 
 export const enrichExistingProducts = async () => {
     console.log("Ürün analizi başlatılıyor...");
@@ -36,7 +48,7 @@ export const enrichExistingProducts = async () => {
             Açıklama: ${data.description || ''}
             Etiketler: ${Array.isArray(data.tags) ? data.tags.join(', ') : ''}`;
 
-            const result = await model.generateContent(prompt);
+            const result = await modelWrapper().generateContent(prompt);
             const response = await result.response;
             const aiVibe = response.text().trim().toLowerCase();
 
