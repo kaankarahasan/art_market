@@ -303,7 +303,11 @@ const SearchScreen = () => {
             : String(product.aiVisualTags).toLowerCase().includes(queryLower)
         ) : false;
 
-        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || fullNameMatch || priceMatch || yearMatch || aiTagsMatch;
+        const widthMatch = product.dimensions?.width?.toString().includes(queryLower) ?? false;
+        const heightMatch = product.dimensions?.height?.toString().includes(queryLower) ?? false;
+        const depthMatch = product.dimensions?.depth?.toString().includes(queryLower) ?? false;
+
+        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || fullNameMatch || priceMatch || yearMatch || aiTagsMatch || widthMatch || heightMatch || depthMatch;
       });
       currentUserResults = allUsers.filter(user => {
         const usernameMatch = user.username?.toLowerCase().includes(queryLower) ?? false;
@@ -318,10 +322,19 @@ const SearchScreen = () => {
         const categoryMatch = product.category?.toLowerCase().includes(queryLower) ?? false;
         const aiTagsMatch = product.aiVisualTags ? (
           Array.isArray(product.aiVisualTags)
-            ? product.aiVisualTags.some(tag => tag?.toLowerCase().includes(queryLower))
+            ? product.aiVisualTags.some(tag => {
+              const match = tag?.toLowerCase().includes(queryLower);
+              if (match) console.log(`🎯 Match found in tag: "${tag}" for product: ${product.title}`);
+              return match;
+            })
             : String(product.aiVisualTags).toLowerCase().includes(queryLower)
         ) : false;
-        return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch;
+
+        const widthMatch = product.dimensions?.width?.toString().includes(queryLower) ?? false;
+        const heightMatch = product.dimensions?.height?.toString().includes(queryLower) ?? false;
+        const depthMatch = product.dimensions?.depth?.toString().includes(queryLower) ?? false;
+
+        return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch || widthMatch || heightMatch || depthMatch;
       });
     } else if (searchScope === 'Artist') {
       currentUserResults = allUsers.filter(user => {

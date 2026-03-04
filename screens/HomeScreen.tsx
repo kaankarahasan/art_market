@@ -180,7 +180,11 @@ const HomeScreen = () => {
             : String(product.aiVisualTags).toLowerCase().includes(queryLower)
         ) : false;
 
-        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || priceMatch || yearMatch || aiTagsMatch;
+        const widthMatch = product.dimensions?.width?.toString().includes(queryLower) ?? false;
+        const heightMatch = product.dimensions?.height?.toString().includes(queryLower) ?? false;
+        const depthMatch = product.dimensions?.depth?.toString().includes(queryLower) ?? false;
+
+        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || priceMatch || yearMatch || aiTagsMatch || widthMatch || heightMatch || depthMatch;
       });
       currentUserResults = allUsers.filter(user => {
         const usernameMatch = user.username?.toLowerCase().includes(queryLower) ?? false;
@@ -197,7 +201,12 @@ const HomeScreen = () => {
             ? p.aiVisualTags.some((tag: string) => tag?.toLowerCase().includes(queryLower))
             : String(p.aiVisualTags).toLowerCase().includes(queryLower)
         ) : false;
-        return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch;
+
+        const widthMatch = p.dimensions?.width?.toString().includes(queryLower) ?? false;
+        const heightMatch = p.dimensions?.height?.toString().includes(queryLower) ?? false;
+        const depthMatch = p.dimensions?.depth?.toString().includes(queryLower) ?? false;
+
+        return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch || widthMatch || heightMatch || depthMatch;
       });
     } else if (searchScope === 'Artist') {
       currentUserResults = allUsers.filter(user => user.username?.toLowerCase().includes(queryLower) || user.fullName?.toLowerCase().includes(queryLower));
