@@ -177,7 +177,7 @@ const SearchScreen = () => {
         .limit(1000)
         .get(); // Not: Native SDK varsayılan olarak taze veriyi çekmeye çalışır
 
-      const productList = productSnap.docs.map((doc: any) => {
+      const productList: Product[] = productSnap.docs.map((doc: any) => {
         const dataFromFirestore = doc.data();
         return {
           id: doc.id,
@@ -190,7 +190,7 @@ const SearchScreen = () => {
       setProducts(productList);
 
       // --- KRİTİK DEBUG LOGLARI ---
-      const taggedProducts = productList.filter(p => p.aiVisualTags && p.aiVisualTags.length > 0);
+      const taggedProducts = productList.filter((p: Product) => p.aiVisualTags && p.aiVisualTags.length > 0);
       console.log(`📦 Toplam Yüklenen: ${productList.length} ürün.`);
       console.log(`✨ Etiketli Ürün Sayısı: ${taggedProducts.length}`);
 
