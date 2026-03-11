@@ -11,7 +11,7 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { doc, getDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, setDoc } from '@react-native-firebase/firestore';
 import { db } from '../firebase';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
@@ -35,6 +35,7 @@ export default function ChatScreen() {
   const route = useRoute<ChatScreenRouteProp>();
   const navigation = useNavigation<any>();
   const { currentUserId, otherUserId } = route.params;
+  const insets = useSafeAreaInsets();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
@@ -94,42 +95,35 @@ export default function ChatScreen() {
   }, [chatId, otherUserId]);
 
   const sendMessage = async () => {
-    if (!text.trim()) return;
+    const textToSend = text.trim();
+    if (!textToSend) return;
 
-    const messagesRef = collection(db, 'chats', chatId, 'messages');
-    await addDoc(messagesRef, {
-      text,
-      senderId: currentUserId,
-      createdAt: serverTimestamp(),
-    });
-
-    const currentUserSnap = await getDoc(doc(db, 'users', currentUserId));
-    const otherUserSnap = await getDoc(doc(db, 'users', otherUserId));
-    const currentUserData = currentUserSnap.exists() ? (currentUserSnap.data() || {}) : {};
-    const otherUserData = otherUserSnap.exists() ? (otherUserSnap.data() || {}) : {};
-
-    const chatDocRef = doc(db, 'chats', chatId);
-    await setDoc(
-      chatDocRef,
-      {
-        lastMessage: text,
-        lastTimestamp: serverTimestamp(),
-        participants: [currentUserId, otherUserId],
-        userInfos: {
-          [currentUserId]: {
-            displayName: (currentUserData as any).displayName || '',
-            username: (currentUserData as any).username || '',
-          },
-          [otherUserId]: {
-            displayName: (otherUserData as any).displayName || '',
-            username: (otherUserData as any).username || '',
-          },
-        },
-      },
-      { merge: true }
-    );
-
+    // Hemen UI'yi temizle
     setText('');
+
+    try {
+      const messagesRef = collection(db, 'chats', chatId, 'messages');
+      await addDoc(messagesRef, {
+        text: textToSend,
+        senderId: currentUserId,
+        createdAt: serverTimestamp(),
+      });
+
+      const chatDocRef = doc(db, 'chats', chatId);
+      await setDoc(
+        chatDocRef,
+        {
+          lastMessage: textToSend,
+          lastTimestamp: serverTimestamp(),
+          participants: [currentUserId, otherUserId],
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error('Mesaj gönderilirken hata oluştu:', error);
+      // Gerekirse hata durumunda mesajı geri yükle
+      // setText(textToSend);
+    }
   };
 
   // Dinamik boyutlar (makul sınırlar ile)
@@ -142,7 +136,7 @@ export default function ChatScreen() {
   const sendButtonPaddingVertical = Math.min(Math.max(screenHeight * 0.012, 8), 12);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0 }]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -237,7 +231,7 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

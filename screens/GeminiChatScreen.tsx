@@ -15,7 +15,7 @@ import {
     ScrollView,
     Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -54,6 +54,7 @@ export default function GeminiChatScreen() {
 
     const { colors, isDarkTheme } = useThemeContext();
     const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
+    const insets = useSafeAreaInsets();
 
     // Sidebar Animation
     useEffect(() => {
@@ -231,7 +232,7 @@ export default function GeminiChatScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0 }]}>
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -307,7 +308,7 @@ export default function GeminiChatScreen() {
                     </View>
                 </View>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </View>
     );
 }
 
