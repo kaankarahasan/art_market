@@ -25,6 +25,7 @@ export type Product = {
   aiVisualTags?: string[];      // AI görsel analiz etiketleri
   modelGlbUrl?: string;         // Android/Web AR modeli
   modelUsdzUrl?: string;        // iOS AR modeli
+  processedTextureUrl?: string; // İşlenmiş (şeffaf/düzeltilmiş) AR görseli
   has3DModel?: boolean;         // 3D model var mı?
 };
 

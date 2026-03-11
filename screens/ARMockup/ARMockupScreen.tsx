@@ -85,24 +85,27 @@ const ARMockupScreen = () => {
 
     const startGyro = () => {
       try {
-        // Reduce update interval slightly to save battery but keep it smooth
-        setUpdateIntervalForType(SensorTypes.gyroscope, 50); // 50ms
+        setUpdateIntervalForType(SensorTypes.gyroscope, 20); // 50hz (20ms) for ultra-smooth
         
         subscription = gyroscope.subscribe(({ x, y, z }) => {
           if (isLockedRef.current) {
-            // Increase delta and sensitivity to make horizontal/vertical movement much more obvious
-            const dt = 0.050; // 50ms 
-            const pixelsPerRad = width * 1.5; // Amplified sensitivity
+            // SENSITIVITY CALIBRATION:
+            // In Portrait Android: 
+            // x = tilt up/down (rotates screen content up/down)
+            // y = tilt left/right (rotates screen content left/right)
+            // z = rotation like a steering wheel
             
-            let deltaX = y * dt * pixelsPerRad;
-            let deltaY = x * dt * pixelsPerRad;
+            const dt = 0.020; 
+            const pixelsPerRad = width * 2.5; // More aggressive tracking
             
-            gyroX.value -= deltaX;
-            gyroY.value -= deltaY;
+            // Integrate movement
+            // NOTE: We invert to "fix" it in space while phone moves
+            gyroX.value -= (y * dt * pixelsPerRad);
+            gyroY.value -= (x * dt * pixelsPerRad);
           }
         });
       } catch (err) {
-        console.warn('Gyroscope error:', err);
+        console.warn('Gyroscope sensor error:', err);
       }
     };
 
@@ -139,12 +142,12 @@ const ARMockupScreen = () => {
       scale.value = savedScale.value * e.scale;
     })
     .onEnd(() => {
-      if (scale.value < 0.5) {
-        scale.value = withSpring(0.5);
-        savedScale.value = 0.5;
-      } else if (scale.value > 3) {
-        scale.value = withSpring(3);
-        savedScale.value = 3;
+      if (scale.value < 0.2) {
+        scale.value = withSpring(0.2);
+        savedScale.value = 0.2;
+      } else if (scale.value > 5) {
+        scale.value = withSpring(5);
+        savedScale.value = 5;
       } else {
         savedScale.value = scale.value;
       }
@@ -156,14 +159,19 @@ const ARMockupScreen = () => {
     const finalTransX = translateX.value + gyroX.value;
     const finalTransY = translateY.value + gyroY.value;
     
+    // Calculate rotation based on DISTANCE from screen center to simulate perspective
+    // AS you move phone away from center, it tilts
+    const rotY = (finalTransX / width) * 0.8; // max ~0.8 rad (~45 deg)
+    const rotX = (-finalTransY / height) * 0.8;
+
     return {
       transform: [
-        { perspective: 1000 },
+        { perspective: 1200 },
         { translateX: finalTransX },
         { translateY: finalTransY },
+        { rotateY: `${rotY}rad` },
+        { rotateX: `${rotX}rad` },
         { scale: scale.value },
-        { rotateY: `${finalTransX / 2000}rad` },
-        { rotateX: `${-finalTransY / 2000}rad` },
       ],
     };
   });

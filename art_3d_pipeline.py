@@ -134,11 +134,19 @@ def generate_3d_models(pil_image, dimensions, output_basename="artwork"):
     dimensions: rect object like {"width": 50, "height": 70, "depth": 2} (in cm)
     """
     # Convert dimensions from cm to meters for standard 3D engines
-    width_m = dimensions.get('width', 50) / 100.0
-    height_m = dimensions.get('height', 70) / 100.0
+    width_val = dimensions.get('width')
+    if width_val is None: width_val = 50
+    width_m = float(width_val) / 100.0
+
+    height_val = dimensions.get('height')
+    if height_val is None: height_val = 70
+    height_m = float(height_val) / 100.0
 
     # Create a simple box with depth instead of just a plane for slight realistic thickness
-    depth_m = dimensions.get('depth', 2) / 100.0
+    # Safe handling of dimensions (fallback if value is None)
+    depth_val = dimensions.get('depth')
+    if depth_val is None: depth_val = 2
+    depth_m = float(depth_val) / 100.0
     
     # Using trimesh to create a box
     mesh = trimesh.creation.box(extents=[width_m, height_m, depth_m])
@@ -179,7 +187,7 @@ def generate_3d_models(pil_image, dimensions, output_basename="artwork"):
     # if using an external API service to convert GLB to USDZ within the pipeline.
     # For this exercise, we will just produce GLB and note USDZ as a secondary conversion.
     
-    os.remove(tex_path)
+    # os.remove(tex_path) # Removed: process_artwork will handle cleanup after upload
     return glb_filename, usdz_filename
 
 def upload_to_storage(local_path, remote_path):
@@ -191,7 +199,9 @@ def upload_to_storage(local_path, remote_path):
     # Give public access token for the url, or use get_signed_url
     blob.upload_from_filename(local_path)
     blob.make_public()
-    return blob.public_url
+    url = blob.public_url
+    print(f"    - Uploaded to: {url}")
+    return url
 
 def process_artwork(product_id, product_data):
     """Main pipeline execution for a single artwork resource."""
@@ -246,6 +256,8 @@ def process_artwork(product_id, product_data):
     if updates:
         db.collection('products').document(product_id).update(updates)
         print(f"  - Associated with DB: SUCCESS {list(updates.keys())}")
+    else:
+        print("  - No updates were necessary for DB.")
         
     # Cleanup local files
     for file in [glb_file, usdz_file, texture_filename]:
@@ -254,7 +266,7 @@ def process_artwork(product_id, product_data):
 
 def run_pipeline_for_all():
     """Runs the full pipeline for all eligible artworks in the system."""
-    products_ref = db.collection('products').where('isSold', '==', False).limit(10) # Limit to 10 for safety
+    products_ref = db.collection('products').where('isSold', '==', False)
     docs = products_ref.stream()
     
     count = 0

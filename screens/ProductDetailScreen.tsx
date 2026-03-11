@@ -585,11 +585,12 @@ const ProductDetailScreen = () => {
               if (productData.modelGlbUrl || productData.modelUsdzUrl) {
                 handleOpenAR();
               } else {
-                const imageUrl = Array.isArray(productData.imageUrls)
+                const urlToUse = productData.processedTextureUrl || (Array.isArray(productData.imageUrls)
                   ? productData.imageUrls[0]
-                  : productData.imageUrls;
-                if (imageUrl) {
-                  navigation.navigate('ARMockup', { imageUrl });
+                  : productData.imageUrls);
+                
+                if (urlToUse) {
+                  navigation.navigate('ARMockup', { imageUrl: urlToUse });
                 }
               }
             }}
