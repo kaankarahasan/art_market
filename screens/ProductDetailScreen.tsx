@@ -319,6 +319,26 @@ const ProductDetailScreen = () => {
       ? [{ uri: productData.imageUrls }]
       : [];
 
+  const categories = [
+    { label: 'Yağlı Boya', value: 'yagli_boya' },
+    { label: 'Suluboya', value: 'suluboya' },
+    { label: 'Akrilik', value: 'akrilik' },
+    { label: 'Heykel', value: 'heykel' },
+    { label: 'Fotoğraf', value: 'fotograf' },
+    { label: 'Dijital Sanat', value: 'dijital' },
+    { label: 'Çizim', value: 'cizim' },
+    { label: 'Grafik Tasarım', value: 'grafik' },
+    { label: 'Seramik', value: 'seramik' },
+    { label: 'Kolaj', value: 'kolaj' },
+    { label: 'Diğer', value: 'diger' },
+  ];
+
+  const getCategoryLabel = (value: string | undefined) => {
+    if (!value) return 'Bilinmiyor';
+    const cat = categories.find((c) => c.value === value);
+    return cat ? cat.label : value;
+  };
+
   const handleFavoriteToggle = (item: Product) => {
     const isFav = favoriteItems.some(fav => fav.id === item.id);
     const imageUrl = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls;
@@ -508,7 +528,7 @@ const ProductDetailScreen = () => {
           )}
 
           <Text style={styles.detail}>
-            Kategori: {productData.category || 'Bilinmiyor'}
+            Kategori: {getCategoryLabel(productData.category)}
           </Text>
           {productData.createdAt && (
             <Text style={styles.detail}>
