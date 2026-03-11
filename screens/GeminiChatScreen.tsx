@@ -234,18 +234,20 @@ export default function GeminiChatScreen() {
     return (
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0 }]}>
             <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <Text style={styles.backIcon}>‹</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Text style={styles.backIcon}>‹</Text>
+                </TouchableOpacity>
+                
+                <Text style={styles.headerTitle}>Gemini</Text>
+                
+                <View style={styles.headerRight}>
+                    <TouchableOpacity onPress={startNewChat} style={styles.newChatBtnAction}>
+                        <Text style={styles.newChatBtn}>+</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setIsSidebarOpen(true)}>
+                    <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={styles.menuBtn}>
                         <Text style={styles.menuIcon}>☰</Text>
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.headerTitle}>Gemini</Text>
-                <TouchableOpacity onPress={startNewChat}>
-                    <Text style={styles.newChatBtn}>+</Text>
-                </TouchableOpacity>
             </View>
 
             {isSidebarOpen && (
@@ -315,12 +317,14 @@ export default function GeminiChatScreen() {
 const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     container: { flex: 1, backgroundColor: isDarkTheme ? '#131314' : '#FFFFFF' },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, height: 56, borderBottomWidth: 1, borderBottomColor: isDarkTheme ? '#303134' : '#F0F4F9' },
-    headerLeft: { flexDirection: 'row', alignItems: 'center' },
-    backBtn: { marginRight: 15 },
+    headerRight: { flexDirection: 'row', alignItems: 'center' },
+    backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
     backIcon: { fontSize: 32, color: colors.text, fontWeight: '300', marginTop: -4 },
-    menuIcon: { fontSize: 28, color: colors.text, fontWeight: '300' },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
-    newChatBtn: { fontSize: 28, color: colors.text, fontWeight: '300', marginRight: 5 },
+    menuBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-end', marginLeft: 10 },
+    menuIcon: { fontSize: 26, color: colors.text, fontWeight: '300' },
+    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center' },
+    newChatBtnAction: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+    newChatBtn: { fontSize: 28, color: colors.text, fontWeight: '300' },
     overlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 10 },
     sidebar: { position: 'absolute', top: 0, bottom: 0, left: 0, width: 280, backgroundColor: isDarkTheme ? '#1E1F20' : '#F0F4F9', zIndex: 11, paddingTop: 50, elevation: 10 },
     sidebarHeader: { paddingHorizontal: 20, marginBottom: 20 },
