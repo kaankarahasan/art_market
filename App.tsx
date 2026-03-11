@@ -5,6 +5,9 @@ import { StatusBar } from 'react-native';
 import 'react-native-get-random-values';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { ActivityIndicator, View } from 'react-native';
+import { onAuthStateChanged } from '@react-native-firebase/auth';
+import { auth } from './firebase';
 
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
@@ -46,12 +49,27 @@ import { fetchRemoteConfig } from './firebase';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function AppContent() {
-  const { isDarkTheme } = useThemeContext();
+  const { isDarkTheme, colors } = useThemeContext();
   const theme = isDarkTheme ? DarkTheme : DefaultTheme;
+  const [initializing, setInitializing] = React.useState(true);
+  const [user, setUser] = React.useState<any>(null);
 
   React.useEffect(() => {
     fetchRemoteConfig();
-  }, []);
+    const subscriber = onAuthStateChanged(auth, (usr) => {
+      setUser(usr);
+      if (initializing) setInitializing(false);
+    });
+    return subscriber;
+  }, [initializing]);
+
+  if (initializing) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.text} />
+      </View>
+    );
+  }
 
   return (
     <>
@@ -60,7 +78,7 @@ function AppContent() {
         backgroundColor={theme.colors.background}
       />
       <NavigationContainer theme={theme}>
-        <Stack.Navigator initialRouteName="Login" screenOptions={{ gestureEnabled: true, animation: 'slide_from_right' }}>
+        <Stack.Navigator initialRouteName={user ? "Main" : "Login"} screenOptions={{ gestureEnabled: true, animation: 'slide_from_right' }}>
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
           <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
           <Stack.Screen name="PasswordReset" component={PasswordResetScreen} options={{ headerShown: false }} />
