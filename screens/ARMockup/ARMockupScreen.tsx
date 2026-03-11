@@ -87,25 +87,30 @@ const ARMockupScreen = () => {
       try {
         setUpdateIntervalForType(SensorTypes.gyroscope, 20); // 50hz (20ms) for ultra-smooth
         
-        subscription = gyroscope.subscribe(({ x, y, z }) => {
-          if (isLockedRef.current) {
-            // SENSITIVITY CALIBRATION:
-            // In Portrait Android: 
-            // x = tilt up/down (rotates screen content up/down)
-            // y = tilt left/right (rotates screen content left/right)
-            // z = rotation like a steering wheel
-            
-            const dt = 0.020; 
-            const pixelsPerRad = width * 2.5; // More aggressive tracking
-            
-            // Integrate movement
-            // NOTE: We invert to "fix" it in space while phone moves
-            gyroX.value -= (y * dt * pixelsPerRad);
-            gyroY.value -= (x * dt * pixelsPerRad);
+        subscription = gyroscope.subscribe({
+          next: ({ x, y, z }) => {
+            if (isLockedRef.current) {
+              // SENSITIVITY CALIBRATION:
+              // In Portrait Android: 
+              // x = tilt up/down (rotates screen content up/down)
+              // y = tilt left/right (rotates screen content left/right)
+              // z = rotation like a steering wheel
+              
+              const dt = 0.020; 
+              const pixelsPerRad = width * 2.5; // More aggressive tracking
+              
+              // Integrate movement
+              // NOTE: We invert to "fix" it in space while phone moves
+              gyroX.value -= (y * dt * pixelsPerRad);
+              gyroY.value -= (x * dt * pixelsPerRad);
+            }
+          },
+          error: (err) => {
+            console.warn('Gyroscope sensor not available:', err);
           }
         });
       } catch (err) {
-        console.warn('Gyroscope sensor error:', err);
+        console.warn('Gyroscope sensor setup error:', err);
       }
     };
 

@@ -209,35 +209,46 @@ const ProductDetailScreen = () => {
       ? productData.modelUsdzUrl 
       : productData.modelGlbUrl;
 
+    const navigateToMockup = () => {
+      const urlToUse = productData.processedTextureUrl || (Array.isArray(productData.imageUrls)
+        ? productData.imageUrls[0]
+        : productData.imageUrls);
+      
+      if (urlToUse) {
+        navigation.navigate('ARMockup', { imageUrl: urlToUse });
+      } else {
+        Alert.alert('Hata', 'Görüntülenecek bir görsel bulunamadı.');
+      }
+    };
+
     if (!modelUrl) {
-      Alert.alert('Hata', 'Bu ürün için 3D model henüz hazır değil.');
+      navigateToMockup();
       return;
     }
 
     try {
       if (Platform.OS === 'ios') {
-        // iOS Quick Look: simply open the .usdz URL
+        // iOS Quick Look
         await Linking.openURL(modelUrl);
       } else {
-        // Android Scene Viewer: use specialized intent URL
-        // 'ar_preferred' modu cihaz AR destekliyorsa AR'da, desteklemiyorsa 3D modunda açmasını sağlar.
+        // Android Scene Viewer
         const sceneViewerUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${modelUrl}&mode=ar_preferred#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;`;
         await Linking.openURL(sceneViewerUrl);
       }
     } catch (err) {
-      console.log('AR açılırken hata, alternatif deneniyor:', err);
+      console.log('Native AR failed, redirecting to custom Mockup:', err);
       
       if (Platform.OS === 'android') {
         try {
-          // ARCore yüklü değilse (örn A serisi Samsunglar), Google Uygulaması üzerinden 3D modunda açmaya zorlarız.
+          // Fallback to 3D mode first
           const fallbackUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${modelUrl}&mode=3d_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
           await Linking.openURL(fallbackUrl);
         } catch (innerErr) {
-          console.error('Google App ile 3D açılırken hata:', innerErr);
-          Alert.alert('Bilgi', 'Cihazınızda 3D veya AR modeli açılamadı. Google uygulamasının yüklü ve güncel olduğundan emin olun.');
+          console.log('Google App fallback failed, using custom Mockup');
+          navigateToMockup();
         }
       } else {
-        Alert.alert('Bilgi', 'AR modeli açılamadı. Lütfen desteklenen bir cihaz kullandığınızdan emin olun.');
+        navigateToMockup();
       }
     }
   };
@@ -581,19 +592,7 @@ const ProductDetailScreen = () => {
 
           <TouchableOpacity
             style={styles.arButton}
-            onPress={() => {
-              if (productData.modelGlbUrl || productData.modelUsdzUrl) {
-                handleOpenAR();
-              } else {
-                const urlToUse = productData.processedTextureUrl || (Array.isArray(productData.imageUrls)
-                  ? productData.imageUrls[0]
-                  : productData.imageUrls);
-                
-                if (urlToUse) {
-                  navigation.navigate('ARMockup', { imageUrl: urlToUse });
-                }
-              }
-            }}
+            onPress={handleOpenAR}
             activeOpacity={0.8}
           >
             <Ionicons name="camera-outline" size={22} color={colors.text} />
