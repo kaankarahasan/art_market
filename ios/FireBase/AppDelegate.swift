@@ -1,5 +1,4 @@
 import UIKit
-import Expo
 import FirebaseCore // Added FirebaseCore
 import React_RCTAppDelegate
 import ReactAppDependencyProvider

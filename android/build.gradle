@@ -2,10 +2,10 @@
 
 buildscript {
   ext {
-    buildToolsVersion = "35.0.0"
+    buildToolsVersion = "34.0.0"
     minSdkVersion = 24
-    compileSdkVersion = 36
-    targetSdkVersion = 36
+    compileSdkVersion = 34
+    targetSdkVersion = 34
     ndkVersion = "27.1.12297006"
     kotlinVersion = "2.0.0"
   }
@@ -16,9 +16,12 @@ buildscript {
   dependencies {
         classpath 'com.google.gms:google-services:4.4.1'
     classpath('com.android.tools.build:gradle:8.1.1')
-    classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0')
   }
+}
+
+plugins {
+    id("com.facebook.react.rootproject")
 }
 
 allprojects {
@@ -30,8 +33,6 @@ allprojects {
 }
 
 
-apply plugin: "com.facebook.react.rootproject"
-apply plugin: "expo-root-project"
 
 allprojects {
     apply plugin: 'eclipse'

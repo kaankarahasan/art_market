@@ -1,6 +1,4 @@
 package com.kaankarahasan.firebase
-import expo.modules.ApplicationLifecycleDispatcher
-import expo.modules.ReactNativeHostWrapper
 
 import android.app.Application
 import android.content.res.Configuration
@@ -24,7 +22,7 @@ import com.FireBase.R
 class MainApplication : Application(), ReactApplication {
 
   override val reactNativeHost: ReactNativeHost =
-      ReactNativeHostWrapper(this, object : DefaultReactNativeHost(this) {
+      object : DefaultReactNativeHost(this) {
         override fun getPackages(): List<ReactPackage> =
             PackageList(this).packages.apply {
               // Packages that cannot be autolinked yet can be added manually here, for example:
@@ -39,7 +37,7 @@ class MainApplication : Application(), ReactApplication {
       })
 
   override val reactHost: ReactHost
-    get() = ReactNativeHostWrapper.createReactHost(applicationContext, reactNativeHost)
+    get() = getDefaultReactHost(applicationContext, reactNativeHost)
 
   override fun onCreate() {
     super.onCreate()
@@ -49,11 +47,9 @@ class MainApplication : Application(), ReactApplication {
       ReleaseLevel.STABLE
     }
     loadReactNative(this)
-    ApplicationLifecycleDispatcher.onApplicationCreate(this)
   }
 
   override fun onConfigurationChanged(newConfig: Configuration) {
     super.onConfigurationChanged(newConfig)
-    ApplicationLifecycleDispatcher.onConfigurationChanged(this, newConfig)
   }
 }

@@ -24,6 +24,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { gyroscope, setUpdateIntervalForType, SensorTypes } from 'react-native-sensors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,6 +39,8 @@ const ARMockupScreen = () => {
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isActive, setIsActive] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
+  const isLockedRef = useRef(false); // To use inside gyro listener
 
   // Gesture Values
   const translateX = useSharedValue(0);
@@ -46,6 +49,10 @@ const ARMockupScreen = () => {
   const savedScale = useSharedValue(1);
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
+  
+  // Gyroscope tracking values (Virtual World coordinates)
+  const gyroX = useSharedValue(0);
+  const gyroY = useSharedValue(0);
 
   useEffect(() => {
     (async () => {
@@ -71,6 +78,51 @@ const ARMockupScreen = () => {
       }
     })();
   }, [hasPermission, requestPermission, navigation]);
+
+  // Gyroscope 3-DOF Tracking
+  useEffect(() => {
+    let subscription: any = null;
+
+    const startGyro = () => {
+      try {
+        // Reduce update interval slightly to save battery but keep it smooth
+        setUpdateIntervalForType(SensorTypes.gyroscope, 50); // 50ms
+        
+        subscription = gyroscope.subscribe(({ x, y, z }) => {
+          if (isLockedRef.current) {
+            // Increase delta and sensitivity to make horizontal/vertical movement much more obvious
+            const dt = 0.050; // 50ms 
+            const pixelsPerRad = width * 1.5; // Amplified sensitivity
+            
+            let deltaX = y * dt * pixelsPerRad;
+            let deltaY = x * dt * pixelsPerRad;
+            
+            gyroX.value -= deltaX;
+            gyroY.value -= deltaY;
+          }
+        });
+      } catch (err) {
+        console.warn('Gyroscope error:', err);
+      }
+    };
+
+    startGyro();
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, []);
+
+  const toggleLock = () => {
+    isLockedRef.current = !isLockedRef.current;
+    setIsLocked(isLockedRef.current);
+    if (!isLockedRef.current) {
+      gyroX.value = withSpring(0);
+      gyroY.value = withSpring(0);
+    }
+  };
 
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
@@ -101,14 +153,17 @@ const ARMockupScreen = () => {
   const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
 
   const rStyle = useAnimatedStyle(() => {
+    const finalTransX = translateX.value + gyroX.value;
+    const finalTransY = translateY.value + gyroY.value;
+    
     return {
       transform: [
         { perspective: 1000 },
-        { translateX: translateX.value },
-        { translateY: translateY.value },
+        { translateX: finalTransX },
+        { translateY: finalTransY },
         { scale: scale.value },
-        { rotateY: `${translateX.value / 2000}rad` },
-        { rotateX: `${-translateY.value / 2000}rad` },
+        { rotateY: `${finalTransX / 2000}rad` },
+        { rotateX: `${-finalTransY / 2000}rad` },
       ],
     };
   });
@@ -140,7 +195,6 @@ const ARMockupScreen = () => {
         audio={false}
       />
 
-      {/* Üst Çıkış/Geri Butonu */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.closeButton}
@@ -155,11 +209,22 @@ const ARMockupScreen = () => {
 
       <View style={styles.instructionContainer}>
         <Text style={styles.instructionText}>
-          Eseri duvara tutturmak için sürükleyin ve iki parmağınızla yakınlaştırarak boyutlandırın.
+          {isLocked 
+            ? "Duvara sabitlendi! Telefonunuzu sağa sola çevrildiğinizde eser duvarda asılı kalacaktır." 
+            : "Eseri istediğiniz konuma sürükleyin, ardından 'Duvara Sabitle' butonuna basın."}
         </Text>
       </View>
+      
+      <View style={styles.lockButtonContainer}>
+        <TouchableOpacity 
+          style={[styles.lockButton, isLocked && styles.lockButtonActive]} 
+          onPress={toggleLock}
+        >
+          <Ionicons name={isLocked ? "lock-closed" : "lock-open"} size={22} color="white" />
+          <Text style={styles.lockButtonText}>{isLocked ? "Kilidi Aç" : "Duvara Sabitle"}</Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Hareket ettirilebilir eserin görüntüsü */}
       <View style={styles.overlayContainer} pointerEvents="box-none">
         <GestureDetector gesture={composedGesture}>
           <Animated.View style={[styles.artworkWrapper, rStyle]}>
@@ -168,7 +233,7 @@ const ARMockupScreen = () => {
               style={styles.artworkImage}
               resizeMode="contain"
             />
-            {/* Gölgelendirme (Duvara asılmış hissiyatı için) */}
+            {/* Gölgelendirme */}
             <View style={styles.artworkShadow} />
           </Animated.View>
         </GestureDetector>
@@ -207,7 +272,7 @@ const styles = StyleSheet.create({
   },
   instructionContainer: {
     position: 'absolute',
-    bottom: 50,
+    top: Platform.OS === 'ios' ? 110 : 90,
     left: 20,
     right: 20,
     padding: 15,
@@ -221,6 +286,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     fontWeight: '500',
+    lineHeight: 20,
+  },
+  lockButtonContainer: {
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  lockButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+    borderWidth: 1.5,
+    borderColor: '#444',
+  },
+  lockButtonActive: {
+    backgroundColor: '#007AFF', // Blue color when locked
+    borderColor: '#005BBB',
+  },
+  lockButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
   overlayContainer: {
     ...StyleSheet.absoluteFillObject,
