@@ -60,7 +60,7 @@ function AppContent() {
         backgroundColor={theme.colors.background}
       />
       <NavigationContainer theme={theme}>
-        <Stack.Navigator initialRouteName="Login">
+        <Stack.Navigator initialRouteName="Login" screenOptions={{ gestureEnabled: true, animation: 'slide_from_right' }}>
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
           <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
           <Stack.Screen name="PasswordReset" component={PasswordResetScreen} options={{ headerShown: false }} />

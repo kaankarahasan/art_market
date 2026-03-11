@@ -26,7 +26,7 @@ const InboxStack = createNativeStackNavigator();
 // HOME STACK
 function HomeStackNavigator() {
   return (
-    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+    <HomeStack.Navigator screenOptions={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}>
       <HomeStack.Screen name="Home" component={HomeScreen} />
       <HomeStack.Screen name="Search" component={SearchScreen} />
       <HomeStack.Screen name="ProductDetail" component={ProductDetailScreen} />
@@ -39,7 +39,7 @@ function HomeStackNavigator() {
 // FAVORITES STACK
 function FavoritesStackNavigator() {
   return (
-    <FavoritesStack.Navigator screenOptions={{ headerShown: false }}>
+    <FavoritesStack.Navigator screenOptions={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}>
       <FavoritesStack.Screen name="Favorites" component={FavoritesScreen} />
       <FavoritesStack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <FavoritesStack.Screen name="OtherProfile" component={OtherProfileScreen} />
@@ -50,7 +50,7 @@ function FavoritesStackNavigator() {
 // INBOX STACK
 function InboxStackNavigator() {
   return (
-    <InboxStack.Navigator screenOptions={{ headerShown: false }}>
+    <InboxStack.Navigator screenOptions={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}>
       <InboxStack.Screen name="Inbox" component={InboxScreen} />
       <InboxStack.Screen name="Chat" component={ChatScreen} />
       <InboxStack.Screen name="OtherProfile" component={OtherProfileScreen} />
