@@ -237,9 +237,9 @@ export default function GeminiChatScreen() {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Text style={styles.backIcon}>‹</Text>
                 </TouchableOpacity>
-                
+
                 <Text style={styles.headerTitle}>Gemini</Text>
-                
+
                 <View style={styles.headerRight}>
                     <TouchableOpacity onPress={startNewChat} style={styles.newChatBtnAction}>
                         <Text style={styles.newChatBtn}>+</Text>
@@ -275,11 +275,7 @@ export default function GeminiChatScreen() {
                 </ScrollView>
             </Animated.View>
 
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-            >
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 <FlatList
                     ref={flatListRef}
                     data={messages}
