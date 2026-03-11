@@ -103,9 +103,12 @@ const ARMockupScreen = () => {
   const rStyle = useAnimatedStyle(() => {
     return {
       transform: [
+        { perspective: 1000 },
         { translateX: translateX.value },
         { translateY: translateY.value },
         { scale: scale.value },
+        { rotateY: `${translateX.value / 2000}rad` },
+        { rotateX: `${-translateY.value / 2000}rad` },
       ],
     };
   });
