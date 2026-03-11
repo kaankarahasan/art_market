@@ -568,10 +568,19 @@ const ProductDetailScreen = () => {
       {!isOwner && productData.ownerId && currentUser && (
         <View style={[
           styles.messageButtonContainer,
-          { paddingBottom: 12 }
+          { paddingBottom: insets.bottom > 0 ? insets.bottom : 12 }
         ]}>
           <TouchableOpacity
-            style={[styles.arButton, { marginBottom: 10 }]}
+            style={styles.messageButton}
+            onPress={handleSendMessage}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.background} />
+            <Text style={[styles.messageButtonText, { color: colors.background }]}>Mesaj Gönder</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.arButton}
             onPress={() => {
               if (productData.modelGlbUrl || productData.modelUsdzUrl) {
                 handleOpenAR();
@@ -586,17 +595,8 @@ const ProductDetailScreen = () => {
             }}
             activeOpacity={0.8}
           >
-            <Ionicons name={(productData.modelGlbUrl || productData.modelUsdzUrl) ? "cube-outline" : "camera-outline"} size={22} color={colors.text} />
-            <Text style={[styles.arButtonText, { color: colors.text }]}>Duvarınızda Görün</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.messageButton}
-            onPress={handleSendMessage}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.background} />
-            <Text style={[styles.messageButtonText, { color: colors.background }]}>Mesaj Gönder</Text>
+            <Ionicons name="camera-outline" size={22} color={colors.text} />
+            <Text style={[styles.arButtonText, { color: colors.text }]}>AR</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -811,6 +811,9 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     backgroundColor: colors.background,
     paddingHorizontal: 20,
     paddingTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
@@ -820,6 +823,7 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     borderTopColor: colors.card,
   },
   messageButton: {
+    flex: 1,
     backgroundColor: colors.text,
     paddingVertical: 14,
     borderRadius: 12,
@@ -834,7 +838,8 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
   },
   arButton: {
     backgroundColor: 'transparent',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -844,8 +849,8 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
   },
   arButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 10,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 
   imageHeaderContainer: {
