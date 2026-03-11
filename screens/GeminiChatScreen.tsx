@@ -275,7 +275,11 @@ export default function GeminiChatScreen() {
                 </ScrollView>
             </Animated.View>
 
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            >
                 <FlatList
                     ref={flatListRef}
                     data={messages}
