@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ const imageInnerWidth = columnWidth - 20;
 const OtherProfileScreen = () => {
   const { colors, isDarkTheme } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
   const route = useRoute<OtherProfileRouteProp>();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { userId } = route.params;
@@ -206,7 +207,7 @@ const OtherProfileScreen = () => {
             </Text>
 
             <Text style={styles.price}>
-              ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
+              ₺{item.price ? Number(item.price).toLocaleString('tr-TR') : '0'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -231,7 +232,7 @@ const OtherProfileScreen = () => {
         <Text style={styles.headerUsername}>@{userData?.username || 'Kullanıcı'}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}>
         <View style={[styles.container, { backgroundColor: colors.background }]}>
           <View style={[styles.profileCard, { backgroundColor: colors.card, marginTop: 10 }]}>
             <TouchableOpacity onPress={() => setModalVisible(true)}>

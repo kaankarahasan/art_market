@@ -29,6 +29,7 @@ import ChatScreen from './screens/ChatScreen';
 import GeminiChatScreen from './screens/GeminiChatScreen';
 import PasswordResetScreen from './screens/PasswordResetScreen';
 import SearchScreen from './screens/SearchScreen';
+import ARMockupScreen from './screens/ARMockup/ARMockupScreen';
 
 import { RootStackParamList } from './routes/types';
 import { FavoriteUsersProvider } from './contexts/FavoritesContext';
@@ -83,6 +84,7 @@ function AppContent() {
           <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="GeminiChat" component={GeminiChatScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ARMockup" component={ARMockupScreen} options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </>

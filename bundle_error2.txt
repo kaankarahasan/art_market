@@ -1,0 +1,12 @@
+env: load .env
+env: export GEMINI_API_KEY
+Starting Metro Bundler
+Android ./index.ts ▓▓▓▓▓░░░░░░░░░░░ 31.6% ( 49/231)
+Android ./index.ts ▓▓▓▓▓░░░░░░░░░░░ 31.6% (217/388)
+Android ./index.ts ▓▓▓▓▓▓▓░░░░░░░░░ 46.6% (549/804)
+Android ./index.ts ▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 80.4% ( 922/1028)
+Android ./index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.2% (1151/1205)
+Android Bundled 18740ms index.ts (1414 modules)
+Writing bundle output to: android/app/src/main/assets/index.android.bundle
+Copying 15 asset files
+Done writing bundle output

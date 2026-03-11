@@ -20,9 +20,12 @@ export type Product = {
   isSold?: boolean;
   createdAt?: any;
   updatedAt?: any;
-  viewCount?: number; // <--- BU SATIRI EKLEYİN
+  viewCount?: number;
   isSeeded?: boolean;
   aiVisualTags?: string[];      // AI görsel analiz etiketleri
+  modelGlbUrl?: string;         // Android/Web AR modeli
+  modelUsdzUrl?: string;        // iOS AR modeli
+  has3DModel?: boolean;         // 3D model var mı?
 };
 
 // Root Stack Param Listesi
@@ -52,4 +55,5 @@ export type RootStackParamList = {
   Chat: { currentUserId: string; otherUserId: string };
   Search: undefined;
   GeminiChat: undefined;
+  ARMockup: { imageUrl: string };
 };

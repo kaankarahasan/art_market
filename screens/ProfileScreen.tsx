@@ -134,7 +134,7 @@ const ProfileScreen = () => {
     }
   }, [profileId]);
 
-  useFocusEffect(useCallback(() => { fetchUserData(); }, [fetchUserData]));
+  useEffect(() => { fetchUserData(); }, [fetchUserData]);
 
   const handleImageLoad = (productId: string, width: number, height: number) => {
     const imageWidth = columnWidth - 20;
@@ -194,7 +194,7 @@ const ProfileScreen = () => {
             <Text style={styles.title} numberOfLines={2}>
               {item.title} {item.year ? `, ${item.year}` : ''}
             </Text>
-            <Text style={styles.price}>₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}</Text>
+            <Text style={styles.price}>₺{item.price ? Number(item.price).toLocaleString('tr-TR') : '0'}</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -239,7 +239,7 @@ const ProfileScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: 60,
+          paddingBottom: 80 + insets.bottom,
         }}
       >
         <View style={[styles.profileCard, { marginTop: 8 }]}>

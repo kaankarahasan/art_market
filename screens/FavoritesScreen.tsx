@@ -127,7 +127,7 @@ const FavoritesScreen = () => {
             </Text>
 
             <Text style={styles.price}>
-              ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
+              ₺{item.price ? Number(item.price).toLocaleString('tr-TR') : '0'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -158,7 +158,7 @@ const FavoritesScreen = () => {
       {favoriteItems.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.text }]}>Henüz favori ürün yok.</Text>
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: 20, paddingTop: 10 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 80 + insets.bottom, paddingTop: 10 }} showsVerticalScrollIndicator={false}>
           <View style={styles.masonryContainer}>
             <View style={styles.column}>{leftColumn.map(renderProductCard)}</View>
             <View style={styles.column}>{rightColumn.map(renderProductCard)}</View>

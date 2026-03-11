@@ -11,6 +11,8 @@ import {
   StatusBar,
   Platform,
   FlatList,
+  Linking,
+  Alert
 } from 'react-native';
 import {
   NavigationProp,
@@ -202,6 +204,44 @@ const ProductDetailScreen = () => {
     setActiveIndex(index);
   };
 
+  const handleOpenAR = async () => {
+    const modelUrl = Platform.OS === 'ios' 
+      ? productData.modelUsdzUrl 
+      : productData.modelGlbUrl;
+
+    if (!modelUrl) {
+      Alert.alert('Hata', 'Bu ürün için 3D model henüz hazır değil.');
+      return;
+    }
+
+    try {
+      if (Platform.OS === 'ios') {
+        // iOS Quick Look: simply open the .usdz URL
+        await Linking.openURL(modelUrl);
+      } else {
+        // Android Scene Viewer: use specialized intent URL
+        // 'ar_preferred' modu cihaz AR destekliyorsa AR'da, desteklemiyorsa 3D modunda açmasını sağlar.
+        const sceneViewerUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${modelUrl}&mode=ar_preferred#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;`;
+        await Linking.openURL(sceneViewerUrl);
+      }
+    } catch (err) {
+      console.log('AR açılırken hata, alternatif deneniyor:', err);
+      
+      if (Platform.OS === 'android') {
+        try {
+          // ARCore yüklü değilse (örn A serisi Samsunglar), Google Uygulaması üzerinden 3D modunda açmaya zorlarız.
+          const fallbackUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${modelUrl}&mode=3d_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
+          await Linking.openURL(fallbackUrl);
+        } catch (innerErr) {
+          console.error('Google App ile 3D açılırken hata:', innerErr);
+          Alert.alert('Bilgi', 'Cihazınızda 3D veya AR modeli açılamadı. Google uygulamasının yüklü ve güncel olduğundan emin olun.');
+        }
+      } else {
+        Alert.alert('Bilgi', 'AR modeli açılamadı. Lütfen desteklenen bir cihaz kullandığınızdan emin olun.');
+      }
+    }
+  };
+
   const renderImages = () => {
     const images: string[] = Array.isArray(productData.imageUrls)
       ? productData.imageUrls.filter((url) => url && url.trim() !== '')
@@ -351,7 +391,7 @@ const ProductDetailScreen = () => {
           </Text>
 
           <Text style={styles.price}>
-            ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
+            ₺{item.price ? Number(item.price).toLocaleString('tr-TR') : '0'}
           </Text>
         </View>
       </TouchableOpacity>
@@ -440,7 +480,7 @@ const ProductDetailScreen = () => {
           </Text>
 
           <Text style={styles.mainPrice}>
-            {productData.price ? `${productData.price} ₺` : 'Belirtilmemiş'}
+            {productData.price ? `₺${Number(productData.price).toLocaleString('tr-TR')}` : 'Belirtilmemiş'}
           </Text>
 
           <Text style={styles.description}>
@@ -510,6 +550,26 @@ const ProductDetailScreen = () => {
           styles.messageButtonContainer,
           { paddingBottom: 12 }
         ]}>
+          <TouchableOpacity
+            style={[styles.arButton, { marginBottom: 10 }]}
+            onPress={() => {
+              if (productData.modelGlbUrl || productData.modelUsdzUrl) {
+                handleOpenAR();
+              } else {
+                const imageUrl = Array.isArray(productData.imageUrls)
+                  ? productData.imageUrls[0]
+                  : productData.imageUrls;
+                if (imageUrl) {
+                  navigation.navigate('ARMockup', { imageUrl });
+                }
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name={(productData.modelGlbUrl || productData.modelUsdzUrl) ? "cube-outline" : "camera-outline"} size={22} color={colors.text} />
+            <Text style={[styles.arButtonText, { color: colors.text }]}>Duvarınızda Görün</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.messageButton}
             onPress={handleSendMessage}
@@ -750,6 +810,21 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
   messageButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  arButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.text,
+  },
+  arButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
     marginLeft: 10,
   },
 

@@ -113,16 +113,14 @@ const HomeScreen = () => {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      const loadData = async () => {
-        setLoading(true);
-        await fetchData();
-        setLoading(false);
-      };
-      loadData();
-    }, [])
-  );
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await fetchData();
+      setLoading(false);
+    };
+    loadData();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -413,7 +411,7 @@ const HomeScreen = () => {
             </Text>
 
             <Text style={styles.price}>
-              ₺{item.price ? item.price.toLocaleString('tr-TR') : '0'}
+              ₺{item.price ? Number(item.price).toLocaleString('tr-TR') : '0'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -517,7 +515,7 @@ const HomeScreen = () => {
       </View>
 
       {isSearchActive ? (
-        <ScrollView style={{ flex: 1, backgroundColor: colors.background }} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: tabBarHeight + 20 }} keyboardShouldPersistTaps="handled">
           {searchQuery.length > 0 ? (
             <View style={{ padding: 16 }}>
               {filteredUsers.length > 0 && (
@@ -542,7 +540,7 @@ const HomeScreen = () => {
                       <Image source={{ uri: Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls || item.imageUrl }} style={{ width: 50, height: 50, borderRadius: 8, marginRight: 12, backgroundColor: '#eee' }} />
                       <View>
                         <Text style={{ color: colors.text, fontWeight: '600' }}>{item.title}</Text>
-                        <Text style={{ color: colors.secondaryText, fontSize: 12 }}>{item.price} ₺</Text>
+                        <Text style={{ color: colors.secondaryText, fontSize: 12 }}>₺{Number(item.price).toLocaleString('tr-TR')}</Text>
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -589,7 +587,7 @@ const HomeScreen = () => {
                   colors={[colors.text]}
                 />
               }
-              contentContainerStyle={{ paddingBottom: tabBarHeight }}
+              contentContainerStyle={{ paddingBottom: tabBarHeight + 20 }}
               onScroll={({ nativeEvent }) => {
                 if (isCloseToBottom(nativeEvent)) {
                   loadMoreData();

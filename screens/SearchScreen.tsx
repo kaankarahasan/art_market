@@ -121,16 +121,19 @@ const SearchScreen = () => {
       navigation.getParent<BottomTabNavigationProp<any>>()?.setOptions({
         tabBarStyle: { display: 'none' }
       });
-      loadRecentSearches();
-
-      if (route.params?.initialQuery) {
-        const timer = setTimeout(() => {
-          inputRef.current?.focus();
-        }, 100);
-        return () => clearTimeout(timer);
-      }
-    }, [navigation, route.params?.initialQuery])
+    }, [navigation])
   );
+
+  useEffect(() => {
+    loadRecentSearches();
+
+    if (route.params?.initialQuery) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [navigation, route.params?.initialQuery]);
 
   useEffect(() => {
     if (route.params?.initialQuery) {
@@ -707,7 +710,7 @@ const SearchScreen = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           style={styles.scrollView}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
           keyboardShouldPersistTaps="handled"
           onScrollBeginDrag={Keyboard.dismiss}
         >

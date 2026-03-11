@@ -13,7 +13,7 @@ import { db, auth } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useThemeContext } from '../contexts/ThemeContext';
 
@@ -35,6 +35,7 @@ export default function InboxScreen() {
   const currentUser = auth.currentUser;
   const navigation = useNavigation<ChatScreenNavigationProp>();
   const [chats, setChats] = useState<ChatItem[]>([]);
+  const insets = useSafeAreaInsets();
   const [profileCache, setProfileCache] = useState<{ [key: string]: { photoURL?: string, displayName?: string } }>({});
 
   useEffect(() => {
@@ -163,7 +164,7 @@ export default function InboxScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -183,7 +184,10 @@ export default function InboxScreen() {
             <Text style={{ color: colors.text }}>Hiç sohbet yok.</Text>
           </View>
         }
-        contentContainerStyle={chats.length === 0 ? { flex: 1 } : undefined}
+        contentContainerStyle={[
+          chats.length === 0 ? { flex: 1 } : {},
+          { paddingBottom: 80 + insets.bottom }
+        ]}
       />
     </SafeAreaView>
   );

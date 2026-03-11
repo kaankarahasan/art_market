@@ -55,7 +55,7 @@ const SettingsScreen = () => {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Ayarlar</Text>
       </View>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 40 + insets.bottom }]}>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Hesap</Text>
           <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>

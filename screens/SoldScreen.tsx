@@ -59,7 +59,7 @@ const SoldScreen = () => {
         {item.title}
       </Text>
       {item.price && (
-        <Text style={[styles.price, { color: colors.text + 'cc' }]}>{item.price} ₺</Text>
+        <Text style={[styles.price, { color: colors.text + 'cc' }]}>₺{Number(item.price).toLocaleString('tr-TR')}</Text>
       )}
     </View>
   );
