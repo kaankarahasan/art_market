@@ -8,6 +8,7 @@ import {
   Dimensions,
   Alert,
   Platform,
+  Linking,
 } from 'react-native';
 import {
   Camera,
@@ -51,8 +52,21 @@ const ARMockupScreen = () => {
       if (!hasPermission) {
         const result = await requestPermission();
         if (!result) {
-          Alert.alert('Erişim İzni', 'Kameraya erişim izni vermeniz gerekiyor.');
-          navigation.goBack();
+          Alert.alert(
+            'Kamera İzni Gerekli',
+            'Sanal ortamda eseri görüntüleyebilmeniz için kamera erişimine ihtiyacımız var. Lütfen ayarlardan kameraya izin verin.',
+            [
+              { text: 'İptal', style: 'cancel', onPress: () => navigation.goBack() },
+              {
+                text: 'Ayarlar',
+                onPress: () => {
+                  Linking.openSettings();
+                  navigation.goBack();
+                },
+              },
+            ],
+            { cancelable: false }
+          );
         }
       }
     })();
