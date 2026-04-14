@@ -1,5 +1,5 @@
 import 'fast-text-encoding';
-import 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import React from 'react';
 import { StatusBar } from 'react-native';
 import 'react-native-get-random-values';
@@ -32,7 +32,7 @@ import ChatScreen from './screens/ChatScreen';
 import GeminiChatScreen from './screens/GeminiChatScreen';
 import PasswordResetScreen from './screens/PasswordResetScreen';
 import SearchScreen from './screens/SearchScreen';
-import ARMockupScreen from './screens/ARMockup/ARMockupScreen';
+import ViewInRoomScreen from './screens/ViewInRoomScreen';
 
 import { RootStackParamList } from './routes/types';
 import { FavoriteUsersProvider } from './contexts/FavoritesContext';
@@ -102,7 +102,7 @@ function AppContent() {
           <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="GeminiChat" component={GeminiChatScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ARMockup" component={ARMockupScreen} options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="ViewInRoom" component={ViewInRoomScreen} options={{ headerShown: false, presentation: 'fullScreenModal', orientation: 'landscape' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </>
@@ -111,12 +111,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <FavoriteUsersProvider>
-      <FavoriteItemsProvider>
-        <ThemeProvider>
-          <AppContent />
-        </ThemeProvider>
-      </FavoriteItemsProvider>
-    </FavoriteUsersProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <FavoriteUsersProvider>
+        <FavoriteItemsProvider>
+          <ThemeProvider>
+            <AppContent />
+          </ThemeProvider>
+        </FavoriteItemsProvider>
+      </FavoriteUsersProvider>
+    </GestureHandlerRootView>
   );
 }

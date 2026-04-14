@@ -1,26 +1,37 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.configuration.updateBuildConfiguration": "disabled",
     "java.compile.nullAnalysis.mode": "automatic",
     "java.import.exclusions": [
-        "**/node_modules/**"
+        "**/node_modules/**",
+        "**/.gradle/**",
+        "**/build/**",
+        "**/bin/**"
     ],
     "java.project.resourceFilters": [
-        "node_modules"
+        "node_modules",
+        ".gradle",
+        "build",
+        "bin"
     ],
     "files.watcherExclude": {
         "**/node_modules/**": true,
         "**/android/build/**": true,
-        "**/ios/build/**": true
+        "**/ios/build/**": true,
+        "**/.gradle/**": true
     },
     "search.exclude": {
         "**/node_modules/**": true,
         "**/android/build/**": true,
-        "**/ios/build/**": true
+        "**/ios/build/**": true,
+        "**/.gradle/**": true
     },
     "files.exclude": {
         "**/node_modules/**/build.gradle": true,
         "**/node_modules/**/.settings": true,
         "**/node_modules/**/.project": true,
-        "**/node_modules/**/.classpath": true
+        "**/node_modules/**/.classpath": true,
+        "**/node_modules/**/bin": true,
+        "**/node_modules/**/.cxx": true
     }
 }
+

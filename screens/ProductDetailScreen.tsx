@@ -204,52 +204,18 @@ const ProductDetailScreen = () => {
     setActiveIndex(index);
   };
 
-  const handleOpenAR = async () => {
-    const modelUrl = Platform.OS === 'ios' 
-      ? productData.modelUsdzUrl 
-      : productData.modelGlbUrl;
-
-    const navigateToMockup = () => {
-      const urlToUse = productData.processedTextureUrl || (Array.isArray(productData.imageUrls)
-        ? productData.imageUrls[0]
-        : productData.imageUrls);
+  const handleViewInRoom = () => {
+    const urlToUse = Array.isArray(productData.imageUrls)
+      ? productData.imageUrls[0]
+      : productData.imageUrls;
       
-      if (urlToUse) {
-        navigation.navigate('ARMockup', { imageUrl: urlToUse });
-      } else {
-        Alert.alert('Hata', 'Görüntülenecek bir görsel bulunamadı.');
-      }
-    };
-
-    if (!modelUrl) {
-      navigateToMockup();
-      return;
-    }
-
-    try {
-      if (Platform.OS === 'ios') {
-        // iOS Quick Look
-        await Linking.openURL(modelUrl);
-      } else {
-        // Android Scene Viewer
-        const sceneViewerUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${modelUrl}&mode=ar_preferred#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;`;
-        await Linking.openURL(sceneViewerUrl);
-      }
-    } catch (err) {
-      console.log('Native AR failed, redirecting to custom Mockup:', err);
-      
-      if (Platform.OS === 'android') {
-        try {
-          // Fallback to 3D mode first
-          const fallbackUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${modelUrl}&mode=3d_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
-          await Linking.openURL(fallbackUrl);
-        } catch (innerErr) {
-          console.log('Google App fallback failed, using custom Mockup');
-          navigateToMockup();
-        }
-      } else {
-        navigateToMockup();
-      }
+    if (urlToUse) {
+      navigation.navigate('ViewInRoom', { 
+        imageUrl: urlToUse, 
+        dimensions: productData.dimensions 
+      });
+    } else {
+      Alert.alert('Hata', 'Görüntülenecek bir görsel bulunamadı.');
     }
   };
 
@@ -592,11 +558,11 @@ const ProductDetailScreen = () => {
 
           <TouchableOpacity
             style={styles.arButton}
-            onPress={handleOpenAR}
+            onPress={handleViewInRoom}
             activeOpacity={0.8}
           >
-            <Ionicons name="camera-outline" size={22} color={colors.text} />
-            <Text style={[styles.arButtonText, { color: colors.text }]}>AR</Text>
+            <Ionicons name="easel-outline" size={22} color={colors.text} />
+            <Text style={[styles.arButtonText, { color: colors.text }]}>Odada Gör</Text>
           </TouchableOpacity>
         </View>
       )}

@@ -56,5 +56,8 @@ export type RootStackParamList = {
   Chat: { currentUserId: string; otherUserId: string };
   Search: undefined;
   GeminiChat: undefined;
-  ARMockup: { imageUrl: string };
+  ViewInRoom: { 
+    imageUrl: string; 
+    dimensions?: { height?: number | null; width?: number | null; depth?: number | null; };
+  };
 };
