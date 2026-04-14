@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { onSnapshot, collection, doc, getDoc } from '@react-native-firebase/firestore';
@@ -11,6 +11,7 @@ type User = {
   uid: string;
   username?: string;
   email?: string;
+  photoURL?: string;
 };
 
 type FollowingScreenRouteProp = RouteProp<RootStackParamList, 'Following'>;
@@ -45,6 +46,7 @@ const FollowingScreen = () => {
                 uid: followingId,
                 username: data.username,
                 email: data.email,
+                photoURL: data.photoURL || data.profileImage,
               });
             }
           }
@@ -83,7 +85,6 @@ const FollowingScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.header, { color: colors.text }]}>Takip Ettiklerin</Text>
 
       {following.length === 0 ? (
         <View style={styles.center}>
@@ -107,6 +108,14 @@ const FollowingScreen = () => {
                   : navigation.navigate('OtherProfile', { userId: item.uid })
               }
             >
+              <Image
+                source={
+                  item.photoURL
+                    ? { uri: item.photoURL }
+                    : require('../assets/default-avatar.png')
+                }
+                style={styles.avatar}
+              />
               <Text style={[styles.username, { color: colors.text }]}>
                 {item.username || item.email || 'Bilinmeyen'}
               </Text>
@@ -125,9 +134,17 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
   userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
   },
   username: { fontSize: 16 },
   emptyText: {

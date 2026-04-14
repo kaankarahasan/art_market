@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { onSnapshot, collection, doc, getDoc } from '@react-native-firebase/firestore';
@@ -18,6 +19,7 @@ type User = {
   uid: string;
   username?: string;
   email?: string;
+  photoURL?: string;
 };
 
 type FollowersScreenRouteProp = RouteProp<RootStackParamList, 'Followers'>;
@@ -52,6 +54,7 @@ const FollowersScreen = () => {
                 uid: followerId,
                 username: data.username,
                 email: data.email,
+                photoURL: data.photoURL || data.profileImage,
               });
             }
           }
@@ -89,7 +92,6 @@ const FollowersScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.header, { color: colors.text }]}>Takipçiler</Text>
 
       {followers.length === 0 ? (
         <View style={styles.center}>
@@ -112,6 +114,14 @@ const FollowersScreen = () => {
               }
               style={[styles.userCard, { backgroundColor: colors.card }]}
             >
+              <Image
+                source={
+                  item.photoURL
+                    ? { uri: item.photoURL }
+                    : require('../assets/default-avatar.png')
+                }
+                style={styles.avatar}
+              />
               <Text style={[styles.username, { color: colors.text }]}>
                 {item.username || item.email}
               </Text>
@@ -130,9 +140,17 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
   userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
   },
   username: { fontSize: 16 },
   emptyText: {
