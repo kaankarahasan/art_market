@@ -84,8 +84,8 @@ function AppContent() {
           <Stack.Screen name="PasswordReset" component={PasswordResetScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
           <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Followers" component={FollowersScreen} />
-          <Stack.Screen name="Following" component={FollowingScreen} />
+          <Stack.Screen name="Followers" component={FollowersScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Following" component={FollowingScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Sold" component={SoldScreen} options={{ title: 'Sold Products' }} />
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
           <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
