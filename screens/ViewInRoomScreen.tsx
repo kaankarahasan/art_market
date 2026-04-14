@@ -1,3 +1,6 @@
+/**
+ * ViewInRoomScreen.tsx - Perfect Ratio & 5M Reference Scaling
+ */
 import React from 'react';
 import {
   StyleSheet,
@@ -7,14 +10,26 @@ import {
   Image,
   useWindowDimensions,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../routes/types';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-// Odadaki bank veya duvarın temsil edilen toplam genişliği (cm cinsinden örnek değer)
-// YATAY modda ekran daha geniş olacağı için referans duvar genişliğini de daha geniş tutuyoruz.
-const ROOM_WALL_WIDTH_CM = 450;
+// --- AYARLANABİLİR PARAMETRELER ---
+// Arka plan resminizin kendi Orijinal Çözünürlüğü (Bozulmaları önlemek için okundu)
+const IMG_WIDTH = 2816;
+const IMG_HEIGHT = 1536;
+const IMG_ASPECT = IMG_WIDTH / IMG_HEIGHT;
+
+// Saksı ve Lambader arasındaki mesafe (cm)
+const REFERENCE_DISTANCE_CM = 500; 
+
+// Saksı ve Lambader'in resim içindeki X ekseni koordinatları (0.0 sol köşe, 1.0 sağ köşe)
+// Resmi göz kararı kontrol ederek bu değerlerle aynen oynayabilirsiniz:
+const LEFT_OBJECT_X_PCT = 0.15;  // Örn: Soldaki lambader
+const RIGHT_OBJECT_X_PCT = 0.85; // Örn: Sağdaki saksı
+// ----------------------------------
 
 type ViewInRoomRouteProp = RouteProp<RootStackParamList, 'ViewInRoom'>;
 
@@ -23,28 +38,73 @@ const ViewInRoomScreen = () => {
   const route = useRoute<ViewInRoomRouteProp>();
   const { imageUrl, dimensions } = route.params;
   
-  // useWindowDimensions ile ekran yatay/dikey dönüşünü otomatik yakalarız.
-  const { width } = useWindowDimensions();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-  // Gerçek dünya ölçülerini (cm) ekrandaki piksellere dönüştürme oranı
-  const pixelsPerCm = width / ROOM_WALL_WIDTH_CM;
+  // 1. Ekran boyutuna göre arka plan resminin "tam sığacak" (contain) ama "boşluksuz çerçevenin" piksellerini bulalım
+  const screenAspect = screenWidth / screenHeight;
+  let renderWidth = screenWidth;
+  let renderHeight = screenHeight;
 
-  // Eserin boyutları. Gittiği veride ölçü yoksa varsayılan olarak 60x80 cm kabul edelim.
+  if (screenAspect > IMG_ASPECT) {
+    // Ekran resimden daha genişse (resmin yanlarında boşluk kalır) -> Boyut yüksekliğe kilitlenir
+    renderHeight = screenHeight;
+    renderWidth = renderHeight * IMG_ASPECT;
+  } else {
+    // Ekran resimden daha darsa (resmin alt/üstünde boşluk kalır) -> Boyut genişliğe kilitlenir
+    renderWidth = screenWidth;
+    renderHeight = renderWidth / IMG_ASPECT;
+  }
+
+  // 2. Piksel -> CM oranını saksı/lambader arasına göre kur (Sadece Görünen Genişlik Üzerinden)
+  const pixelDistance = renderWidth * (RIGHT_OBJECT_X_PCT - LEFT_OBJECT_X_PCT);
+  const pixelsPerCm = pixelDistance / REFERENCE_DISTANCE_CM;
+
+  // 3. Eserin boyutlarını piksele çevir (Varsayılan 60x80)
   const artworkWidthCm = dimensions?.width || 60;
   const artworkHeightCm = dimensions?.height || (dimensions?.width ? dimensions.width : 80);
 
-  const calculatedPixelWidth = artworkWidthCm * pixelsPerCm;
-  const calculatedPixelHeight = artworkHeightCm * pixelsPerCm;
+  const artworkWidthPx = artworkWidthCm * pixelsPerCm;
+  const artworkHeightPx = artworkHeightCm * pixelsPerCm;
+
+  // 4. İki objenin tam merkezi X koordinatını hesapla
+  const centerX_PCT = (LEFT_OBJECT_X_PCT + RIGHT_OBJECT_X_PCT) / 2;
+
+  // X ekseninde merkezde, Y ekseninde ise resmin genelde göz hizası olan hafif yukarısında (%40)
+  const artworkLeftPx = (renderWidth * centerX_PCT) - (artworkWidthPx / 2);
+  const artworkTopPx = (renderHeight * 0.40) - (artworkHeightPx / 2); 
 
   return (
     <View style={styles.container}>
-      {/* Arka Plan Oda Görseli (Ekrana tam sığdırıldı) */}
-      <View style={StyleSheet.absoluteFillObject}>
+      <StatusBar hidden />
+      {/* Resmin tam sınırlarına oturan kapsayıcı "Kutu", resizeMode: contain olan resmin asıl bulunduğu alanı simüle eder */}
+      <View style={{ width: renderWidth, height: renderHeight, overflow: 'hidden' }}>
+        
+        {/* view_in_room_final.png - Cache'i kırmak ve yenilemek için ismini final yaptım */}
         <Image
-          source={require('../assets/view_in_room_fixed.png')}
+          source={require('../assets/view_in_room_final.png')}
           style={{ width: '100%', height: '100%' }}
-          resizeMode="contain"
+          resizeMode="cover" 
         />
+
+        {/* Eser Katmanı - Tam milimetrik matematik hesabı lokasyonu */}
+        <View 
+          style={{
+            position: 'absolute',
+            left: artworkLeftPx,
+            top: artworkTopPx,
+            width: artworkWidthPx,
+            height: artworkHeightPx,
+          }}
+          pointerEvents="none"
+        >
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.artworkImage}
+            resizeMode="contain"
+          />
+          <View style={styles.artworkShadow} />
+        </View>
+
       </View>
 
       <View style={styles.header}>
@@ -56,34 +116,6 @@ const ViewInRoomScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.instructionContainer}>
-        <Text style={styles.instructionText}>
-          Eser gerçek boyutlarına ({artworkWidthCm}x{artworkHeightCm} cm) uygun olarak hizalandı.
-        </Text>
-      </View>
-
-      {/* Sabit ve Orantılı Eser Görseli */}
-      {/* pointerEvents none yaparak sürüklenme veya dokunmaları devre dışı bırakıyoruz */}
-      <View style={styles.overlayContainer} pointerEvents="none">
-        <View
-          style={{
-            width: calculatedPixelWidth,
-            height: calculatedPixelHeight,
-            justifyContent: 'center',
-            alignItems: 'center',
-            // Eğer referans resmin tam ortasını değil biraz yukarısını istiyorsanız translateY eklenebilir:
-            // transform: [{ translateY: -20 }] 
-          }}
-        >
-          <Image
-            source={{ uri: imageUrl }}
-            style={styles.artworkImage}
-            resizeMode="contain" // Orijinal görsel kırpılmadan sığdırılır
-          />
-          {/* Gölgelendirme Efekti */}
-          <View style={styles.artworkShadow} />
-        </View>
-      </View>
     </View>
   );
 };
@@ -94,6 +126,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     position: 'absolute',
@@ -109,27 +143,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  instructionContainer: {
-    position: 'absolute',
-    bottom: 25, // Yatay ekranda instruction metnini alta almak daha temiz bir görünüm yaratır
-    alignSelf: 'center',
-    padding: 10,
-    paddingHorizontal: 15,
-    borderRadius: 15,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    zIndex: 10,
-  },
-  instructionText: {
-    color: 'white',
-    fontSize: 13,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  overlayContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   artworkImage: {
     width: '100%',
     height: '100%',
@@ -140,7 +153,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.6,
     shadowRadius: 15,
     elevation: 20,
     zIndex: 1,

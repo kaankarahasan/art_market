@@ -78,6 +78,8 @@ const ProductDetailScreen = () => {
   const [otherProducts, setOtherProducts] = useState<Product[]>([]);
   const [loadingOtherProducts, setLoadingOtherProducts] = useState(false);
 
+  const isNavigatingToModal = useRef(false);
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
 
@@ -94,11 +96,14 @@ const ProductDetailScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
+      isNavigatingToModal.current = false;
       const parent = navigation.getParent<BottomTabNavigationProp<any>>();
       const defaultStyle = parent?.getState()?.routes[0]?.params?.tabBarStyle;
       parent?.setOptions?.({ tabBarStyle: { display: 'none' } });
       return () => {
-        parent?.setOptions?.({ tabBarStyle: defaultStyle });
+        if (!isNavigatingToModal.current) {
+          parent?.setOptions?.({ tabBarStyle: defaultStyle });
+        }
       };
     }, [navigation])
   );
@@ -205,6 +210,7 @@ const ProductDetailScreen = () => {
   };
 
   const handleViewInRoom = () => {
+    isNavigatingToModal.current = true;
     const urlToUse = Array.isArray(productData.imageUrls)
       ? productData.imageUrls[0]
       : productData.imageUrls;
@@ -542,22 +548,24 @@ const ProductDetailScreen = () => {
         )}
       </ScrollView>
 
-      {!isOwner && productData.ownerId && currentUser && (
+      {productData.ownerId && currentUser && (
         <View style={[
           styles.messageButtonContainer,
           { paddingBottom: insets.bottom > 0 ? insets.bottom : 12 }
         ]}>
-          <TouchableOpacity
-            style={styles.messageButton}
-            onPress={handleSendMessage}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.background} />
-            <Text style={[styles.messageButtonText, { color: colors.background }]}>Mesaj Gönder</Text>
-          </TouchableOpacity>
+          {!isOwner && (
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={handleSendMessage}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.background} />
+              <Text style={[styles.messageButtonText, { color: colors.background }]}>Mesaj Gönder</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
-            style={styles.arButton}
+            style={[styles.arButton, isOwner && { flex: 1 }]}
             onPress={handleViewInRoom}
             activeOpacity={0.8}
           >
