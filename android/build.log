@@ -1,0 +1,360 @@
+> Task :gradle-plugin:shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:settings-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:settings-plugin:pluginDescriptors UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:processResources UP-TO-DATE
+> Task :gradle-plugin:shared:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:shared:compileJava NO-SOURCE
+> Task :gradle-plugin:shared:processResources NO-SOURCE
+> Task :gradle-plugin:shared:classes UP-TO-DATE
+> Task :gradle-plugin:shared:jar UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:compileJava NO-SOURCE
+> Task :gradle-plugin:settings-plugin:classes UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:jar UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:react-native-gradle-plugin:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:compileJava NO-SOURCE
+> Task :gradle-plugin:react-native-gradle-plugin:pluginDescriptors UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:processResources UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:classes UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:jar UP-TO-DATE
+
+> Configure project :react-native-firebase_app
+:react-native-firebase_app package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/app/package.json
+:react-native-firebase_app:firebase.bom using default value: 34.8.0
+:react-native-firebase_app:play.play-services-auth using default value: 21.4.0
+:react-native-firebase_app package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/app/package.json
+:react-native-firebase_app:version set from package.json: 23.8.6 (23,8,6 - 23008006)
+:react-native-firebase_app:android.compileSdk using custom value: 36
+:react-native-firebase_app:android.targetSdk using custom value: 36
+:react-native-firebase_app:android.minSdk using custom value: 24
+:react-native-firebase_app:reactNativeAndroidDir /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native
+
+> Configure project :react-native-firebase_auth
+:react-native-firebase_auth package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/auth/package.json
+:react-native-firebase_app package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/app/package.json
+:react-native-firebase_auth:firebase.bom using default value: 34.8.0
+:react-native-firebase_auth package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/auth/package.json
+:react-native-firebase_auth:version set from package.json: 23.8.6 (23,8,6 - 23008006)
+:react-native-firebase_auth:android.compileSdk using custom value: 36
+:react-native-firebase_auth:android.targetSdk using custom value: 36
+:react-native-firebase_auth:android.minSdk using custom value: 24
+:react-native-firebase_auth:reactNativeAndroidDir /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native
+
+> Configure project :react-native-firebase_firestore
+:react-native-firebase_firestore package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/firestore/package.json
+:react-native-firebase_app package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/app/package.json
+:react-native-firebase_firestore:firebase.bom using default value: 34.8.0
+:react-native-firebase_firestore package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/firestore/package.json
+:react-native-firebase_firestore:version set from package.json: 23.8.6 (23,8,6 - 23008006)
+:react-native-firebase_firestore:android.compileSdk using custom value: 36
+:react-native-firebase_firestore:android.targetSdk using custom value: 36
+:react-native-firebase_firestore:android.minSdk using custom value: 24
+:react-native-firebase_firestore:reactNativeAndroidDir /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native
+
+> Configure project :react-native-firebase_remote-config
+:react-native-firebase_remote-config package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/remote-config/package.json
+:react-native-firebase_app package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/app/package.json
+:react-native-firebase_remote-config:firebase.bom using default value: 34.8.0
+:react-native-firebase_remote-config package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/remote-config/package.json
+:react-native-firebase_remote-config:version set from package.json: 23.8.6 (23,8,6 - 23008006)
+:react-native-firebase_remote-config:android.compileSdk using custom value: 36
+:react-native-firebase_remote-config:android.targetSdk using custom value: 36
+:react-native-firebase_remote-config:android.minSdk using custom value: 24
+:react-native-firebase_remote-config:reactNativeAndroidDir /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native
+
+> Configure project :react-native-firebase_storage
+:react-native-firebase_storage package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/storage/package.json
+:react-native-firebase_app package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/app/package.json
+:react-native-firebase_storage:firebase.bom using default value: 34.8.0
+:react-native-firebase_storage package.json found at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/@react-native-firebase/storage/package.json
+:react-native-firebase_storage:version set from package.json: 23.8.6 (23,8,6 - 23008006)
+:react-native-firebase_storage:android.compileSdk using custom value: 36
+:react-native-firebase_storage:android.targetSdk using custom value: 36
+:react-native-firebase_storage:android.minSdk using custom value: 24
+:react-native-firebase_storage:reactNativeAndroidDir /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native
+
+> Task :react-native-firebase_remote-config:preBuild UP-TO-DATE
+> Task :react-native-firebase_auth:preBuild UP-TO-DATE
+> Task :react-native-firebase_firestore:preBuild UP-TO-DATE
+> Task :react-native-firebase_storage:preBuild UP-TO-DATE
+> Task :react-native-firebase_app:preBuild UP-TO-DATE
+> Task :react-native-fs:preBuild UP-TO-DATE
+> Task :react-native-get-random-values:preBuild UP-TO-DATE
+> Task :app:generateAutolinkingNewArchitectureFiles UP-TO-DATE
+> Task :app:generateAutolinkingPackageList UP-TO-DATE
+> Task :app:generateCodegenSchemaFromJavaScript SKIPPED
+> Task :app:generateCodegenArtifactsFromSchema SKIPPED
+> Task :app:generateReactNativeEntryPoint UP-TO-DATE
+> Task :react-native-reanimated:assertMinimalReactNativeVersionTask
+> Task :react-native-reanimated:assertNewArchitectureEnabledTask SKIPPED
+> Task :react-native-reanimated:assertWorkletsVersionTask
+
+> Task :react-native-picker_picker:generateCodegenSchemaFromJavaScript FAILED
+/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
+  return expand(pattern)
+         ^
+
+TypeError: expand is not a function
+    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
+    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
+    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
+    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
+    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
+    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
+    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
+    at Array.flatMap (<anonymous>)
+    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
+    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
+
+Node.js v24.10.0
+
+> Task :react-native-async-storage_async-storage:generateCodegenSchemaFromJavaScript FAILED
+/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
+  return expand(pattern)
+         ^
+
+TypeError: expand is not a function
+    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
+    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
+    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
+    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
+    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
+    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
+    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
+    at Array.flatMap (<anonymous>)
+    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
+    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
+
+Node.js v24.10.0
+
+> Task :react-native-image-picker:generateCodegenSchemaFromJavaScript FAILED
+/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
+  return expand(pattern)
+         ^
+
+TypeError: expand is not a function
+    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
+    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
+    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
+    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
+    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
+    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
+    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
+    at Array.flatMap (<anonymous>)
+    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
+    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
+
+Node.js v24.10.0
+
+> Task :react-native-safe-area-context:generateCodegenSchemaFromJavaScript FAILED
+/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
+  return expand(pattern)
+         ^
+
+TypeError: expand is not a function
+    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
+    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
+    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
+    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
+    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
+    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
+    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
+    at Array.flatMap (<anonymous>)
+    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
+    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
+
+Node.js v24.10.0
+
+> Task :react-native-camera-roll_camera-roll:generateCodegenSchemaFromJavaScript FAILED
+/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
+  return expand(pattern)
+         ^
+
+TypeError: expand is not a function
+    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
+    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
+    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
+    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
+    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
+    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
+    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
+    at Array.flatMap (<anonymous>)
+    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
+    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
+
+Node.js v24.10.0
+
+> Task :react-native-google-signin_google-signin:generateCodegenSchemaFromJavaScript FAILED
+/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
+  return expand(pattern)
+         ^
+
+TypeError: expand is not a function
+    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
+    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
+    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
+    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
+    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
+    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
+    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
+    at Array.flatMap (<anonymous>)
+    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
+    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
+
+Node.js v24.10.0
+
+> Task :react-native-gesture-handler:generateCodegenSchemaFromJavaScript FAILED
+/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
+  return expand(pattern)
+         ^
+
+TypeError: expand is not a function
+    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
+    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
+    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
+    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
+    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
+    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
+    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
+    at Array.flatMap (<anonymous>)
+    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
+    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
+
+Node.js v24.10.0
+
+> Task :react-native-reanimated:generateCodegenSchemaFromJavaScript FAILED
+/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
+  return expand(pattern)
+         ^
+
+TypeError: expand is not a function
+    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
+    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
+    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
+    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
+    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
+    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
+    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
+    at Array.flatMap (<anonymous>)
+    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
+    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
+
+Node.js v24.10.0
+
+[Incubating] Problems report is available at: file:///Users/kaankarahasan/Desktop/Project/app_market/android/build/reports/problems/problems-report.html
+
+FAILURE: Build completed with 8 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':react-native-picker_picker:generateCodegenSchemaFromJavaScript'.
+> Process 'command 'node'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':react-native-gesture-handler:generateCodegenSchemaFromJavaScript'.
+> Process 'command 'node'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+3: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':react-native-safe-area-context:generateCodegenSchemaFromJavaScript'.
+> Process 'command 'node'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+4: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':react-native-async-storage_async-storage:generateCodegenSchemaFromJavaScript'.
+> Process 'command 'node'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+5: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':react-native-google-signin_google-signin:generateCodegenSchemaFromJavaScript'.
+> Process 'command 'node'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+6: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':react-native-camera-roll_camera-roll:generateCodegenSchemaFromJavaScript'.
+> Process 'command 'node'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+7: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':react-native-image-picker:generateCodegenSchemaFromJavaScript'.
+> Process 'command 'node'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+8: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':react-native-reanimated:generateCodegenSchemaFromJavaScript'.
+> Process 'command 'node'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 3s
+23 actionable tasks: 10 executed, 13 up-to-date
