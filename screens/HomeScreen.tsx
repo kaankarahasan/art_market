@@ -7,6 +7,7 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  FlatList,
   ScrollView,
   RefreshControl,
   TextInput,
@@ -383,8 +384,13 @@ const HomeScreen = () => {
     let rightHeight = 0;
 
     products.forEach((product) => {
-      const imageHeight = imageHeights[product.id] || 250;
-      const infoHeightEstimate = 12 + 15 + 6 + 20 + 8 + 20 + 12;
+      // Hızla asimetrik düzen oluşturmak için: 
+      // Eğer görsel daha yüklenmediyse, ID'ye dayalı "sabit ama rastgele" bir yükseklik ata.
+      // Bu sayede sayfa açılır açılmaz düzgün bir masonry görünümü olur.
+      const stableRandomHeight = (parseInt(product.id.substring(0, 8), 16) % 150) + 200;
+      const imageHeight = imageHeights[product.id] || stableRandomHeight;
+      
+      const infoHeightEstimate = 100; // Metin alanları için tahmini pay
       const cardHeight = imageHeight + infoHeightEstimate;
 
       if (leftHeight <= rightHeight) {
@@ -417,8 +423,13 @@ const HomeScreen = () => {
 
   const renderProductCard = (item: any) => {
     const isFavorite = favoriteItems.some(fav => fav.id === item.id);
-    const imageHeight = imageHeights[item.id] || 250;
-    const firstImage = item.imageUrls?.[0] || item.imageUrl;
+    
+    // Asimetrik düzen için stabil rastgele başlangıç yüksekliği
+    const stableRandomHeight = (parseInt(item.id.substring(0, 8), 16) % 150) + 200;
+    const imageHeight = imageHeights[item.id] || stableRandomHeight;
+    const firstImage = Array.isArray(item.imageUrls) && item.imageUrls.length > 0 
+      ? item.imageUrls[0] 
+      : (item.mainImageUrl || item.imageUrl || (typeof item.imageUrls === 'string' ? item.imageUrls : null));
 
     const displayName = userNames[item.username] || item.username || 'Bilinmeyen';
 
@@ -434,13 +445,13 @@ const HomeScreen = () => {
       <View key={item.id} style={[styles.card, { width: columnWidth }]}>
         <TouchableOpacity
           onPress={handlePress}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
           <View style={styles.imageContainer}>
             {firstImage ? (
               <Image
-                source={{ uri: firstImage }}
-                style={[styles.image, { height: imageHeight }]}
+                source={{ uri: typeof firstImage === 'string' ? firstImage : undefined }}
+                style={[styles.image, { height: imageHeight, backgroundColor: isDarkTheme ? '#2a2a2a' : '#f0f0f0' }]}
                 onLoad={(e) => {
                   const { width, height } = e.nativeEvent.source;
                   handleImageLoad(item.id, width, height);
@@ -462,7 +473,7 @@ const HomeScreen = () => {
                 onPress={() => handleFavoriteToggle(item)}
                 style={styles.favoriteButton}
               >
-                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={colors.text} />
+                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#ff4b4b' : colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -597,7 +608,7 @@ const HomeScreen = () => {
                   <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>Eserler</Text>
                   {filteredProducts.map(item => (
                     <TouchableOpacity key={item.id} style={{ flexDirection: 'row', marginBottom: 12, alignItems: 'center' }} onPress={() => navigation.navigate('ProductDetail', { product: { ...item, createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString() } })}>
-                      <Image source={{ uri: Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls || item.imageUrl }} style={{ width: 50, height: 50, borderRadius: 8, marginRight: 12, backgroundColor: '#eee' }} />
+                      <Image source={{ uri: Array.isArray(item.imageUrls) && item.imageUrls[0] ? item.imageUrls[0] : (item.mainImageUrl || item.imageUrl) }} style={{ width: 50, height: 50, borderRadius: 8, marginRight: 12, backgroundColor: '#eee' }} />
                       <View>
                         <Text style={{ color: colors.text, fontWeight: '600' }}>{item.title}</Text>
                         <Text style={{ color: colors.secondaryText, fontSize: 12 }}>₺{Number(item.price).toLocaleString('tr-TR')}</Text>
@@ -657,10 +668,10 @@ const HomeScreen = () => {
             >
               <View style={styles.masonryContainer}>
                 <View style={styles.column}>
-                  {leftColumn.map(renderProductCard)}
+                  {leftColumn.map((item) => renderProductCard(item))}
                 </View>
                 <View style={styles.column}>
-                  {rightColumn.map(renderProductCard)}
+                  {rightColumn.map((item) => renderProductCard(item))}
                 </View>
               </View>
               {loadingMore && (
@@ -729,6 +740,10 @@ const createStyles = (colors: any) => StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
   },
   imageContainer: {
     padding: 10

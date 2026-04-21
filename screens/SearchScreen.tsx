@@ -31,40 +31,19 @@ const columnWidth = (screenWidth - 45) / 2;
 
 const categoryHeights = [220, 180, 160, 240, 240, 190, 180, 260, 200, 220, 160];
 
-const CATEGORY_DATA = [
-  { label: 'Yağlı Boya', value: 'yagli_boya' },
-  { label: 'Suluboya', value: 'suluboya' },
-  { label: 'Akrilik', value: 'akrilik' },
-  { label: 'Heykel', value: 'heykel' },
-  { label: 'Fotoğraf', value: 'fotograf' },
-  { label: 'Dijital Sanat', value: 'dijital' },
-  { label: 'Çizim', value: 'cizim' },
-  { label: 'Grafik Tasarım', value: 'grafik' },
-  { label: 'Seramik', value: 'seramik' },
-  { label: 'Kolaj', value: 'kolaj' },
-  { label: 'Diğer', value: 'diger' }
+const categories = [
+  { name: 'Yağlı Boya', value: 'yagli_boya', height: categoryHeights[0], imageSource: require('../assets/categories/yagli_boya.jpg') },
+  { name: 'Suluboya', value: 'suluboya', height: categoryHeights[1], imageSource: require('../assets/categories/suluboya.jpg') },
+  { name: 'Akrilik', value: 'akrilik', height: categoryHeights[2], imageSource: require('../assets/categories/akrilik.jpg') },
+  { name: 'Heykel', value: 'heykel', height: categoryHeights[3], imageSource: require('../assets/categories/heykel.jpg') },
+  { name: 'Fotoğraf', value: 'fotograf', height: categoryHeights[4], imageSource: require('../assets/categories/fotograf.jpg') },
+  { name: 'Dijital Sanat', value: 'dijital', height: categoryHeights[5], imageSource: require('../assets/categories/dijital.jpg') },
+  { name: 'Çizim', value: 'cizim', height: categoryHeights[6], imageSource: require('../assets/categories/cizim.jpg') },
+  { name: 'Grafik Tasarım', value: 'grafik', height: categoryHeights[7], imageSource: require('../assets/categories/grafik.jpg') },
+  { name: 'Seramik', value: 'seramik', height: categoryHeights[8], imageSource: require('../assets/categories/seramik.jpg') },
+  { name: 'Kolaj', value: 'kolaj', height: categoryHeights[9], imageSource: require('../assets/categories/kolaj.jpg') },
+  { name: 'Diğer', value: 'diger', height: categoryHeights[10], imageSource: require('../assets/categories/diger.jpg') }
 ];
-
-const CAT_BG_URLS = [
-  "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&q=80",
-  "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?w=800&q=80",
-  "https://images.unsplash.com/photo-1577083552431-6e5fd01988ec?w=800&q=80",
-  "https://images.unsplash.com/photo-1580136608260-4eb11f4b24fe?w=800&q=80",
-  "https://images.unsplash.com/photo-1578301978693-85fa9c026f47?w=800&q=80",
-  "https://images.unsplash.com/photo-1579783900882-c0d514d2b271?w=800&q=80",
-  "https://images.unsplash.com/photo-1576766465809-d754dc93952f?w=800&q=80",
-  "https://images.unsplash.com/photo-1582200297052-e5b1ac9a039d?w=800&q=80",
-  "https://images.unsplash.com/photo-1579965039268-dceeb7b6f3c5?w=800&q=80",
-  "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&q=80",
-  "https://images.unsplash.com/photo-1578301978018-3005759f48f7?w=800&q=80"
-];
-
-const categories = CATEGORY_DATA.map((item, index) => ({
-  name: item.label,
-  value: item.value,
-  height: categoryHeights[index % categoryHeights.length],
-  imageUrl: CAT_BG_URLS[index % CAT_BG_URLS.length]
-}));
 
 const leftCategories = categories.filter((_, i) => i % 2 === 0);
 const rightCategories = categories.filter((_, i) => i % 2 !== 0);
@@ -583,7 +562,7 @@ const SearchScreen = () => {
     });
   };
 
-  const renderCategoryCard = (cat: { name: string, value: string, height: number, imageUrl: string }) => (
+  const renderCategoryCard = (cat: { name: string, value: string, height: number, imageSource: any }) => (
     <TouchableOpacity
       key={cat.name}
       style={{
@@ -601,7 +580,7 @@ const SearchScreen = () => {
       }}
     >
       <Image
-        source={{ uri: cat.imageUrl }}
+        source={cat.imageSource}
         style={{ width: '100%', height: '100%', position: 'absolute' }}
         resizeMode="cover"
       />

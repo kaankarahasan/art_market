@@ -41,18 +41,24 @@ const CATEGORIES = [
     'dijital', 'cizim', 'grafik', 'seramik', 'kolaj', 'diger'
 ];
 
-const ARTWORK_URLS = [
-  "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&q=80",
-  "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?w=800&q=80",
-  "https://images.unsplash.com/photo-1580136608260-4eb11f4b24fe?w=800&q=80",
-  "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&q=80",
-  "https://images.unsplash.com/photo-1578301978018-3005759f48f7?w=800&q=80",
-  "https://images.unsplash.com/photo-1505909182942-e2f09aee3e89?w=800&q=80",
-  "https://images.unsplash.com/photo-1515405295579-ba7b45403062?w=800&q=80",
-  "https://images.unsplash.com/photo-1501472312651-726afe119ff1?w=800&q=80",
-  "https://images.unsplash.com/photo-1572949645841-094f3a9c4c94?w=800&q=80",
-  "https://images.unsplash.com/photo-1557053503-0c252e5c8093?w=800&q=80"
-];
+// We'll fetch these dynamically to ensure uniqueness
+let ARTWORK_URLS = [];
+
+async function initializeArtworks() {
+    console.log(`- Fetching art collection metadata...`);
+    try {
+        const res = await axios.get("https://api.github.com/repos/jwilber/Bob_Ross_Paintings/contents/data/paintings");
+        ARTWORK_URLS = res.data.filter(file => file.name.endsWith('.png')).map(f => f.download_url);
+        console.log(`- Loaded ${ARTWORK_URLS.length} unique paintings.`);
+    } catch (e) {
+        console.error("Failed to fetch artworks tree, using fallback list.");
+        ARTWORK_URLS = [
+            "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&q=80",
+            "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?w=800&q=80",
+            "https://images.unsplash.com/photo-1580136608260-4eb11f4b24fe?w=800&q=80"
+        ];
+    }
+}
 
 /**
  * Utility to download image, upload to Storage, and convert to base64
@@ -135,8 +141,10 @@ async function seed() {
     }
 
     try {
+        await initializeArtworks();
         let batch = db.batch();
         let opCount = 0;
+        let artworkIdx = 0;
         let totalUsers = 0;
         let totalProducts = 0;
 
@@ -170,7 +178,8 @@ async function seed() {
             const productCount = faker.number.int({ min: PRODUCTS_PER_USER_MIN, max: PRODUCTS_PER_USER_MAX });
             for (let j = 0; j < productCount; j++) {
                 const productId = `prod_${faker.string.uuid()}`;
-                const sourceUrl = faker.helpers.arrayElement(ARTWORK_URLS);
+                const sourceUrl = ARTWORK_URLS[artworkIdx % ARTWORK_URLS.length];
+                artworkIdx++;
 
                 let aiVisualTags = [];
                 let uploadedImageUrl = sourceUrl; // Fallback

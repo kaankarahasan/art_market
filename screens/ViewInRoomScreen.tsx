@@ -22,14 +22,16 @@ const IMG_WIDTH = 4096;
 const IMG_HEIGHT = 2232;
 const IMG_ASPECT = IMG_WIDTH / IMG_HEIGHT;
 
-// Kapının sağında kalan duvarın genişliği (cm)
-// 2 metre uzaklıktan çekilmiş orantısı, 5 metrelik duvar içindeki piksellere zaten gömülüdür.
-const REFERENCE_DISTANCE_CM = 500; 
+// --- GERÇEK DÜNYA OPTİK & PERSPEKTİF DEĞERLERİ ---
+const REAL_DOOR_HEIGHT_CM = 210; // Kullanıcının belirttiği referans kapı boyu
+const REAL_WALL_WIDTH_CM = 500;  // Kapının sağındaki duvar genişliği
+const CAMERA_DISTANCE_M = 2;     // Duvara olan izleme mesafesi (2 Metre)
 
-// Resimde kapıdan sağa doğru uzanan boş beyaz duvarın tahmini başlangıç ve bitiş yüzdeleri:
-// %100 = resmin tam genşliği. Resmi kendi panelinizde inceleyerek duvarın yerini bu değerlerle tam oturtun.
-const WALL_LEFT_PCT = 0.25;  // Kapı pervazının bittiği ve duvarın başladığı yer (Örn: %25)
-const WALL_RIGHT_PCT = 0.95; // Sağ köşedeki sınır (Örn: %95)
+// 2D Piksel Tahminleri (Resmi görmeden yapılan kalibrasyon, kayma olursa değiştirilebilir):
+// Kapı resmin dikeyinde ne kadar yer kaplıyor? (Standart odada kapılar ~%72 yer kaplar)
+const DOOR_HEIGHT_IN_IMAGE_PCT = 0.72; 
+// Kapı çitasının sağ tarafta bittiği ve 5m beyaz duvarın başladığı X noktası (Soldan tahmini %20)
+const DOOR_RIGHT_EDGE_PCT = 0.20;
 // ----------------------------------
 
 type ViewInRoomRouteProp = RouteProp<RootStackParamList, 'ViewInRoom'>;
@@ -54,21 +56,40 @@ const ViewInRoomScreen = () => {
     renderHeight = renderWidth / IMG_ASPECT;
   }
 
-  // 2. Piksel -> CM oranını 5 Metrelik duvarın resim içindeki pikselleri üzerinden ayarla
-  const pixelDistance = renderWidth * (WALL_RIGHT_PCT - WALL_LEFT_PCT);
-  const pixelsPerCm = pixelDistance / REFERENCE_DISTANCE_CM;
+  // 2. Optik Piksel Haritalaması (Kullanıcının 210cm ölçüsüne göre kalibrasyon)
+  // Kapının fotoğraf üzerindeki piksel uzunluğunu buluyoruz:
+  const doorPixelHeight = renderHeight * DOOR_HEIGHT_IN_IMAGE_PCT;
+  
+  // 1 cm = X piksel oranı (Doğrudan kapı yüksekliğinden elde ediliyor)
+  const basePixelsPerCm = doorPixelHeight / REAL_DOOR_HEIGHT_CM;
 
-  // 3. Eserin boyutlarını piksele çevir
+  // Kamera 2 metre mesafe parametresinin matematiksel yansıması
+  // Eğer mesafe 4m olsaydı eser perspektif olarak daha küçük (~0.5x) gözükecekti.
+  const perspectiveRatio = 2.0 / CAMERA_DISTANCE_M; 
+  const pixelsPerCm = basePixelsPerCm * perspectiveRatio;
+
   const artworkWidthCm = dimensions?.width || 60;
   const artworkHeightCm = dimensions?.height || (dimensions?.width ? dimensions.width : 80);
+  const artworkDepthCm = dimensions?.depth || 2;
 
   const artworkWidthPx = artworkWidthCm * pixelsPerCm;
   const artworkHeightPx = artworkHeightCm * pixelsPerCm;
+  
+  // Kalınlık bilgisini kullanarak eserin gölge (duvardan çıkıntı) miktarını dinamik belirliyoruz
+  const dynamicShadowOffset = Math.min(Math.max(artworkDepthCm * 3, 5), 30);
+  const dynamicShadowRadius = Math.min(Math.max(artworkDepthCm * 2, 5), 25);
 
-  // 4. "Kapının sağında kalan duvarın tam ortası"
-  const centerX_PCT = (WALL_LEFT_PCT + WALL_RIGHT_PCT) / 2;
+  // 3. Duvar ve Merkezi Konumlandırma
+  // 5 Metrelik duvarın piksellerdeki toplam kapladığı fiziksel genişlik:
+  const wallWidthPx = REAL_WALL_WIDTH_CM * pixelsPerCm;
+  
+  // Duvar kapının hemen sağından başlıyor, bu yüzden "başlangıç X":
+  const wallStartX = renderWidth * DOOR_RIGHT_EDGE_PCT;
+  // "Kapının yanındaki duvarın ortasına konumlandırılır" -> Merkezi X noktası:
+  const wallCenterXPx = wallStartX + (wallWidthPx / 2);
 
-  const artworkLeftPx = (renderWidth * centerX_PCT) - (artworkWidthPx / 2);
+  // Eseri duvarın ortasından kendi yarısı kadar sola çekerek milimetrik hizala
+  const artworkLeftPx = wallCenterXPx - (artworkWidthPx / 2);
   // Y ekseni göz hizasında (Resmin dikey olarak yaklaşık ortası)
   const artworkTopPx = (renderHeight * 0.45) - (artworkHeightPx / 2); 
 
@@ -177,9 +198,17 @@ const ViewInRoomScreen = () => {
               <Image
                 source={{ uri: imageUrl }}
                 style={styles.artworkImage}
-                resizeMode="contain"
+                resizeMode="stretch" // Ebatlar ne girildiyse görseli ona zorla (180x60 ise tam 180x60 dikdörtgen olur)
               />
-              <View style={styles.artworkShadow} />
+              <View 
+                style={[
+                  styles.artworkShadow, 
+                  { 
+                    shadowOffset: { width: dynamicShadowOffset * 0.5, height: dynamicShadowOffset },
+                    shadowRadius: dynamicShadowRadius
+                  }
+                ]} 
+              />
             </View>
           </View>
           
@@ -237,9 +266,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.6,
-    shadowRadius: 15,
+    shadowOpacity: 0.7,
     elevation: 20,
     zIndex: 1,
   },
