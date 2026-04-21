@@ -45,11 +45,25 @@ const CATEGORY_DATA = [
   { label: 'Diğer', value: 'diger' }
 ];
 
+const CAT_BG_URLS = [
+  "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&q=80",
+  "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?w=800&q=80",
+  "https://images.unsplash.com/photo-1577083552431-6e5fd01988ec?w=800&q=80",
+  "https://images.unsplash.com/photo-1580136608260-4eb11f4b24fe?w=800&q=80",
+  "https://images.unsplash.com/photo-1578301978693-85fa9c026f47?w=800&q=80",
+  "https://images.unsplash.com/photo-1579783900882-c0d514d2b271?w=800&q=80",
+  "https://images.unsplash.com/photo-1576766465809-d754dc93952f?w=800&q=80",
+  "https://images.unsplash.com/photo-1582200297052-e5b1ac9a039d?w=800&q=80",
+  "https://images.unsplash.com/photo-1579965039268-dceeb7b6f3c5?w=800&q=80",
+  "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&q=80",
+  "https://images.unsplash.com/photo-1578301978018-3005759f48f7?w=800&q=80"
+];
+
 const categories = CATEGORY_DATA.map((item, index) => ({
   name: item.label,
   value: item.value,
   height: categoryHeights[index % categoryHeights.length],
-  imageUrl: `https://picsum.photos/seed/${item.value}/300/${200 + (index % 5) * 50}`
+  imageUrl: CAT_BG_URLS[index % CAT_BG_URLS.length]
 }));
 
 const leftCategories = categories.filter((_, i) => i % 2 === 0);

@@ -16,12 +16,13 @@ if (!fs.existsSync(serviceAccountPath)) {
 
 const serviceAccount = require(serviceAccountPath);
 
-// Initialize Firebase Admin
 admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: "app-market-test-35f90.firebasestorage.app"
 });
 
 const db = admin.firestore();
+const bucket = admin.storage().bucket();
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -40,15 +41,48 @@ const CATEGORIES = [
     'dijital', 'cizim', 'grafik', 'seramik', 'kolaj', 'diger'
 ];
 
+const ARTWORK_URLS = [
+  "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&q=80",
+  "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?w=800&q=80",
+  "https://images.unsplash.com/photo-1580136608260-4eb11f4b24fe?w=800&q=80",
+  "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&q=80",
+  "https://images.unsplash.com/photo-1578301978018-3005759f48f7?w=800&q=80",
+  "https://images.unsplash.com/photo-1505909182942-e2f09aee3e89?w=800&q=80",
+  "https://images.unsplash.com/photo-1515405295579-ba7b45403062?w=800&q=80",
+  "https://images.unsplash.com/photo-1501472312651-726afe119ff1?w=800&q=80",
+  "https://images.unsplash.com/photo-1572949645841-094f3a9c4c94?w=800&q=80",
+  "https://images.unsplash.com/photo-1557053503-0c252e5c8093?w=800&q=80"
+];
+
 /**
- * Utility to download image and convert to base64
+ * Utility to download image, upload to Storage, and convert to base64
  */
-async function fetchImageAsBase64(url) {
+async function processSeedImage(url, storagePath) {
     try {
-        const response = await axios.get(url, { responseType: 'arraybuffer' });
-        return Buffer.from(response.data, 'binary').toString('base64');
+        const response = await axios.get(url, {
+            responseType: 'arraybuffer',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        });
+        const buffer = Buffer.from(response.data, 'binary');
+        
+        const file = bucket.file(storagePath);
+        await file.save(buffer, {
+            metadata: { contentType: 'image/jpeg' }
+        });
+        
+        const urlData = await file.getSignedUrl({
+            action: 'read',
+            expires: '01-01-2099'
+        });
+        
+        return {
+            downloadUrl: urlData[0],
+            base64: buffer.toString('base64')
+        };
     } catch (error) {
-        console.error(`- Failed to download image: ${url}`);
+        console.error(`- Failed to download/upload image: ${url}`);
         return null;
     }
 }
@@ -136,28 +170,35 @@ async function seed() {
             const productCount = faker.number.int({ min: PRODUCTS_PER_USER_MIN, max: PRODUCTS_PER_USER_MAX });
             for (let j = 0; j < productCount; j++) {
                 const productId = `prod_${faker.string.uuid()}`;
-                const imageUrl = `https://picsum.photos/seed/${productId}/800/800`;
+                const sourceUrl = faker.helpers.arrayElement(ARTWORK_URLS);
 
                 let aiVisualTags = [];
-                if (process.env.GEMINI_API_KEY) {
-                    console.log(`  🖼️ Analyzing product ${j + 1}/${productCount} for ${username}...`);
-                    const base64 = await fetchImageAsBase64(imageUrl);
-                    if (base64) {
-                        aiVisualTags = await analyzeSeedImage(base64);
+                let uploadedImageUrl = sourceUrl; // Fallback
+
+                console.log(`  🖼️ Processing product ${j + 1}/${productCount} for ${username}...`);
+                
+                const imagePath = `product_images/${faker.string.uuid()}.jpg`;
+                const processed = await processSeedImage(sourceUrl, imagePath);
+                
+                if (processed) {
+                    uploadedImageUrl = processed.downloadUrl;
+                    if (process.env.GEMINI_API_KEY) {
+                        aiVisualTags = await analyzeSeedImage(processed.base64);
                         if (aiVisualTags.length > 0) {
                             console.log(`    ✨ Tags: ${aiVisualTags.join(', ')}`);
                         }
                     }
-                    // Throttle to respect API limits
-                    await sleep(AI_THROTTLE_MS);
                 }
+
+                // Throttle to respect API limits
+                if(process.env.GEMINI_API_KEY) await sleep(AI_THROTTLE_MS);
 
                 const productData = {
                     id: productId,
                     title: faker.commerce.productName(),
                     description: faker.commerce.productDescription(),
-                    imageUrls: [imageUrl],
-                    mainImageUrl: imageUrl,
+                    imageUrls: [uploadedImageUrl],
+                    mainImageUrl: uploadedImageUrl,
                     ownerId: userId,
                     username: username,
                     userProfileImage: photoURL,
@@ -216,6 +257,20 @@ async function clean() {
             let batch = db.batch();
             let opCount = 0;
             for (const doc of snapshot.docs) {
+                const data = doc.data();
+                if (colName === 'products' && data.imageUrls && Array.isArray(data.imageUrls)) {
+                    // Extract storage path from signed URL and delete from storage bucket
+                    for (const url of data.imageUrls) {
+                        const match = url.match(/(product_images\/[a-zA-Z0-9-]+\.jpg)/);
+                        if (match && match[1]) {
+                            try {
+                                await bucket.file(match[1]).delete();
+                            } catch (e) {
+                                // Ignore if file already deleted or not found
+                            }
+                        }
+                    }
+                }
                 batch.delete(doc.ref);
                 opCount++;
                 totalDeleted++;
