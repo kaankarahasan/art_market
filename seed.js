@@ -30,9 +30,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // --- CONFIG ---
-const USER_COUNT = 5; // Reduced default for AI stability
-const PRODUCTS_PER_USER_MIN = 3;
-const PRODUCTS_PER_USER_MAX = 5;
+const USER_COUNT = 20; // 20 Users requested
+const PRODUCTS_PER_USER_MIN = 5;
+const PRODUCTS_PER_USER_MAX = 5; // Exactly 5 products per user to reach 100 total
 const BATCH_SIZE = 500;
 const AI_THROTTLE_MS = 3000; // 3 seconds between AI calls to respect free tier quotas
 

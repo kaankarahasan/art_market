@@ -18,7 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getDocs, collection, query, where, limit } from '@react-native-firebase/firestore';
+import { getDocs, collection, query, where, limit, orderBy, startAfter, FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { db, auth } from '../firebase';
 import { useThemeContext } from '../contexts/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,12 +30,13 @@ const RECENT_SEARCHES_KEY = '@recent_searches_general';
 
 const HomeScreen = () => {
   const [products, setProducts] = useState<any[]>([]);
-  const [originalProducts, setOriginalProducts] = useState<any[]>([]); // To store the base set for looping
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
   const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
   const [loadingMore, setLoadingMore] = useState(false);
+  const [lastVisible, setLastVisible] = useState<FirebaseFirestoreTypes.QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   // Search States
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -78,38 +79,104 @@ const HomeScreen = () => {
     }, [navigation, insets.bottom, tabBarHeight, colors, isDarkTheme])
   );
 
-  const fetchData = async () => {
+  const fetchData = async (isLoadMore = false) => {
+    if (isLoadMore && (!hasMore || loadingMore)) return;
+
     try {
+      if (isLoadMore) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+        setHasMore(true);
+        setLastVisible(null);
+      }
+
       // Modular Native Firestore Fetch
       const productsRef = collection(db, 'products');
-      const q = query(productsRef, where('isSold', '==', false), limit(50));
+      
+      let q;
+      if (isLoadMore && lastVisible) {
+        q = query(
+          productsRef,
+          where('isSold', '==', false),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastVisible),
+          limit(20)
+        );
+      } else {
+        q = query(
+          productsRef,
+          where('isSold', '==', false),
+          orderBy('createdAt', 'desc'),
+          limit(20)
+        );
+      }
 
-      const usersRef = collection(db, 'users');
-      const uq = query(usersRef, limit(100));
+      // Fetch users once on initial load
+      let userList = allUsers;
+      if (!isLoadMore) {
+        const usersRef = collection(db, 'users');
+        const uq = query(usersRef, limit(100));
+        const usersSnap = await getDocs(uq);
+        userList = usersSnap.docs.map((doc: any) => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setAllUsers(userList);
+      }
 
-      const [productSnap, usersSnap] = await Promise.all([
-        getDocs(q),
-        getDocs(uq)
-      ]);
+      const productSnap = await getDocs(q);
+      
+      if (productSnap.docs.length > 0) {
+        // Update last visible document for next pagination
+        setLastVisible(productSnap.docs[productSnap.docs.length - 1]);
+        
+        const newProducts = productSnap.docs.map((doc: any) => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
+        }));
 
-      const productList = productSnap.docs.map((doc: any) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: (doc.data() as any).createdAt?.toDate ? (doc.data() as any).createdAt.toDate() : new Date()
-      }));
+        if (isLoadMore) {
+          setProducts(prev => [...prev, ...shuffleArray(newProducts)]);
+        } else {
+          setProducts(shuffleArray(newProducts));
+        }
 
-      const userList = usersSnap.docs.map((doc: any) => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      const shuffled = shuffleArray(productList);
-      setOriginalProducts(shuffled);
-      setProducts(shuffled);
-      setAllUsers(userList);
+        // If we got fewer items than limit, we might be near the end
+        if (productSnap.docs.length < 20) {
+          setLastVisible(null); // End reached, next load will start from top
+        }
+      } else {
+        // No more docs, reset for infinite scrolling
+        setLastVisible(null);
+        // Explicitly fetch the first page to keep it seamless if they are at the bottom
+        if (isLoadMore) {
+          const resetQ = query(
+            productsRef,
+            where('isSold', '==', false),
+            orderBy('createdAt', 'desc'),
+            limit(20)
+          );
+          const resetSnap = await getDocs(resetQ);
+          if (resetSnap.docs.length > 0) {
+            setLastVisible(resetSnap.docs[resetSnap.docs.length - 1]);
+            const resetProducts = resetSnap.docs.map((doc: any) => ({
+              id: `${doc.id}_loop_${Date.now()}`, // Append loop suffix to avoid key collisions
+              ...doc.data(),
+              createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
+            }));
+            setProducts(prev => [...prev, ...shuffleArray(resetProducts)]);
+          }
+        }
+      }
 
     } catch (error) {
       console.error('Veriler alınırken hata:', error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+      setRefreshing(false);
     }
   };
 
@@ -276,31 +343,24 @@ const HomeScreen = () => {
     setRefreshing(false);
   };
 
+  // Helper to shuffle array (used later if needed)
   const shuffleArray = (array: any[]) => {
-    for (let i = array.length - 1; i > 0; i--) {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
     }
-    return array;
+    return newArray;
   };
 
   const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
-    const paddingToBottom = 1500;
+    const paddingToBottom = 800; // Reduced from 1500 for better control
     return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
   };
 
   const loadMoreData = () => {
-    if (loadingMore || originalProducts.length === 0 || products.length > 200) return;
-
-    setLoadingMore(true);
-
-    const newBatch = originalProducts.map((item) => ({
-      ...item,
-      id: `${item.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    }));
-
-    setProducts(prev => [...prev, ...newBatch]);
-    setLoadingMore(false);
+    if (loadingMore || !hasMore) return;
+    fetchData(true);
   };
 
   const handleImageLoad = (productId: string, width: number, height: number) => {
@@ -593,7 +653,7 @@ const HomeScreen = () => {
                   loadMoreData();
                 }
               }}
-              scrollEventThrottle={400}
+              scrollEventThrottle={16}
             >
               <View style={styles.masonryContainer}>
                 <View style={styles.column}>
@@ -603,6 +663,11 @@ const HomeScreen = () => {
                   {rightColumn.map(renderProductCard)}
                 </View>
               </View>
+              {loadingMore && (
+                <View style={{ paddingVertical: 20 }}>
+                  <ActivityIndicator size="small" color={colors.text} />
+                </View>
+              )}
             </ScrollView>
           )}
         </>
