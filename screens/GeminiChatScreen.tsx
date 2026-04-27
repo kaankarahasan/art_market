@@ -11,7 +11,7 @@ import {
     Dimensions,
     ActivityIndicator,
     Keyboard,
-    Alert,
+    Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -43,6 +43,7 @@ export default function GeminiChatScreen() {
     const isMounted = useRef(true);
     const scrollTimeout = useRef<any>(null);
     const currentUser = auth.currentUser;
+    const [resetModalVisible, setResetModalVisible] = useState(false);
 
     const { colors, isDarkTheme } = useThemeContext();
     const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
@@ -111,37 +112,24 @@ export default function GeminiChatScreen() {
 
     const resetChat = async () => {
         if (!currentUser) return;
-
-        Alert.alert(
-            "Sohbeti Sıfırla",
-            "Tüm mesaj geçmişini silmek istediğinizden emin misiniz?",
-            [
-                { text: "Vazgeç", style: "cancel" },
-                {
-                    text: "Sıfırla",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            setLoading(true);
-                            const messagesRef = collection(db, 'users', currentUser.uid, 'gemini_sessions', currentSessionId, 'messages');
-                            const snapshot = await getDocs(messagesRef);
-                            
-                            const deletePromises = snapshot.docs.map((d: any) => deleteDoc(d.ref));
-                            await Promise.all(deletePromises);
-                            
-                            // Also delete the session doc itself to be clean
-                            await deleteDoc(doc(db, 'users', currentUser.uid, 'gemini_sessions', currentSessionId));
-                            
-                            setMessages([]);
-                        } catch (e) {
-                            console.warn("Reset error:", e);
-                        } finally {
-                            setLoading(false);
-                        }
-                    }
-                }
-            ]
-        );
+        setResetModalVisible(false);
+        try {
+            setLoading(true);
+            const messagesRef = collection(db, 'users', currentUser.uid, 'gemini_sessions', currentSessionId, 'messages');
+            const snapshot = await getDocs(messagesRef);
+            
+            const deletePromises = snapshot.docs.map((d: any) => deleteDoc(d.ref));
+            await Promise.all(deletePromises);
+            
+            // Also delete the session doc itself to be clean
+            await deleteDoc(doc(db, 'users', currentUser.uid, 'gemini_sessions', currentSessionId));
+            
+            setMessages([]);
+        } catch (e) {
+            console.warn("Reset error:", e);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const sendMessage = async () => {
@@ -231,10 +219,38 @@ export default function GeminiChatScreen() {
                         <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Gemini</Text>
-                    <TouchableOpacity onPress={resetChat} style={styles.resetBtnAction}>
-                        <Text style={styles.resetBtn}>↺</Text>
+                    <TouchableOpacity onPress={() => setResetModalVisible(true)} style={styles.resetBtnAction}>
+                        <MaterialIcons name="delete-outline" size={24} color={colors.text} />
                     </TouchableOpacity>
                 </View>
+
+                {/* Reset Confirm Modal */}
+                <Modal
+                    visible={resetModalVisible}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setResetModalVisible(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setResetModalVisible(false)}
+                    >
+                        <View style={styles.modalBox}>
+                            <MaterialIcons name="delete-outline" size={36} color={colors.text} style={{ marginBottom: 12 }} />
+                            <Text style={styles.modalTitle}>Sohbeti Sıfırla</Text>
+                            <Text style={styles.modalSubtitle}>Tüm mesaj geçmişini silmek istediğinizden emin misiniz?</Text>
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setResetModalVisible(false)}>
+                                    <Text style={styles.modalCancelText}>Vazgeç</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.modalConfirmBtn} onPress={resetChat}>
+                                    <Text style={styles.modalConfirmText}>Sıfırla</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
 
                 {/* Messages */}
                 <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -337,8 +353,76 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
         flex: 1,
     },
     username: { fontWeight: '600', color: colors.text },
-    resetBtnAction: { paddingHorizontal: 15, height: 40, justifyContent: 'center' },
-    resetBtn: { fontSize: 24, color: colors.text, fontWeight: '400' },
+    resetBtnAction: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    // Modal styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalBox: {
+        width: '80%',
+        backgroundColor: colors.card,
+        borderRadius: 20,
+        padding: 28,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.18,
+        shadowRadius: 16,
+        elevation: 8,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.text,
+        marginBottom: 8,
+    },
+    modalSubtitle: {
+        fontSize: 14,
+        color: colors.secondaryText,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    modalCancelBtn: {
+        flex: 1,
+        height: 46,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: isDarkTheme ? '#444' : '#E0E0E0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalCancelText: {
+        color: colors.text,
+        fontWeight: '600',
+        fontSize: 15,
+    },
+    modalConfirmBtn: {
+        flex: 1,
+        height: 46,
+        borderRadius: 12,
+        backgroundColor: isDarkTheme ? '#FF453A' : '#FF3B30',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalConfirmText: {
+        color: '#FFF',
+        fontWeight: '700',
+        fontSize: 15,
+    },
     
     messageBubble: {
         padding: 14,

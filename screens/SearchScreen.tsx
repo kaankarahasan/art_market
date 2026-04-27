@@ -27,7 +27,7 @@ import { useThemeContext } from '../contexts/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
 const boxSize = (screenWidth - 48) / 2;
-const columnWidth = (screenWidth - 45) / 2;
+const columnWidth = (screenWidth - 30) / 2; // HomeScreen ile aynı: paddingHorizontal:10 + column paddingHorizontal:5*2
 
 const categoryHeights = [220, 180, 160, 240, 240, 190, 180, 260, 200, 220, 160];
 
@@ -611,7 +611,7 @@ const SearchScreen = () => {
     };
 
     return (
-      <View key={item.id} style={[styles.card, cardStyle || { width: columnWidth }]}>
+      <View key={item.id} style={[styles.card, cardStyle ?? {}]}>
         <TouchableOpacity
           onPress={handlePress}
           activeOpacity={0.8}
@@ -745,12 +745,12 @@ const SearchScreen = () => {
                         </View>
                       )}
                       {finalFilteredProducts.length > 0 && (
-                        <View style={{ flexDirection: 'row' }}>
-                          <View style={{ flex: 1, paddingRight: 5 }}>
-                            {filteredLeftColumn.map(item => renderProductCard(item, { width: (screenWidth - 30) / 2, marginBottom: 10 }))}
+                        <View style={{ flexDirection: 'row', paddingHorizontal: 10 }}>
+                          <View style={{ flex: 1, paddingHorizontal: 5 }}>
+                            {filteredLeftColumn.map(item => renderProductCard(item))}
                           </View>
-                          <View style={{ flex: 1, paddingLeft: 5 }}>
-                            {filteredRightColumn.map(item => renderProductCard(item, { width: (screenWidth - 30) / 2, marginBottom: 10 }))}
+                          <View style={{ flex: 1, paddingHorizontal: 5 }}>
+                            {filteredRightColumn.map(item => renderProductCard(item))}
                           </View>
                         </View>
                       )}

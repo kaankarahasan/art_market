@@ -43,6 +43,8 @@ export default function ChatScreen() {
     displayName: '',
     photoURL: undefined,
   });
+  // Ref olarak da sakla — async sendMessage içinde güncel değeri okumak için
+  const otherUserRef = React.useRef<{ displayName: string; photoURL?: string }>({ displayName: '', photoURL: undefined });
 
   const chatId = [currentUserId, otherUserId].sort().join('_');
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -69,13 +71,32 @@ export default function ChatScreen() {
             const name = data.displayName || data.fullName || data.username || data.name || 'Bilinmeyen';
             const photo = data.photoURL || data.profilePicture || data.profileImage || undefined;
             setOtherUser({ displayName: name, photoURL: photo });
+            otherUserRef.current = { displayName: name, photoURL: photo };
+
+            // Chat açılır açılmaz userInfos'u güncelle (isim görünsün)
+            const currentSnap = await getDoc(doc(db, 'users', currentUserId));
+            const currentData = currentSnap.data() as any;
+            const currentName = currentData?.displayName || currentData?.fullName || currentData?.username || 'Bilinmeyen';
+            const currentPhoto = currentData?.photoURL || currentData?.profilePicture || undefined;
+
+            await setDoc(
+              doc(db, 'chats', chatId),
+              {
+                participants: [currentUserId, otherUserId],
+                [`userInfos.${otherUserId}`]: { displayName: name, photoURL: photo ?? null },
+                [`userInfos.${currentUserId}`]: { displayName: currentName, photoURL: currentPhoto ?? null },
+              },
+              { merge: true }
+            );
           }
         } else {
           setOtherUser({ displayName: 'Bilinmeyen' });
+          otherUserRef.current = { displayName: 'Bilinmeyen' };
         }
       } catch (error) {
         console.error('Kullanıcı bilgisi alınamadı:', error);
         setOtherUser({ displayName: 'Bilinmeyen' });
+        otherUserRef.current = { displayName: 'Bilinmeyen' };
       }
     };
     fetchOtherUser();
@@ -98,33 +119,27 @@ export default function ChatScreen() {
   const sendMessage = async () => {
     const textToSend = text.trim();
     if (!textToSend) return;
-
-    // Hemen UI'yi temizle
     setText('');
 
     try {
-      const messagesRef = collection(db, 'chats', chatId, 'messages');
-      await addDoc(messagesRef, {
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
         text: textToSend,
         senderId: currentUserId,
         createdAt: serverTimestamp(),
       });
 
-      // Karşı kullanıcı bilgisini userInfos'a yaz (InboxScreen için)
-      const userInfosUpdate: Record<string, any> = {};
-      userInfosUpdate[`userInfos.${otherUserId}`] = {
-        displayName: otherUser.displayName || 'Bilinmeyen',
-        photoURL: otherUser.photoURL || null,
-      };
-
-      const chatDocRef = doc(db, 'chats', chatId);
+      // userInfos'u merge ile güncelle (isimler her zaman güncel kalsın)
+      const other = otherUserRef.current;
       await setDoc(
-        chatDocRef,
+        doc(db, 'chats', chatId),
         {
           lastMessage: textToSend,
           lastTimestamp: serverTimestamp(),
           participants: [currentUserId, otherUserId],
-          ...userInfosUpdate,
+          [`userInfos.${otherUserId}`]: {
+            displayName: other.displayName || 'Bilinmeyen',
+            photoURL: other.photoURL ?? null,
+          },
         },
         { merge: true }
       );
