@@ -620,7 +620,7 @@ const SearchScreen = () => {
             {firstImage ? (
               <Image
                 source={{ uri: firstImage || undefined }}
-                style={[styles.image, { height: imageHeight, backgroundColor: isDarkTheme ? '#2a2a2a' : '#f0f0f0' }]}
+                style={[styles.image, { height: imageHeight, backgroundColor: colors.card }]}
                 onLoad={(e) => handleImageLoad(item.id, e)}
               />
             ) : (

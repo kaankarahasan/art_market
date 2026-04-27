@@ -110,6 +110,13 @@ export default function ChatScreen() {
         createdAt: serverTimestamp(),
       });
 
+      // Karşı kullanıcı bilgisini userInfos'a yaz (InboxScreen için)
+      const userInfosUpdate: Record<string, any> = {};
+      userInfosUpdate[`userInfos.${otherUserId}`] = {
+        displayName: otherUser.displayName || 'Bilinmeyen',
+        photoURL: otherUser.photoURL || null,
+      };
+
       const chatDocRef = doc(db, 'chats', chatId);
       await setDoc(
         chatDocRef,
@@ -117,13 +124,12 @@ export default function ChatScreen() {
           lastMessage: textToSend,
           lastTimestamp: serverTimestamp(),
           participants: [currentUserId, otherUserId],
+          ...userInfosUpdate,
         },
         { merge: true }
       );
     } catch (error) {
       console.error('Mesaj gönderilirken hata oluştu:', error);
-      // Gerekirse hata durumunda mesajı geri yükle
-      // setText(textToSend);
     }
   };
 

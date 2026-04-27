@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { onSnapshot, collection, query, orderBy, limit, doc, getDocs, setDoc, addDoc, getDoc, Timestamp, deleteDoc } from '@react-native-firebase/firestore';
 import { db, auth, getRemoteValue } from '../firebase';
@@ -225,13 +226,11 @@ export default function GeminiChatScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
                 {/* Header */}
-                <View style={[styles.header, { paddingVertical: avatarSize / 4 }]}>
+                <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Text style={[styles.backText, { fontSize: avatarSize * 0.7 }]}>‹</Text>
+                        <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
                     </TouchableOpacity>
-
-                    <Text style={[styles.username, { fontSize: usernameFont, flex: 1 }]}>Gemini</Text>
-
+                    <Text style={styles.headerTitle}>Gemini</Text>
                     <TouchableOpacity onPress={resetChat} style={styles.resetBtnAction}>
                         <Text style={styles.resetBtn}>↺</Text>
                     </TouchableOpacity>
@@ -317,18 +316,26 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingVertical: 10,
         paddingHorizontal: 14,
         borderBottomWidth: 1,
         borderBottomColor: colors.card,
         backgroundColor: colors.background,
-        justifyContent: 'space-between'
     },
     backButton: {
-        paddingHorizontal: 12,
+        width: 40,
+        height: 40,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    backText: { color: colors.text },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginLeft: 5,
+        flex: 1,
+    },
     username: { fontWeight: '600', color: colors.text },
     resetBtnAction: { paddingHorizontal: 15, height: 40, justifyContent: 'center' },
     resetBtn: { fontSize: 24, color: colors.text, fontWeight: '400' },

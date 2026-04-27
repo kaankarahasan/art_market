@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { query, collection, where, orderBy, onSnapshot, getDoc, doc, deleteDoc } from '@react-native-firebase/firestore';
 import { db, auth } from '../firebase';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../routes/types';
@@ -40,10 +40,29 @@ export default function InboxScreen() {
   const [chats, setChats] = useState<ChatItem[]>([]);
   const insets = useSafeAreaInsets();
   const [profileCache, setProfileCache] = useState<{ [key: string]: { photoURL?: string, displayName?: string } }>({});
+  const { colors, isDarkTheme } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   
   const [pinnedChats, setPinnedChats] = useState<string[]>([]);
   const [selectedChat, setSelectedChat] = useState<ChatItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Tab bar'ı InboxScreen'e girildiğinde geri göster (diğer stack ekranları gizliyor olabilir)
+  useFocusEffect(
+    React.useCallback(() => {
+      const tabBarStyle = {
+        display: 'flex' as const,
+        position: 'absolute' as const,
+        backgroundColor: colors.background,
+        borderTopWidth: 1,
+        borderTopColor: isDarkTheme ? '#333' : '#F0F0F0',
+        height: 60 + insets.bottom,
+        paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+        paddingTop: 8,
+      };
+      navigation.getParent()?.setOptions({ tabBarStyle });
+    }, [navigation, colors, isDarkTheme, insets.bottom])
+  );
 
   useEffect(() => {
     loadPinnedChats();
@@ -166,9 +185,6 @@ export default function InboxScreen() {
 
     fetchMissingProfiles();
   }, [chats]);
-
-  const { colors } = useThemeContext();
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   if (!currentUser) {
     return (
