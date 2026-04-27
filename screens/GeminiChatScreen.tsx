@@ -201,7 +201,6 @@ export default function GeminiChatScreen() {
 
         } catch (e: any) {
             console.error("Gemini Error:", e);
-            Alert.alert("Gemini Hatası", e.message);
         } finally {
             setLoading(false);
         }
@@ -220,7 +219,7 @@ export default function GeminiChatScreen() {
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Gemini</Text>
                     <TouchableOpacity onPress={() => setResetModalVisible(true)} style={styles.resetBtnAction}>
-                        <MaterialIcons name="delete-outline" size={24} color={colors.text} />
+                        <MaterialIcons name="refresh" size={26} color={colors.text} />
                     </TouchableOpacity>
                 </View>
 
@@ -237,7 +236,7 @@ export default function GeminiChatScreen() {
                         onPress={() => setResetModalVisible(false)}
                     >
                         <View style={styles.modalBox}>
-                            <MaterialIcons name="delete-outline" size={36} color={colors.text} style={{ marginBottom: 12 }} />
+                            <MaterialIcons name="refresh" size={36} color={colors.text} style={{ marginBottom: 12 }} />
                             <Text style={styles.modalTitle}>Sohbeti Sıfırla</Text>
                             <Text style={styles.modalSubtitle}>Tüm mesaj geçmişini silmek istediğinizden emin misiniz?</Text>
                             <View style={styles.modalButtons}>
