@@ -85,13 +85,11 @@ const SearchScreen = () => {
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [filterWidth, setFilterWidth] = useState<string>('');
   const [filterHeight, setFilterHeight] = useState<string>('');
-  const [filterDepth, setFilterDepth] = useState<string>('');
 
   const [tempMinPrice, setTempMinPrice] = useState<string>('');
   const [tempMaxPrice, setTempMaxPrice] = useState<string>('');
   const [tempWidth, setTempWidth] = useState<string>('');
   const [tempHeight, setTempHeight] = useState<string>('');
-  const [tempDepth, setTempDepth] = useState<string>('');
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<SearchScreenRouteProp>();
@@ -227,10 +225,9 @@ const SearchScreen = () => {
   useEffect(() => {
     saveRecentSearches(recentSearches);
   }, [recentSearches]);
-
   const hasActiveFilters = useCallback(() => {
-    return !!(minPrice || maxPrice || filterWidth || filterHeight || filterDepth);
-  }, [minPrice, maxPrice, filterWidth, filterHeight, filterDepth]);
+    return !!(minPrice || maxPrice || filterWidth || filterHeight);
+  }, [minPrice, maxPrice, filterWidth, filterHeight]);
 
   useEffect(() => {
     if (debounceTimeout.current) { clearTimeout(debounceTimeout.current); }
@@ -281,7 +278,8 @@ const SearchScreen = () => {
       currentProductResults = products.filter(product => {
         const titleMatch = product.title?.toLowerCase().includes(queryLower) ?? false;
         const descriptionMatch = product.description?.toLowerCase().includes(queryLower) ?? false;
-        const categoryMatch = product.category?.toLowerCase().includes(queryLower) ?? false;
+        const categoryMatch = product.category?.toLowerCase().includes(queryLower) || 
+          categories.find(c => c.value === product.category)?.name.toLowerCase().includes(queryLower) || false;
         const usernameMatch = product.username?.toLowerCase().includes(queryLower) ?? false;
         const owner = userMap[product.ownerId || ''];
         const fullNameMatch = owner?.fullName?.toLowerCase().includes(queryLower) ?? false;
@@ -301,9 +299,8 @@ const SearchScreen = () => {
 
         const widthMatch = product.dimensions?.width?.toString().includes(queryLower) ?? false;
         const heightMatch = product.dimensions?.height?.toString().includes(queryLower) ?? false;
-        const depthMatch = product.dimensions?.depth?.toString().includes(queryLower) ?? false;
 
-        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || fullNameMatch || priceMatch || yearMatch || aiTagsMatch || widthMatch || heightMatch || depthMatch;
+        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || fullNameMatch || priceMatch || yearMatch || aiTagsMatch || widthMatch || heightMatch;
       });
       currentUserResults = allUsers.filter(user => {
         const usernameMatch = user.username?.toLowerCase().includes(queryLower) ?? false;
@@ -315,7 +312,8 @@ const SearchScreen = () => {
       currentProductResults = products.filter(product => {
         const titleMatch = product.title?.toLowerCase().includes(queryLower) ?? false;
         const descriptionMatch = product.description?.toLowerCase().includes(queryLower) ?? false;
-        const categoryMatch = product.category?.toLowerCase().includes(queryLower) ?? false;
+        const categoryMatch = product.category?.toLowerCase().includes(queryLower) || 
+          categories.find(c => c.value === product.category)?.name.toLowerCase().includes(queryLower) || false;
         const aiTagsMatch = product.aiVisualTags ? (
           Array.isArray(product.aiVisualTags)
             ? product.aiVisualTags.some(tag => {
@@ -328,9 +326,8 @@ const SearchScreen = () => {
 
         const widthMatch = product.dimensions?.width?.toString().includes(queryLower) ?? false;
         const heightMatch = product.dimensions?.height?.toString().includes(queryLower) ?? false;
-        const depthMatch = product.dimensions?.depth?.toString().includes(queryLower) ?? false;
 
-        return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch || widthMatch || heightMatch || depthMatch;
+        return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch || widthMatch || heightMatch;
       });
     } else if (searchScope === 'Artist') {
       currentUserResults = allUsers.filter(user => {
@@ -354,8 +351,7 @@ const SearchScreen = () => {
       currentProductResults = products.filter(product => {
         const widthMatch = product.dimensions?.width?.toString().includes(queryLower) ?? false;
         const heightMatch = product.dimensions?.height?.toString().includes(queryLower) ?? false;
-        const depthMatch = product.dimensions?.depth?.toString().includes(queryLower) ?? false;
-        return widthMatch || heightMatch || depthMatch;
+        return widthMatch || heightMatch;
       });
     }
 
@@ -392,9 +388,8 @@ const SearchScreen = () => {
 
     const numericWidth = filterWidth ? parseFloat(filterWidth) : null;
     const numericHeight = filterHeight ? parseFloat(filterHeight) : null;
-    const numericDepth = filterDepth ? parseFloat(filterDepth) : null;
 
-    if (numericWidth !== null || numericHeight !== null || numericDepth !== null) {
+    if (numericWidth !== null || numericHeight !== null) {
       currentlyFilteredProducts = currentlyFilteredProducts.filter(p => {
         const dims = p.dimensions;
         if (!dims) return false;
@@ -402,12 +397,9 @@ const SearchScreen = () => {
         if (dims.width != null) { if (typeof dims.width === 'string') { const parsed = parseInt(dims.width, 10); if (!isNaN(parsed)) productWidth = parsed; } else if (typeof dims.width === 'number') { productWidth = dims.width; } }
         let productHeight: number | null = null;
         if (dims.height != null) { if (typeof dims.height === 'string') { const parsed = parseInt(dims.height, 10); if (!isNaN(parsed)) productHeight = parsed; } else if (typeof dims.height === 'number') { productHeight = dims.height; } }
-        let productDepth: number | null = null;
-        if (dims.depth != null) { if (typeof dims.depth === 'string') { const parsed = parseInt(dims.depth, 10); if (!isNaN(parsed)) productDepth = parsed; } else if (typeof dims.depth === 'number') { productDepth = dims.depth; } }
         let widthMatch = true; if (numericWidth !== null && !isNaN(numericWidth)) { if (productWidth === null || productWidth !== numericWidth) widthMatch = false; }
         let heightMatch = true; if (numericHeight !== null && !isNaN(numericHeight)) { if (productHeight === null || productHeight !== numericHeight) heightMatch = false; }
-        let depthMatch = true; if (numericDepth !== null && !isNaN(numericDepth)) { if (productDepth === null || productDepth !== numericDepth) depthMatch = false; }
-        return widthMatch && heightMatch && depthMatch;
+        return widthMatch && heightMatch;
       });
     }
 
@@ -416,7 +408,7 @@ const SearchScreen = () => {
     setFilteringLoader(false);
 
   }, [
-    textFilteredProducts, minPrice, maxPrice, filterWidth, filterHeight, filterDepth, loading, isSearching, hasActiveFilters, products, selectedSort
+    textFilteredProducts, minPrice, maxPrice, filterWidth, filterHeight, loading, isSearching, hasActiveFilters, products, selectedSort
   ]);
 
 
@@ -429,11 +421,11 @@ const SearchScreen = () => {
     let rightHeight = 0;
 
     items.forEach(product => {
-      const aspectRatio = imageAspectRatios[product.id] || 1.2;
+      // Asimetrik düzen için stabil rastgele başlangıç yüksekliği
+      const stableRandomHeight = (parseInt(product.id.substring(0, 8), 16) % 150) + 200;
+      const aspectRatio = imageAspectRatios[product.id];
       const imageWidth = columnWidth - 20;
-      let imageHeight = imageWidth * aspectRatio;
-
-      if (isNaN(imageHeight)) imageHeight = imageWidth * 1.2;
+      let imageHeight = aspectRatio ? imageWidth * aspectRatio : stableRandomHeight;
 
       const infoHeightEstimate = 110;
       const cardHeight = imageHeight + infoHeightEstimate;
@@ -485,8 +477,8 @@ const SearchScreen = () => {
 
   const clearFilters = () => {
     setTempMinPrice(''); setTempMaxPrice('');
-    setTempWidth(''); setTempHeight(''); setTempDepth('');
-    setMinPrice(''); setMaxPrice(''); setFilterWidth(''); setFilterHeight(''); setFilterDepth('');
+    setTempWidth(''); setTempHeight('');
+    setMinPrice(''); setMaxPrice(''); setFilterWidth(''); setFilterHeight('');
   };
 
   const applyFilters = () => {
@@ -494,7 +486,6 @@ const SearchScreen = () => {
     setMaxPrice(tempMaxPrice);
     setFilterWidth(tempWidth);
     setFilterHeight(tempHeight);
-    setFilterDepth(tempDepth);
     setFilterModalVisible(false);
   };
 
@@ -504,7 +495,6 @@ const SearchScreen = () => {
       setTempMaxPrice(maxPrice);
       setTempWidth(filterWidth);
       setTempHeight(filterHeight);
-      setTempDepth(filterDepth);
     }
   }, [filterModalVisible]);
 
@@ -575,8 +565,8 @@ const SearchScreen = () => {
         backgroundColor: '#eee'
       }}
       onPress={() => {
-        setSearchQuery(cat.value);
-        setDebouncedSearchQuery(cat.value);
+        setSearchQuery(cat.name);
+        setDebouncedSearchQuery(cat.name);
       }}
     >
       <Image
@@ -603,12 +593,11 @@ const SearchScreen = () => {
     const owner = userMap[item.ownerId || ''];
     const displayName = owner?.fullName || owner?.username || item.username || 'Bilinmeyen';
 
+    // Asimetrik düzen için stabil rastgele başlangıç yüksekliği
+    const stableRandomHeight = (parseInt(item.id.substring(0, 8), 16) % 150) + 200;
     const targetWidth = (cardStyle && (cardStyle as any).width) ? (cardStyle as any).width : columnWidth;
-    const aspectRatio = imageAspectRatios[item.id] || 1.2;
-    let calculatedHeight = targetWidth * aspectRatio;
-
-    if (isNaN(calculatedHeight)) calculatedHeight = targetWidth * 1.2;
-    const finalHeight = Math.max(100, Math.min(calculatedHeight, screenWidth * 1.5));
+    const aspectRatio = imageAspectRatios[item.id];
+    const imageHeight = aspectRatio ? targetWidth * aspectRatio : stableRandomHeight;
 
     const handlePress = () => {
       const serializableProduct = {
@@ -619,32 +608,48 @@ const SearchScreen = () => {
     };
 
     return (
-      <TouchableOpacity key={item.id} style={[styles.card, cardStyle || { width: columnWidth }]} onPress={handlePress} activeOpacity={0.7}>
-        <View style={styles.imageContainer}>
-          {firstImage ? (
-            <Image
-              source={{ uri: firstImage || undefined }}
-              style={[styles.image, { height: finalHeight }]}
-              resizeMode="cover"
-              onLoad={(e) => handleImageLoad(item.id, e)}
-            />
-          ) : (
-            <View style={[styles.noImage, { height: finalHeight }]}>
-              <Text style={styles.noImageText}>Resim yok</Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.infoContainer}>
-          <View style={styles.userRow}>
-            <Text style={styles.username} numberOfLines={1}>{displayName}</Text>
-            <TouchableOpacity onPress={() => handleFavoriteToggle(item)} style={styles.favoriteButton}>
-              <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={colors.text} />
-            </TouchableOpacity>
+      <View key={item.id} style={[styles.card, cardStyle || { width: columnWidth }]}>
+        <TouchableOpacity
+          onPress={handlePress}
+          activeOpacity={0.8}
+        >
+          <View style={styles.imageContainer}>
+            {firstImage ? (
+              <Image
+                source={{ uri: firstImage || undefined }}
+                style={[styles.image, { height: imageHeight, backgroundColor: isDarkTheme ? '#2a2a2a' : '#f0f0f0' }]}
+                onLoad={(e) => handleImageLoad(item.id, e)}
+              />
+            ) : (
+              <View style={[styles.image, styles.noImage, { height: 200 }]}>
+                <Text style={styles.noImageText}>Resim yok</Text>
+              </View>
+            )}
           </View>
-          <Text style={styles.title} numberOfLines={2}>{item.title}{item.year ? `, ${item.year}` : ''}</Text>
-          <Text style={styles.price}>₺{item.price ? Number(item.price).toLocaleString('tr-TR') : '0'}</Text>
-        </View>
-      </TouchableOpacity>
+
+          <View style={styles.infoContainer}>
+            <View style={styles.userRow}>
+              <Text style={styles.username} numberOfLines={1}>
+                {displayName}
+              </Text>
+              <TouchableOpacity
+                onPress={() => handleFavoriteToggle(item)}
+                style={styles.favoriteButton}
+              >
+                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#ff4b4b' : colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.title} numberOfLines={2}>
+              {item.title}{item.year ? `, ${item.year}` : ''}
+            </Text>
+
+            <Text style={styles.price}>
+              ₺{item.price ? Number(item.price).toLocaleString('tr-TR') : '0'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -821,14 +826,6 @@ const SearchScreen = () => {
                   keyboardType="numeric"
                   value={tempHeight}
                   onChangeText={setTempHeight}
-                />
-                <TextInput
-                  style={styles.priceInput}
-                  placeholder="Derinlik"
-                  placeholderTextColor={colors.secondaryText}
-                  keyboardType="numeric"
-                  value={tempDepth}
-                  onChangeText={setTempDepth}
                 />
               </View>
             </ScrollView>

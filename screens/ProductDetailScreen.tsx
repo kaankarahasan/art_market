@@ -496,7 +496,7 @@ const ProductDetailScreen = () => {
           {productData.dimensions && (
             <Text style={styles.detail}>
               Boyut:{' '}
-              {['height', 'width', 'depth']
+              {['height', 'width']
                 .map((key) =>
                   productData.dimensions
                     ? productData.dimensions[

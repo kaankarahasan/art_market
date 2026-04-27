@@ -116,8 +116,8 @@ export default function InboxScreen() {
           id: doc.id,
           lastMessage: data.lastMessage || '',
           otherUserId,
-          otherUserName: info.displayName || info.fullName || info.username || 'Bilinmeyen',
-          otherUserPhoto: info.photoURL || undefined,
+          otherUserName: info.displayName || info.fullName || info.username || info.name || 'Bilinmeyen',
+          otherUserPhoto: info.photoURL || info.profilePicture || info.profileImage || undefined,
           unreadCount,
         };
       });
@@ -149,8 +149,8 @@ export default function InboxScreen() {
             const userData = userSnap.data() as any;
             if (userData) {
               newProfiles[uid] = {
-                photoURL: userData.photoURL || userData.profileImage,
-                displayName: userData.displayName || userData.fullName || userData.username || 'Kullanıcı'
+                photoURL: userData.photoURL || userData.profilePicture || userData.profileImage,
+                displayName: userData.displayName || userData.fullName || userData.username || userData.name || 'Kullanıcı'
               };
             }
           }

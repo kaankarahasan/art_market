@@ -66,8 +66,9 @@ export default function ChatScreen() {
         if (snap.exists()) {
           const data = snap.data() as any;
           if (data) {
-            const name = data.displayName || data.fullName || data.username || 'Bilinmeyen';
-            setOtherUser({ displayName: name, photoURL: data.photoURL });
+            const name = data.displayName || data.fullName || data.username || data.name || 'Bilinmeyen';
+            const photo = data.photoURL || data.profilePicture || data.profileImage || undefined;
+            setOtherUser({ displayName: name, photoURL: photo });
           }
         } else {
           setOtherUser({ displayName: 'Bilinmeyen' });
@@ -139,8 +140,8 @@ export default function ChatScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0 }]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={90}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         {/* Üst Bar */}
         <View style={[styles.header, { paddingVertical: avatarSize / 4 }]}>

@@ -1,5 +1,5 @@
 /**
- * ViewInRoomScreen.tsx - Perfect Ratio, 5M Reference Scaling & Zoom
+ * ViewInRoomScreen.tsx - Perfect Ratio, 5M Reference Scaling & Zoom & Big Room
  */
 import React from 'react';
 import {
@@ -17,21 +17,26 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
-// --- AYARLANABİLİR PARAMETRELER (YENİ GÖRSEL: view_in_room_2.png) ---
+// --- AYARLANABİLİR PARAMETRELER (YENİ GÖRSEL: view_in_room_3.png) ---
 const IMG_WIDTH = 4096;
 const IMG_HEIGHT = 2232;
 const IMG_ASPECT = IMG_WIDTH / IMG_HEIGHT;
 
-// --- GERÇEK DÜNYA OPTİK & PERSPEKTİF DEĞERLERİ ---
+// --- GERÇEK DÜNYA OPTİK & PERSPEKTİF DEĞERLERİ (NORMAL ODA) ---
 const REAL_DOOR_HEIGHT_CM = 210; // Kullanıcının belirttiği referans kapı boyu
 const REAL_WALL_WIDTH_CM = 500;  // Kapının sağındaki duvar genişliği
 const CAMERA_DISTANCE_M = 2;     // Duvara olan izleme mesafesi (2 Metre)
 
-// 2D Piksel Tahminleri (Resmi görmeden yapılan kalibrasyon, kayma olursa değiştirilebilir):
-// Kapı resmin dikeyinde ne kadar yer kaplıyor? (Standart odada kapılar ~%72 yer kaplar)
+// 2D Piksel Tahminleri (Normal Oda):
 const DOOR_HEIGHT_IN_IMAGE_PCT = 0.72; 
-// Kapı çitasının sağ tarafta bittiği ve 5m beyaz duvarın başladığı X noktası (Soldan tahmini %20)
 const DOOR_RIGHT_EDGE_PCT = 0.20;
+
+// --- GERÇEK DÜNYA OPTİK & PERSPEKTİF DEĞERLERİ (BÜYÜK GALERİ ODASI) ---
+const BIG_WALL_WIDTH_CM = 2000;
+const BIG_WALL_HEIGHT_CM = 1000;
+const BIG_CAMERA_DISTANCE_M = 10;
+// Büyük oda için duvarın dikeyde tahmini kapladığı alan (%70 varsayıldı)
+const BIG_WALL_HEIGHT_IN_IMAGE_PCT = 0.70;
 // ----------------------------------
 
 type ViewInRoomRouteProp = RouteProp<RootStackParamList, 'ViewInRoom'>;
@@ -56,42 +61,60 @@ const ViewInRoomScreen = () => {
     renderHeight = renderWidth / IMG_ASPECT;
   }
 
-  // 2. Optik Piksel Haritalaması (Kullanıcının 210cm ölçüsüne göre kalibrasyon)
-  // Kapının fotoğraf üzerindeki piksel uzunluğunu buluyoruz:
-  const doorPixelHeight = renderHeight * DOOR_HEIGHT_IN_IMAGE_PCT;
-  
-  // 1 cm = X piksel oranı (Doğrudan kapı yüksekliğinden elde ediliyor)
-  const basePixelsPerCm = doorPixelHeight / REAL_DOOR_HEIGHT_CM;
-
-  // Kamera 2 metre mesafe parametresinin matematiksel yansıması
-  // Eğer mesafe 4m olsaydı eser perspektif olarak daha küçük (~0.5x) gözükecekti.
-  const perspectiveRatio = 2.0 / CAMERA_DISTANCE_M; 
-  const pixelsPerCm = basePixelsPerCm * perspectiveRatio;
-
   const artworkWidthCm = dimensions?.width || 60;
   const artworkHeightCm = dimensions?.height || (dimensions?.width ? dimensions.width : 80);
-  const artworkDepthCm = dimensions?.depth || 2;
+  const artworkDepthCm = 2;
+
+  // Genişliği 5m'den (500cm) veya yüksekliği 2.1m'den (210cm) büyük olanlar için büyük odayı kullan
+  const isBigArtwork = artworkWidthCm > 500 || artworkHeightCm > 210;
+
+  let pixelsPerCm = 0;
+  let artworkLeftPx = 0;
+  let artworkTopPx = 0;
+
+  if (isBigArtwork) {
+    // 2. Optik Piksel Haritalaması (Büyük Oda Kalibrasyonu)
+    const bigWallPixelHeight = renderHeight * BIG_WALL_HEIGHT_IN_IMAGE_PCT;
+    
+    // 1 cm = X piksel oranı (Duvarın 10m = 1000cm olmasından)
+    const basePixelsPerCm = bigWallPixelHeight / BIG_WALL_HEIGHT_CM;
+    const perspectiveRatio = 10.0 / BIG_CAMERA_DISTANCE_M; // 10 / 10 = 1.0
+    pixelsPerCm = basePixelsPerCm * perspectiveRatio;
+
+    const artworkWidthPx = artworkWidthCm * pixelsPerCm;
+    const artworkHeightPx = artworkHeightCm * pixelsPerCm;
+
+    // 3. Duvar ve Merkezi Konumlandırma (Büyük Oda)
+    // Doğrudan ekranın ortasına
+    artworkLeftPx = (renderWidth / 2) - (artworkWidthPx / 2);
+    artworkTopPx = (renderHeight / 2) - (artworkHeightPx / 2);
+
+  } else {
+    // 2. Optik Piksel Haritalaması (Normal Oda Kalibrasyonu)
+    const doorPixelHeight = renderHeight * DOOR_HEIGHT_IN_IMAGE_PCT;
+    
+    const basePixelsPerCm = doorPixelHeight / REAL_DOOR_HEIGHT_CM;
+    const perspectiveRatio = 2.0 / CAMERA_DISTANCE_M; 
+    pixelsPerCm = basePixelsPerCm * perspectiveRatio;
+
+    const artworkWidthPx = artworkWidthCm * pixelsPerCm;
+    const artworkHeightPx = artworkHeightCm * pixelsPerCm;
+
+    // 3. Duvar ve Merkezi Konumlandırma (Normal Oda)
+    const wallWidthPx = REAL_WALL_WIDTH_CM * pixelsPerCm;
+    const wallStartX = renderWidth * DOOR_RIGHT_EDGE_PCT;
+    const wallCenterXPx = wallStartX + (wallWidthPx / 2);
+
+    artworkLeftPx = wallCenterXPx - (artworkWidthPx / 2);
+    artworkTopPx = (renderHeight * 0.45) - (artworkHeightPx / 2); 
+  }
 
   const artworkWidthPx = artworkWidthCm * pixelsPerCm;
   const artworkHeightPx = artworkHeightCm * pixelsPerCm;
   
-  // Kalınlık bilgisini kullanarak eserin gölge (duvardan çıkıntı) miktarını dinamik belirliyoruz
+  // Standart bir derinlik (kalınlık) varsayarak gölge (duvardan çıkıntı) miktarını dinamik belirliyoruz
   const dynamicShadowOffset = Math.min(Math.max(artworkDepthCm * 3, 5), 30);
   const dynamicShadowRadius = Math.min(Math.max(artworkDepthCm * 2, 5), 25);
-
-  // 3. Duvar ve Merkezi Konumlandırma
-  // 5 Metrelik duvarın piksellerdeki toplam kapladığı fiziksel genişlik:
-  const wallWidthPx = REAL_WALL_WIDTH_CM * pixelsPerCm;
-  
-  // Duvar kapının hemen sağından başlıyor, bu yüzden "başlangıç X":
-  const wallStartX = renderWidth * DOOR_RIGHT_EDGE_PCT;
-  // "Kapının yanındaki duvarın ortasına konumlandırılır" -> Merkezi X noktası:
-  const wallCenterXPx = wallStartX + (wallWidthPx / 2);
-
-  // Eseri duvarın ortasından kendi yarısı kadar sola çekerek milimetrik hizala
-  const artworkLeftPx = wallCenterXPx - (artworkWidthPx / 2);
-  // Y ekseni göz hizasında (Resmin dikey olarak yaklaşık ortası)
-  const artworkTopPx = (renderHeight * 0.45) - (artworkHeightPx / 2); 
 
   // --- ZOOM ve PAN (SÜRÜKLEME) MATEMATİĞİ ---
   const scale = useSharedValue(1);
@@ -180,7 +203,7 @@ const ViewInRoomScreen = () => {
           
           <View style={{ width: renderWidth, height: renderHeight, overflow: 'hidden' }}>
             <Image
-              source={require('../assets/view_in_room_2.jpg')}
+              source={isBigArtwork ? require('../assets/view_in_room_big.jpg') : require('../assets/view_in_room_3.jpg')}
               style={{ width: '100%', height: '100%' }}
               resizeMode="cover" 
             />

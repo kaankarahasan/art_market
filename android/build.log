@@ -1,5 +1,5 @@
-> Task :gradle-plugin:shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :gradle-plugin:settings-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :gradle-plugin:settings-plugin:pluginDescriptors UP-TO-DATE
 > Task :gradle-plugin:settings-plugin:processResources UP-TO-DATE
 > Task :gradle-plugin:shared:compileKotlin UP-TO-DATE
@@ -74,287 +74,852 @@
 :react-native-firebase_storage:android.minSdk using custom value: 24
 :react-native-firebase_storage:reactNativeAndroidDir /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native
 
-> Task :react-native-firebase_remote-config:preBuild UP-TO-DATE
 > Task :react-native-firebase_auth:preBuild UP-TO-DATE
-> Task :react-native-firebase_firestore:preBuild UP-TO-DATE
-> Task :react-native-firebase_storage:preBuild UP-TO-DATE
 > Task :react-native-firebase_app:preBuild UP-TO-DATE
+> Task :react-native-firebase_firestore:preBuild UP-TO-DATE
 > Task :react-native-fs:preBuild UP-TO-DATE
 > Task :react-native-get-random-values:preBuild UP-TO-DATE
+> Task :react-native-firebase_storage:preBuild UP-TO-DATE
+> Task :react-native-firebase_remote-config:preBuild UP-TO-DATE
+> Task :react-native-google-signin_google-signin:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :react-native-gesture-handler:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :react-native-image-picker:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :react-native-async-storage_async-storage:generateCodegenSchemaFromJavaScript UP-TO-DATE
 > Task :app:generateAutolinkingNewArchitectureFiles UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :react-native-image-picker:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :react-native-picker_picker:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :react-native-image-picker:preBuild UP-TO-DATE
+> Task :react-native-safe-area-context:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :react-native-google-signin_google-signin:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :react-native-google-signin_google-signin:preBuild UP-TO-DATE
+> Task :react-native-safe-area-context:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :react-native-safe-area-context:preBuild UP-TO-DATE
+> Task :react-native-gesture-handler:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :react-native-gesture-handler:preBuild UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:preBuild UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:preReleaseBuild UP-TO-DATE
+> Task :react-native-async-storage_async-storage:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :react-native-picker_picker:generateCodegenArtifactsFromSchema UP-TO-DATE
 > Task :app:generateAutolinkingPackageList UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-picker_picker:preBuild UP-TO-DATE
+> Task :react-native-async-storage_async-storage:preBuild UP-TO-DATE
 > Task :app:generateCodegenSchemaFromJavaScript SKIPPED
+> Task :react-native-firebase_app:preReleaseBuild UP-TO-DATE
+> Task :react-native-async-storage_async-storage:preReleaseBuild UP-TO-DATE
 > Task :app:generateCodegenArtifactsFromSchema SKIPPED
 > Task :app:generateReactNativeEntryPoint UP-TO-DATE
+> Task :react-native-async-storage_async-storage:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-firebase_auth:preReleaseBuild UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-firebase_auth:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-firebase_firestore:preReleaseBuild UP-TO-DATE
+> Task :react-native-async-storage_async-storage:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-firebase_auth:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-async-storage_async-storage:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-firebase_remote-config:preReleaseBuild UP-TO-DATE
+> Task :react-native-firebase_app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-firebase_remote-config:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-screens:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :react-native-firebase_auth:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-firebase_firestore:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-firebase_storage:preReleaseBuild UP-TO-DATE
+> Task :react-native-firebase_remote-config:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-vector-icons:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :react-native-firebase_storage:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-firebase_app:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-firebase_firestore:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-firebase_remote-config:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-firebase_firestore:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-gesture-handler:preReleaseBuild UP-TO-DATE
+> Task :react-native-fs:preReleaseBuild UP-TO-DATE
+> Task :react-native-firebase_storage:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-firebase_app:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-get-random-values:preReleaseBuild UP-TO-DATE
+> Task :react-native-gesture-handler:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-google-signin_google-signin:preReleaseBuild UP-TO-DATE
+> Task :react-native-firebase_storage:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-google-signin_google-signin:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-image-picker:preReleaseBuild UP-TO-DATE
+> Task :react-native-vector-icons:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :react-native-vector-icons:preBuild UP-TO-DATE
+> Task :react-native-picker_picker:preReleaseBuild UP-TO-DATE
+> Task :react-native-google-signin_google-signin:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-image-picker:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-screens:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :react-native-picker_picker:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-screens:preBuild UP-TO-DATE
+> Task :react-native-safe-area-context:preReleaseBuild UP-TO-DATE
+> Task :react-native-image-picker:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-google-signin_google-signin:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-get-random-values:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-screens:preReleaseBuild UP-TO-DATE
+> Task :react-native-picker_picker:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-image-picker:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-get-random-values:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-picker_picker:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-safe-area-context:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-vector-icons:preReleaseBuild UP-TO-DATE
+> Task :react-native-get-random-values:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-safe-area-context:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-vector-icons:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-safe-area-context:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-fs:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-async-storage_async-storage:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-vector-icons:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-firebase_app:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-fs:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-async-storage_async-storage:generateReleaseResValues UP-TO-DATE
+> Task :react-native-vector-icons:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:generateReleaseResValues UP-TO-DATE
+> Task :react-native-firebase_app:generateReleaseResValues UP-TO-DATE
+> Task :react-native-fs:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:generateReleaseResources UP-TO-DATE
+> Task :react-native-firebase_app:generateReleaseResources UP-TO-DATE
+> Task :react-native-firebase_firestore:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-async-storage_async-storage:generateReleaseResources UP-TO-DATE
+> Task :react-native-firebase_auth:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-firebase_auth:generateReleaseResValues UP-TO-DATE
+> Task :react-native-firebase_firestore:generateReleaseResValues UP-TO-DATE
+> Task :react-native-firebase_auth:generateReleaseResources UP-TO-DATE
+> Task :react-native-firebase_firestore:generateReleaseResources UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:packageReleaseResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:packageReleaseResources UP-TO-DATE
+> Task :react-native-firebase_auth:packageReleaseResources UP-TO-DATE
+> Task :react-native-firebase_firestore:packageReleaseResources UP-TO-DATE
+> Task :react-native-firebase_app:packageReleaseResources UP-TO-DATE
+> Task :react-native-firebase_auth:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-firebase_firestore:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-firebase_app:parseReleaseLocalResources UP-TO-DATE
 > Task :react-native-reanimated:assertMinimalReactNativeVersionTask
 > Task :react-native-reanimated:assertNewArchitectureEnabledTask SKIPPED
+> Task :react-native-worklets:assertMinimalReactNativeVersionTask
+> Task :react-native-worklets:assertNewArchitectureEnabledTask SKIPPED
 > Task :react-native-reanimated:assertWorkletsVersionTask
+> Task :react-native-worklets:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :react-native-firebase_auth:generateReleaseRFile UP-TO-DATE
+> Task :react-native-firebase_firestore:generateReleaseRFile UP-TO-DATE
+> Task :react-native-firebase_app:generateReleaseRFile UP-TO-DATE
+> Task :react-native-reanimated:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :react-native-async-storage_async-storage:generateReleaseRFile UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:generateReleaseRFile UP-TO-DATE
+> Task :react-native-async-storage_async-storage:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-firebase_firestore:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-firebase_auth:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-firebase_remote-config:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-worklets:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :react-native-reanimated:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :react-native-firebase_storage:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-firebase_storage:generateReleaseResValues UP-TO-DATE
+> Task :react-native-firebase_remote-config:generateReleaseResValues UP-TO-DATE
+> Task :react-native-firebase_app:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-firebase_storage:generateReleaseResources UP-TO-DATE
+> Task :react-native-firebase_remote-config:generateReleaseResources UP-TO-DATE
+> Task :react-native-firebase_storage:packageReleaseResources UP-TO-DATE
+> Task :react-native-firebase_remote-config:packageReleaseResources UP-TO-DATE
+> Task :react-native-firebase_storage:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-firebase_storage:generateReleaseRFile UP-TO-DATE
+> Task :react-native-firebase_storage:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-worklets:prepareWorkletsHeadersForPrefabs UP-TO-DATE
+> Task :react-native-worklets:preBuild
+> Task :react-native-google-signin_google-signin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-worklets:preReleaseBuild
+> Task :react-native-firebase_remote-config:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-google-signin_google-signin:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-google-signin_google-signin:generateReleaseResValues UP-TO-DATE
+> Task :react-native-firebase_remote-config:generateReleaseRFile UP-TO-DATE
+> Task :react-native-firebase_remote-config:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-google-signin_google-signin:generateReleaseResources UP-TO-DATE
+> Task :react-native-picker_picker:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-picker_picker:generateReleaseResValues UP-TO-DATE
+> Task :react-native-google-signin_google-signin:packageReleaseResources UP-TO-DATE
+> Task :react-native-picker_picker:generateReleaseResources UP-TO-DATE
+> Task :react-native-google-signin_google-signin:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-reanimated:prepareReanimatedHeadersForPrefabs UP-TO-DATE
+> Task :react-native-reanimated:preBuild
+> Task :app:preBuild
+> Task :app:preReleaseBuild
+> Task :react-native-google-signin_google-signin:generateReleaseRFile UP-TO-DATE
+> Task :react-native-reanimated:preReleaseBuild
+> Task :react-native-picker_picker:packageReleaseResources UP-TO-DATE
+> Task :react-native-reanimated:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-picker_picker:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-picker_picker:generateReleaseRFile UP-TO-DATE
+> Task :react-native-picker_picker:javaPreCompileRelease UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-fs:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-fs:generateReleaseResValues UP-TO-DATE
+> Task :react-native-fs:generateReleaseResources UP-TO-DATE
+> Task :react-native-fs:packageReleaseResources UP-TO-DATE
+> Task :react-native-fs:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-fs:generateReleaseRFile UP-TO-DATE
+> Task :react-native-fs:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-fs:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-picker_picker:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-picker_picker:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-picker_picker:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-gesture-handler:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-reanimated:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-gesture-handler:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-reanimated:generateReleaseResValues UP-TO-DATE
+> Task :react-native-reanimated:generateReleaseResources UP-TO-DATE
+> Task :react-native-fs:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-fs:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-get-random-values:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-get-random-values:generateReleaseResValues UP-TO-DATE
+> Task :react-native-get-random-values:generateReleaseResources UP-TO-DATE
+> Task :react-native-get-random-values:packageReleaseResources UP-TO-DATE
+> Task :react-native-get-random-values:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-get-random-values:generateReleaseRFile UP-TO-DATE
+> Task :react-native-get-random-values:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-gesture-handler:generateReleaseResValues UP-TO-DATE
+> Task :react-native-gesture-handler:generateReleaseResources UP-TO-DATE
+> Task :react-native-gesture-handler:packageReleaseResources UP-TO-DATE
+> Task :react-native-reanimated:packageReleaseResources UP-TO-DATE
+> Task :react-native-gesture-handler:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-reanimated:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-gesture-handler:generateReleaseRFile UP-TO-DATE
+> Task :react-native-reanimated:generateReleaseRFile UP-TO-DATE
+> Task :react-native-gesture-handler:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-reanimated:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-image-picker:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-safe-area-context:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-image-picker:generateReleaseResValues UP-TO-DATE
+> Task :react-native-safe-area-context:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-firebase_app:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-safe-area-context:generateReleaseResValues UP-TO-DATE
+> Task :react-native-image-picker:generateReleaseResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-safe-area-context:generateReleaseResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-firebase_app:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-async-storage_async-storage:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-image-picker:packageReleaseResources UP-TO-DATE
+> Task :react-native-safe-area-context:packageReleaseResources UP-TO-DATE
+> Task :react-native-google-signin_google-signin:compileReleaseKotlin UP-TO-DATE
+> Task :react-native-firebase_app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-firebase_app:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-google-signin_google-signin:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-google-signin_google-signin:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-get-random-values:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-get-random-values:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-get-random-values:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-google-signin_google-signin:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-google-signin_google-signin:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-safe-area-context:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-safe-area-context:generateReleaseRFile UP-TO-DATE
+> Task :react-native-firebase_auth:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-firebase_remote-config:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-firebase_auth:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-firebase_storage:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-firebase_remote-config:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-firebase_auth:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-firebase_storage:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-firebase_remote-config:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-firebase_storage:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-vector-icons:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-firebase_firestore:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-firebase_firestore:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-firebase_firestore:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-image-picker:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-firebase_app:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-worklets:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-firebase_auth:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-async-storage_async-storage:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-firebase_remote-config:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-image-picker:generateReleaseRFile UP-TO-DATE
+> Task :react-native-firebase_storage:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-screens:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-image-picker:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-fs:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-gesture-handler:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-get-random-values:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-google-signin_google-signin:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-picker_picker:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-reanimated:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-vector-icons:generateReleaseResValues UP-TO-DATE
+> Task :react-native-firebase_firestore:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-vector-icons:generateReleaseResources UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:processReleaseManifest UP-TO-DATE
+> Task :react-native-firebase_app:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-firebase_app:processReleaseManifest UP-TO-DATE
+> Task :react-native-firebase_auth:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-firebase_auth:processReleaseManifest UP-TO-DATE
+> Task :react-native-firebase_firestore:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-firebase_firestore:processReleaseManifest UP-TO-DATE
+> Task :react-native-vector-icons:packageReleaseResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-firebase_remote-config:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-async-storage_async-storage:processReleaseManifest UP-TO-DATE
+> Task :react-native-firebase_remote-config:processReleaseManifest UP-TO-DATE
+> Task :react-native-vector-icons:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-firebase_storage:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-firebase_storage:processReleaseManifest UP-TO-DATE
+> Task :react-native-vector-icons:generateReleaseRFile UP-TO-DATE
+> Task :react-native-gesture-handler:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-vector-icons:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-gesture-handler:processReleaseManifest UP-TO-DATE
+> Task :react-native-fs:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-get-random-values:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-fs:processReleaseManifest UP-TO-DATE
+> Task :react-native-google-signin_google-signin:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-get-random-values:processReleaseManifest UP-TO-DATE
+> Task :react-native-google-signin_google-signin:processReleaseManifest UP-TO-DATE
+> Task :react-native-picker_picker:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-reanimated:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-picker_picker:processReleaseManifest UP-TO-DATE
+> Task :react-native-async-storage_async-storage:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-reanimated:processReleaseManifest UP-TO-DATE
+> Task :react-native-firebase_auth:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-firebase_firestore:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-firebase_remote-config:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-firebase_storage:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-fs:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-image-picker:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-google-signin_google-signin:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-image-picker:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-get-random-values:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-image-picker:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-picker_picker:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-async-storage_async-storage:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-image-picker:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-firebase_app:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-firebase_auth:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-image-picker:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-firebase_firestore:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-firebase_remote-config:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-firebase_storage:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-fs:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-gesture-handler:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-image-picker:processReleaseManifest UP-TO-DATE
+> Task :react-native-get-random-values:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-google-signin_google-signin:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-image-picker:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-reanimated:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-picker_picker:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-image-picker:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-async-storage_async-storage:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-vector-icons:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-firebase_app:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-vector-icons:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-vector-icons:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-vector-icons:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-firebase_firestore:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-vector-icons:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-firebase_remote-config:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-firebase_storage:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-fs:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-get-random-values:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-google-signin_google-signin:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+> Task :react-native-safe-area-context:compileReleaseKotlin UP-TO-DATE
+> Task :react-native-firebase_auth:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-picker_picker:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-image-picker:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-safe-area-context:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-vector-icons:processReleaseManifest UP-TO-DATE
+> Task :react-native-firebase_app:processReleaseJavaRes NO-SOURCE
+> Task :react-native-camera-roll_camera-roll:processReleaseJavaRes NO-SOURCE
+> Task :react-native-firebase_auth:processReleaseJavaRes NO-SOURCE
+> Task :react-native-async-storage_async-storage:processReleaseJavaRes NO-SOURCE
+> Task :react-native-firebase_firestore:processReleaseJavaRes NO-SOURCE
+> Task :react-native-vector-icons:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-vector-icons:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-fs:processReleaseJavaRes NO-SOURCE
+> Task :react-native-firebase_remote-config:processReleaseJavaRes NO-SOURCE
+> Task :react-native-firebase_storage:processReleaseJavaRes NO-SOURCE
+> Task :react-native-vector-icons:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-get-random-values:processReleaseJavaRes NO-SOURCE
+> Task :react-native-image-picker:processReleaseJavaRes NO-SOURCE
+> Task :react-native-picker_picker:processReleaseJavaRes NO-SOURCE
+> Task :react-native-reanimated:processReleaseJavaRes NO-SOURCE
+> Task :react-native-vector-icons:processReleaseJavaRes NO-SOURCE
+> Task :react-native-async-storage_async-storage:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:compileReleaseShaders NO-SOURCE
+> Task :react-native-async-storage_async-storage:compileReleaseShaders NO-SOURCE
+> Task :react-native-async-storage_async-storage:generateReleaseAssets UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:generateReleaseAssets UP-TO-DATE
+> Task :react-native-firebase_app:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-google-signin_google-signin:processReleaseJavaRes UP-TO-DATE
+> Task :react-native-firebase_app:compileReleaseShaders NO-SOURCE
+> Task :react-native-firebase_app:generateReleaseAssets UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-firebase_auth:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-async-storage_async-storage:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-firebase_app:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-safe-area-context:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-firebase_auth:compileReleaseShaders NO-SOURCE
+> Task :react-native-firebase_remote-config:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-firebase_firestore:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-firebase_auth:generateReleaseAssets UP-TO-DATE
+> Task :react-native-firebase_remote-config:compileReleaseShaders NO-SOURCE
+> Task :react-native-firebase_remote-config:generateReleaseAssets UP-TO-DATE
+> Task :react-native-safe-area-context:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-firebase_firestore:compileReleaseShaders NO-SOURCE
+> Task :react-native-firebase_storage:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-firebase_firestore:generateReleaseAssets UP-TO-DATE
+> Task :react-native-firebase_auth:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-firebase_storage:compileReleaseShaders NO-SOURCE
+> Task :react-native-safe-area-context:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-firebase_storage:generateReleaseAssets UP-TO-DATE
+> Task :react-native-firebase_remote-config:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-fs:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-firebase_firestore:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-fs:compileReleaseShaders NO-SOURCE
+> Task :react-native-fs:generateReleaseAssets UP-TO-DATE
+> Task :react-native-safe-area-context:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-gesture-handler:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-firebase_storage:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-get-random-values:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-gesture-handler:compileReleaseShaders NO-SOURCE
+> Task :react-native-gesture-handler:generateReleaseAssets UP-TO-DATE
+> Task :react-native-get-random-values:compileReleaseShaders NO-SOURCE
+> Task :react-native-fs:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-get-random-values:generateReleaseAssets UP-TO-DATE
+> Task :react-native-safe-area-context:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-google-signin_google-signin:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-gesture-handler:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-image-picker:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-google-signin_google-signin:compileReleaseShaders NO-SOURCE
+> Task :react-native-get-random-values:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-google-signin_google-signin:generateReleaseAssets UP-TO-DATE
+> Task :react-native-image-picker:compileReleaseShaders NO-SOURCE
+> Task :react-native-image-picker:generateReleaseAssets UP-TO-DATE
+> Task :react-native-google-signin_google-signin:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-reanimated:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-picker_picker:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-image-picker:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-safe-area-context:processReleaseManifest UP-TO-DATE
+> Task :react-native-vector-icons:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-reanimated:compileReleaseShaders NO-SOURCE
+> Task :react-native-picker_picker:compileReleaseShaders NO-SOURCE
+> Task :react-native-picker_picker:generateReleaseAssets UP-TO-DATE
+> Task :react-native-reanimated:generateReleaseAssets UP-TO-DATE
+> Task :react-native-vector-icons:compileReleaseShaders NO-SOURCE
+> Task :react-native-vector-icons:generateReleaseAssets UP-TO-DATE
+> Task :react-native-picker_picker:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-safe-area-context:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-reanimated:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-vector-icons:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-safe-area-context:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-firebase_auth:createFullJarRelease UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:createFullJarRelease UP-TO-DATE
+> Task :react-native-firebase_app:createFullJarRelease UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:extractProguardFiles UP-TO-DATE
+> Task :react-native-firebase_app:extractProguardFiles UP-TO-DATE
+> Task :react-native-firebase_auth:extractProguardFiles UP-TO-DATE
+> Task :react-native-async-storage_async-storage:createFullJarRelease UP-TO-DATE
+> Task :react-native-safe-area-context:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-async-storage_async-storage:extractProguardFiles UP-TO-DATE
+> Task :react-native-firebase_auth:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-firebase_firestore:createFullJarRelease UP-TO-DATE
+> Task :react-native-firebase_firestore:extractProguardFiles UP-TO-DATE
+> Task :react-native-firebase_firestore:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-firebase_remote-config:createFullJarRelease UP-TO-DATE
+> Task :react-native-firebase_remote-config:extractProguardFiles UP-TO-DATE
+> Task :react-native-firebase_remote-config:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-safe-area-context:processReleaseJavaRes UP-TO-DATE
+> Task :react-native-safe-area-context:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-safe-area-context:compileReleaseShaders NO-SOURCE
+> Task :react-native-safe-area-context:generateReleaseAssets UP-TO-DATE
+> Task :react-native-safe-area-context:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-firebase_storage:createFullJarRelease UP-TO-DATE
+> Task :react-native-fs:createFullJarRelease UP-TO-DATE
+> Task :react-native-firebase_storage:extractProguardFiles UP-TO-DATE
+> Task :react-native-fs:extractProguardFiles UP-TO-DATE
+> Task :react-native-firebase_storage:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-gesture-handler:extractProguardFiles UP-TO-DATE
+> Task :react-native-reanimated:extractProguardFiles UP-TO-DATE
+> Task :react-native-reanimated:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-gesture-handler:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-screens:buildCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-get-random-values:createFullJarRelease UP-TO-DATE
+> Task :react-native-screens:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-get-random-values:extractProguardFiles UP-TO-DATE
+> Task :react-native-screens:mergeReleaseNativeLibs UP-TO-DATE
+> Task :react-native-screens:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-screens:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-screens:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-screens:generateReleaseResValues UP-TO-DATE
+> Task :react-native-screens:generateReleaseResources UP-TO-DATE
+> Task :react-native-screens:packageReleaseResources UP-TO-DATE
+> Task :react-native-screens:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-screens:generateReleaseRFile UP-TO-DATE
+> Task :react-native-worklets:buildCMakeRelWithDebInfo[arm64-v8a][worklets]
+> Task :react-native-worklets:externalNativeBuildRelease
+> Task :react-native-worklets:generateJsonModelRelease
+> Task :react-native-worklets:prefabReleaseConfigurePackage
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :react-native-reanimated:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-reanimated:generateJsonModelRelease
+> Task :react-native-reanimated:prefabReleaseConfigurePackage UP-TO-DATE
+> Task :react-native-worklets:prefabReleasePackage UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-async-storage_async-storage:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-fs:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-worklets:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :react-native-async-storage_async-storage:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-fs:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-worklets:mergeReleaseNativeLibs UP-TO-DATE
+> Task :react-native-google-signin_google-signin:createFullJarRelease UP-TO-DATE
+> Task :react-native-worklets:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-google-signin_google-signin:extractProguardFiles UP-TO-DATE
+> Task :react-native-worklets:generateReleaseBuildConfig UP-TO-DATE
+> Task :react-native-worklets:generateReleaseResValues UP-TO-DATE
+> Task :react-native-worklets:generateReleaseResources UP-TO-DATE
+> Task :react-native-worklets:packageReleaseResources UP-TO-DATE
+> Task :react-native-get-random-values:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-worklets:parseReleaseLocalResources UP-TO-DATE
+> Task :react-native-get-random-values:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-firebase_app:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-image-picker:createFullJarRelease UP-TO-DATE
+> Task :react-native-image-picker:extractProguardFiles UP-TO-DATE
+> Task :react-native-firebase_app:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-google-signin_google-signin:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-screens:compileReleaseKotlin UP-TO-DATE
+> Task :react-native-worklets:generateReleaseRFile UP-TO-DATE
+> Task :react-native-screens:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-reanimated:buildCMakeRelWithDebInfo[arm64-v8a][reanimated]
+> Task :react-native-worklets:javaPreCompileRelease UP-TO-DATE
+> Task :react-native-reanimated:externalNativeBuildRelease
+> Task :react-native-screens:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-screens:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-image-picker:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-screens:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-screens:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-screens:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-screens:processReleaseManifest UP-TO-DATE
+> Task :react-native-reanimated:prefabReleasePackage UP-TO-DATE
+> Task :react-native-screens:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-reanimated:mergeReleaseNativeLibs UP-TO-DATE
+> Task :react-native-reanimated:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-screens:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-screens:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-screens:processReleaseJavaRes UP-TO-DATE
+> Task :react-native-screens:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-screens:compileReleaseShaders NO-SOURCE
+> Task :react-native-screens:generateReleaseAssets UP-TO-DATE
+> Task :react-native-worklets:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-screens:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-worklets:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-google-signin_google-signin:prepareLintJarForPublish UP-TO-DATE
+> Task :app:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-worklets:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-firebase_remote-config:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-image-picker:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-firebase_firestore:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-worklets:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-safe-area-context:createFullJarRelease UP-TO-DATE
+> Task :react-native-worklets:writeReleaseAarMetadata UP-TO-DATE
+> Task :react-native-worklets:extractDeepLinksRelease UP-TO-DATE
+> Task :react-native-safe-area-context:extractProguardFiles UP-TO-DATE
+> Task :react-native-worklets:processReleaseManifest UP-TO-DATE
+> Task :react-native-firebase_auth:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-picker_picker:createFullJarRelease UP-TO-DATE
+> Task :react-native-worklets:prepareReleaseArtProfile UP-TO-DATE
+> Task :react-native-screens:createFullJarRelease UP-TO-DATE
+> Task :react-native-reanimated:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :react-native-worklets:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-picker_picker:extractProguardFiles UP-TO-DATE
+> Task :react-native-reanimated:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :react-native-firebase_storage:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-safe-area-context:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-gesture-handler:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-worklets:processReleaseJavaRes NO-SOURCE
+> Task :react-native-screens:extractProguardFiles UP-TO-DATE
+> Task :react-native-vector-icons:createFullJarRelease UP-TO-DATE
+> Task :react-native-worklets:mergeReleaseShaders UP-TO-DATE
+> Task :react-native-vector-icons:extractProguardFiles UP-TO-DATE
+> Task :react-native-safe-area-context:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-worklets:compileReleaseShaders NO-SOURCE
+> Task :react-native-worklets:generateReleaseAssets UP-TO-DATE
+> Task :react-native-worklets:mergeReleaseAssets UP-TO-DATE
+> Task :react-native-worklets:createFullJarRelease UP-TO-DATE
+> Task :react-native-reanimated:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-worklets:extractProguardFiles UP-TO-DATE
+> Task :react-native-picker_picker:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-reanimated:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-gesture-handler:buildCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-async-storage_async-storage:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-picker_picker:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-async-storage_async-storage:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-gesture-handler:mergeReleaseNativeLibs UP-TO-DATE
+> Task :react-native-reanimated:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :react-native-async-storage_async-storage:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-gesture-handler:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-reanimated:createFullJarRelease UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-vector-icons:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-firebase_auth:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-vector-icons:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-firebase_firestore:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-firebase_firestore:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-firebase_firestore:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-firebase_auth:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-worklets:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-firebase_auth:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-worklets:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-screens:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-screens:prepareLintJarForPublish UP-TO-DATE
+> Task :react-native-firebase_remote-config:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-firebase_remote-config:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-firebase_remote-config:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-reanimated:generateReleaseLintModel UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-firebase_firestore:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-async-storage_async-storage:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-firebase_firestore:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-firebase_auth:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-async-storage_async-storage:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-firebase_firestore:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-async-storage_async-storage:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-firebase_auth:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-firebase_firestore:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-firebase_firestore:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-firebase_storage:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-firebase_app:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-firebase_app:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-firebase_storage:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-firebase_auth:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-firebase_remote-config:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-async-storage_async-storage:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-firebase_remote-config:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-firebase_auth:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-firebase_storage:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-async-storage_async-storage:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-firebase_remote-config:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-google-signin_google-signin:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-firebase_remote-config:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-firebase_auth:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-google-signin_google-signin:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-firebase_app:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-google-signin_google-signin:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-firebase_remote-config:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-picker_picker:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-picker_picker:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-fs:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-picker_picker:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-get-random-values:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-fs:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-get-random-values:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-fs:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-firebase_storage:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-get-random-values:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-google-signin_google-signin:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-firebase_app:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-firebase_storage:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-google-signin_google-signin:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-firebase_app:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-firebase_storage:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-fs:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-get-random-values:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-google-signin_google-signin:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-picker_picker:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-firebase_app:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-fs:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-firebase_storage:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-get-random-values:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-google-signin_google-signin:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-get-random-values:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-google-signin_google-signin:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-picker_picker:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-firebase_app:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-firebase_storage:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-fs:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-firebase_app:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-get-random-values:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-fs:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-picker_picker:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-image-picker:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-fs:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-picker_picker:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-reanimated:stripReleaseDebugSymbols UP-TO-DATE
+> Task :react-native-image-picker:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-reanimated:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-safe-area-context:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-image-picker:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-reanimated:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-safe-area-context:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-picker_picker:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-safe-area-context:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-screens:stripReleaseDebugSymbols UP-TO-DATE
+> Task :react-native-screens:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-screens:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-image-picker:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-get-random-values:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-safe-area-context:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-reanimated:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-vector-icons:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-image-picker:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-safe-area-context:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-vector-icons:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-vector-icons:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-image-picker:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-reanimated:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-worklets:stripReleaseDebugSymbols UP-TO-DATE
+> Task :react-native-image-picker:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-reanimated:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-worklets:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-image-picker:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-screens:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-reanimated:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-screens:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-worklets:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-vector-icons:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-screens:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-reanimated:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-screens:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-vector-icons:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-worklets:extractReleaseAnnotations UP-TO-DATE
+> Task :react-native-screens:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-safe-area-context:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-vector-icons:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-worklets:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :react-native-vector-icons:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-worklets:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-vector-icons:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-worklets:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-safe-area-context:syncReleaseLibJars UP-TO-DATE
+> Task :react-native-worklets:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-safe-area-context:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :react-native-firebase_auth:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-firebase_firestore:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-firebase_remote-config:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-firebase_storage:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-fs:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-reanimated:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-worklets:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-get-random-values:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-google-signin_google-signin:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-picker_picker:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-image-picker:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-safe-area-context:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-screens:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-vector-icons:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-firebase_auth:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-firebase_remote-config:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-firebase_firestore:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-get-random-values:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-fs:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-image-picker:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-google-signin_google-signin:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-firebase_storage:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-picker_picker:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-reanimated:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-safe-area-context:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-vector-icons:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-screens:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-async-storage_async-storage:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-worklets:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-firebase_app:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-async-storage_async-storage:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-async-storage_async-storage:bundleReleaseAar UP-TO-DATE
+> Task :react-native-firebase_app:generateReleaseLintVitalModel UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:bundleReleaseAar UP-TO-DATE
+> Task :react-native-firebase_app:bundleReleaseAar UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :react-native-firebase_app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :react-native-async-storage_async-storage:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :react-native-async-storage_async-storage:mergeReleaseResources UP-TO-DATE
+> Task :react-native-firebase_app:mergeReleaseResources UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:mergeReleaseResources UP-TO-DATE
+> Task :react-native-firebase_app:verifyReleaseResources UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:verifyReleaseResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:verifyReleaseResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:assembleRelease UP-TO-DATE
+> Task :react-native-camera-roll_camera-roll:assembleRelease UP-TO-DATE
+> Task :react-native-firebase_app:assembleRelease UP-TO-DATE
+> Task :react-native-firebase_app:compileReleaseLibraryResources UP-TO-DATE
+> Task :react-native-firebase_auth:bundleReleaseAar UP-TO-DATE
+> Task :react-native-firebase_firestore:bundleReleaseAar UP-TO-DATE
+> Task :react-native-firebase_remote-config:bundleReleaseAar UP-TO-DATE
+> Task :react-native-firebase_auth:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :react-native-firebase_firestore:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :react-native-firebase_remote-config:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :react-native-gesture-handler:stripReleaseDebugSymbols UP-TO-DATE
+> Task :react-native-gesture-handler:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :react-native-gesture-handler:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-gesture-handler:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-firebase_auth:mergeReleaseResources UP-TO-DATE
+> Task :react-native-firebase_firestore:mergeReleaseResources UP-TO-DATE
+> Task :react-native-firebase_remote-config:mergeReleaseResources UP-TO-DATE
+> Task :react-native-firebase_firestore:verifyReleaseResources FAILED
+> Task :react-native-firebase_remote-config:verifyReleaseResources FAILED
+> Task :react-native-firebase_auth:verifyReleaseResources FAILED
+> Task :app:buildCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-gesture-handler:compileReleaseKotlin
+> Task :react-native-async-storage_async-storage:lintVitalAnalyzeRelease
+> Task :react-native-camera-roll_camera-roll:lintVitalAnalyzeRelease
+> Task :react-native-firebase_app:lintVitalAnalyzeRelease
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+> Task :react-native-reanimated:externalNativeBuildRelease
+> Task :react-native-reanimated:prefabReleasePackage
+> Task :react-native-reanimated:mergeReleaseNativeLibs
 
-> Task :react-native-picker_picker:generateCodegenSchemaFromJavaScript FAILED
-/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
-  return expand(pattern)
-         ^
+> Task :react-native-reanimated:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
 
-TypeError: expand is not a function
-    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
-    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
-    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
-    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
-    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
-    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
-    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
-    at Array.flatMap (<anonymous>)
-    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
-    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
-
-Node.js v24.10.0
-
-> Task :react-native-async-storage_async-storage:generateCodegenSchemaFromJavaScript FAILED
-/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
-  return expand(pattern)
-         ^
-
-TypeError: expand is not a function
-    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
-    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
-    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
-    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
-    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
-    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
-    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
-    at Array.flatMap (<anonymous>)
-    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
-    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
-
-Node.js v24.10.0
-
-> Task :react-native-image-picker:generateCodegenSchemaFromJavaScript FAILED
-/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
-  return expand(pattern)
-         ^
-
-TypeError: expand is not a function
-    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
-    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
-    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
-    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
-    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
-    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
-    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
-    at Array.flatMap (<anonymous>)
-    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
-    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
-
-Node.js v24.10.0
-
-> Task :react-native-safe-area-context:generateCodegenSchemaFromJavaScript FAILED
-/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
-  return expand(pattern)
-         ^
-
-TypeError: expand is not a function
-    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
-    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
-    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
-    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
-    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
-    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
-    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
-    at Array.flatMap (<anonymous>)
-    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
-    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
-
-Node.js v24.10.0
-
-> Task :react-native-camera-roll_camera-roll:generateCodegenSchemaFromJavaScript FAILED
-/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
-  return expand(pattern)
-         ^
-
-TypeError: expand is not a function
-    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
-    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
-    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
-    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
-    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
-    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
-    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
-    at Array.flatMap (<anonymous>)
-    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
-    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
-
-Node.js v24.10.0
-
-> Task :react-native-google-signin_google-signin:generateCodegenSchemaFromJavaScript FAILED
-/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
-  return expand(pattern)
-         ^
-
-TypeError: expand is not a function
-    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
-    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
-    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
-    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
-    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
-    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
-    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
-    at Array.flatMap (<anonymous>)
-    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
-    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
-
-Node.js v24.10.0
-
-> Task :react-native-gesture-handler:generateCodegenSchemaFromJavaScript FAILED
-/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
-  return expand(pattern)
-         ^
-
-TypeError: expand is not a function
-    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
-    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
-    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
-    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
-    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
-    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
-    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
-    at Array.flatMap (<anonymous>)
-    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
-    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
-
-Node.js v24.10.0
-
-> Task :react-native-reanimated:generateCodegenSchemaFromJavaScript FAILED
-/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271
-  return expand(pattern)
-         ^
-
-TypeError: expand is not a function
-    at Minimatch.braceExpand (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:271:10)
-    at Minimatch.make (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:180:33)
-    at new Minimatch (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/node_modules/minimatch/minimatch.js:156:8)
-    at setopts (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/common.js:116:20)
-    at new GlobSync (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:37:3)
-    at glob.globSync [as sync] (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/glob/sync.js:23:10)
-    at /Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:59:19
-    at Array.flatMap (<anonymous>)
-    at expandDirectoriesIntoFiles (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:54:6)
-    at combineSchemasInFileList (/Users/kaankarahasan/Desktop/Project/app_market/node_modules/react-native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema.js:70:28)
-
-Node.js v24.10.0
-
-[Incubating] Problems report is available at: file:///Users/kaankarahasan/Desktop/Project/app_market/android/build/reports/problems/problems-report.html
-
-FAILURE: Build completed with 8 failures.
-
-1: Task failed with an exception.
------------
-* What went wrong:
-Execution failed for task ':react-native-picker_picker:generateCodegenSchemaFromJavaScript'.
-> Process 'command 'node'' finished with non-zero exit value 1
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
-
-2: Task failed with an exception.
------------
-* What went wrong:
-Execution failed for task ':react-native-gesture-handler:generateCodegenSchemaFromJavaScript'.
-> Process 'command 'node'' finished with non-zero exit value 1
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
-
-3: Task failed with an exception.
------------
-* What went wrong:
-Execution failed for task ':react-native-safe-area-context:generateCodegenSchemaFromJavaScript'.
-> Process 'command 'node'' finished with non-zero exit value 1
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
-
-4: Task failed with an exception.
------------
-* What went wrong:
-Execution failed for task ':react-native-async-storage_async-storage:generateCodegenSchemaFromJavaScript'.
-> Process 'command 'node'' finished with non-zero exit value 1
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
-
-5: Task failed with an exception.
------------
-* What went wrong:
-Execution failed for task ':react-native-google-signin_google-signin:generateCodegenSchemaFromJavaScript'.
-> Process 'command 'node'' finished with non-zero exit value 1
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
-
-6: Task failed with an exception.
------------
-* What went wrong:
-Execution failed for task ':react-native-camera-roll_camera-roll:generateCodegenSchemaFromJavaScript'.
-> Process 'command 'node'' finished with non-zero exit value 1
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
-
-7: Task failed with an exception.
------------
-* What went wrong:
-Execution failed for task ':react-native-image-picker:generateCodegenSchemaFromJavaScript'.
-> Process 'command 'node'' finished with non-zero exit value 1
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
-
-8: Task failed with an exception.
------------
-* What went wrong:
-Execution failed for task ':react-native-reanimated:generateCodegenSchemaFromJavaScript'.
-> Process 'command 'node'' finished with non-zero exit value 1
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
-
-Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
-
-You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
-
-For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-
-BUILD FAILED in 3s
-23 actionable tasks: 10 executed, 13 up-to-date
+> Task :react-native-reanimated:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :react-native-reanimated:bundleLibCompileToJarRelease
+> Task :react-native-reanimated:exportReleaseConsumerProguardFiles
+> Task :react-native-reanimated:bundleLibRuntimeToJarRelease
+> Task :react-native-reanimated:generateReleaseLintModel
+> Task :react-native-reanimated:createFullJarRelease
+> Task :react-native-reanimated:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-reanimated:copyReleaseJniLibsProjectOnly
+> Task :react-native-reanimated:extractReleaseAnnotations
+> Task :react-native-reanimated:mergeReleaseConsumerProguardFiles
+> Task :react-native-reanimated:mergeReleaseJavaResource UP-TO-DATE
+> Task :react-native-reanimated:syncReleaseLibJars
+> Task :react-native-reanimated:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :react-native-reanimated:generateReleaseLintVitalModel
+> Task :react-native-reanimated:stripReleaseDebugSymbols
+> Task :react-native-reanimated:compileReleaseLibraryResources
+> Task :react-native-reanimated:mapReleaseSourceSetPaths
+> Task :react-native-reanimated:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-reanimated:lintVitalAnalyzeRelease
+> Task :react-native-reanimated:mergeReleaseResources
+> Task :react-native-reanimated:bundleReleaseLocalLintAar
+> Task :react-native-gesture-handler:buildCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-gesture-handler:mergeReleaseNativeLibs
+> Task :react-native-gesture-handler:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :react-native-gesture-handler:copyReleaseJniLibsProjectOnly
+> Task :react-native-gesture-handler:writeReleaseLintModelMetadata
+> Task :react-native-gesture-handler:stripReleaseDebugSymbols
+> Task :react-native-gesture-handler:mapReleaseSourceSetPaths
+> Task :react-native-gesture-handler:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-reanimated:bundleReleaseAar
+> Task :react-native-gesture-handler:mergeReleaseResources
+> Task :react-native-reanimated:verifyReleaseResources
+> Task :react-native-reanimated:assembleRelease
+> Task :react-native-gesture-handler:verifyReleaseResources
+> Task :app:buildCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-gesture-handler:compileReleaseKotlin

@@ -38,7 +38,6 @@ const AddProductScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [height, setHeight] = useState('');
   const [width, setWidth] = useState('');
-  const [depth, setDepth] = useState('');
   const [year, setYear] = useState('');
 
   const navigation = useNavigation();
@@ -170,7 +169,6 @@ const AddProductScreen = () => {
       const dimensions = {
         height: height ? parseFloat(height) : null,
         width: width ? parseFloat(width) : null,
-        depth: depth ? parseFloat(depth) : null,
       };
 
       await addDoc(collection(db, 'products'), {
@@ -198,7 +196,6 @@ const AddProductScreen = () => {
       setCategory('');
       setHeight('');
       setWidth('');
-      setDepth('');
       setYear('');
       setImages([]);
       navigation.goBack();
@@ -294,15 +291,6 @@ const AddProductScreen = () => {
                 keyboardType="numeric"
                 value={width}
                 onChangeText={setWidth}
-              />
-            </View>
-            <View style={styles.dimensionBox}>
-              <Text style={styles.dimensionLabel}>Kalınlık</Text>
-              <TextInput
-                style={styles.dimensionInput}
-                keyboardType="numeric"
-                value={depth}
-                onChangeText={setDepth}
               />
             </View>
           </View>

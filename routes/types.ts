@@ -14,7 +14,6 @@ export type Product = {
   dimensions?: {
     height?: number | null;
     width?: number | null;
-    depth?: number | null;
   };
   year?: number | null;         // Yıl artık sayı olarak tutuluyor
   isSold?: boolean;
@@ -58,6 +57,6 @@ export type RootStackParamList = {
   GeminiChat: undefined;
   ViewInRoom: { 
     imageUrl: string; 
-    dimensions?: { height?: number | null; width?: number | null; depth?: number | null; };
+    dimensions?: { height?: number | null; width?: number | null; };
   };
 };

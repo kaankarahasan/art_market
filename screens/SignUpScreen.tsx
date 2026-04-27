@@ -100,7 +100,7 @@ const SignUpScreen = () => {
           email: user.email,
           fullName,
           username,
-          profilePicture: '',
+          photoURL: '',
           bio: '',
           followersCount: 0,
           followingCount: 0,

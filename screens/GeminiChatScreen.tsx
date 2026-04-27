@@ -5,18 +5,17 @@ import {
     TouchableOpacity,
     FlatList,
     Text,
+    Image,
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
     Dimensions,
     ActivityIndicator,
     Keyboard,
-    Animated,
-    ScrollView,
     Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { onSnapshot, collection, query, orderBy, limit, doc, getDocs, setDoc, addDoc, getDoc, Timestamp, deleteDoc } from '@react-native-firebase/firestore';
@@ -30,24 +29,17 @@ type Message = {
     createdAt: any;
 };
 
-type ChatSession = {
-    id: string;
-    title: string;
-    createdAt: any;
-};
+
 
 export default function GeminiChatScreen() {
     const navigation = useNavigation<any>();
     const [messages, setMessages] = useState<Message[]>([]);
-    const [sessions, setSessions] = useState<ChatSession[]>([]);
-    const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+    const [currentSessionId] = useState<string>("main_session");
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [productsContext, setProductsContext] = useState('');
 
     const flatListRef = useRef<FlatList>(null);
-    const sidebarAnim = useRef(new Animated.Value(-300)).current;
     const isMounted = useRef(true);
     const scrollTimeout = useRef<any>(null);
     const currentUser = auth.currentUser;
@@ -55,32 +47,26 @@ export default function GeminiChatScreen() {
     const { colors, isDarkTheme } = useThemeContext();
     const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
     const insets = useSafeAreaInsets();
+    const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-    // Sidebar Animation
-    useEffect(() => {
-        Animated.timing(sidebarAnim, {
-            toValue: isSidebarOpen ? 0 : -300,
-            duration: 300,
-            useNativeDriver: true,
-        }).start();
-    }, [isSidebarOpen]);
+    // Tab bar gizleme (ChatScreen ile aynı)
+    useFocusEffect(
+        React.useCallback(() => {
+            navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+            return () => navigation.getParent()?.setOptions({ tabBarStyle: undefined });
+        }, [navigation])
+    );
 
-    // 1. Fetch Chat Sessions (Modular)
-    useEffect(() => {
-        if (!currentUser) return;
+    // Dynamic dimensions from ChatScreen
+    const avatarSize = Math.min(Math.max(screenHeight * 0.06, 40), 60);
+    const usernameFont = Math.min(Math.max(screenHeight * 0.022, 14), 18);
+    const messageFont = Math.min(Math.max(screenHeight * 0.018, 12), 16);
+    const inputFont = Math.min(Math.max(screenHeight * 0.018, 12), 16);
+    const buttonFont = Math.min(Math.max(screenHeight * 0.018, 12), 16);
+    const inputPaddingVertical = Math.min(Math.max(screenHeight * 0.012, 8), 12);
+    const sendButtonPaddingVertical = Math.min(Math.max(screenHeight * 0.012, 8), 12);
 
-        const q = query(
-            collection(db, 'users', currentUser.uid, 'gemini_sessions'),
-            orderBy('createdAt', 'desc')
-        );
 
-        const unsubscribe = onSnapshot(q, snapshot => {
-            const fetched = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ChatSession));
-            setSessions(fetched);
-        });
-
-        return () => unsubscribe();
-    }, [currentUser]);
 
     // 2. Listen to Messages (Modular)
     useEffect(() => {
@@ -123,32 +109,34 @@ export default function GeminiChatScreen() {
         fetchContext();
     }, []);
 
-    const startNewChat = () => {
-        setCurrentSessionId(null);
-        setMessages([]);
-        setIsSidebarOpen(false);
-    };
-
-    const deleteSession = async (sessionId: string) => {
+    const resetChat = async () => {
         if (!currentUser) return;
 
         Alert.alert(
-            "Sohbeti Sil",
-            "Bu sohbeti silmek istediğinizden emin misiniz?",
+            "Sohbeti Sıfırla",
+            "Tüm mesaj geçmişini silmek istediğinizden emin misiniz?",
             [
                 { text: "Vazgeç", style: "cancel" },
                 {
-                    text: "Sil",
+                    text: "Sıfırla",
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            await deleteDoc(doc(db, 'users', currentUser.uid, 'gemini_sessions', sessionId));
-
-                            if (currentSessionId === sessionId) {
-                                startNewChat();
-                            }
+                            setLoading(true);
+                            const messagesRef = collection(db, 'users', currentUser.uid, 'gemini_sessions', currentSessionId, 'messages');
+                            const snapshot = await getDocs(messagesRef);
+                            
+                            const deletePromises = snapshot.docs.map((d: any) => deleteDoc(d.ref));
+                            await Promise.all(deletePromises);
+                            
+                            // Also delete the session doc itself to be clean
+                            await deleteDoc(doc(db, 'users', currentUser.uid, 'gemini_sessions', currentSessionId));
+                            
+                            setMessages([]);
                         } catch (e) {
-                            console.warn("Delete error:", e);
+                            console.warn("Reset error:", e);
+                        } finally {
+                            setLoading(false);
                         }
                     }
                 }
@@ -165,15 +153,15 @@ export default function GeminiChatScreen() {
 
         try {
             let sessionID = currentSessionId;
-            const userSessionCollection = collection(db, 'users', currentUser.uid, 'gemini_sessions');
+            const sessionRef = doc(db, 'users', currentUser.uid, 'gemini_sessions', sessionID);
 
-            if (!sessionID) {
-                const newSession = await addDoc(userSessionCollection, {
-                    title: userText.substring(0, 30) + '...',
+            // Ensure session exists
+            const sessionSnap = await getDoc(sessionRef);
+            if (!sessionSnap.exists()) {
+                await setDoc(sessionRef, {
+                    title: 'Ana Sohbet',
                     createdAt: serverTimestamp()
                 });
-                sessionID = newSession.id;
-                setCurrentSessionId(sessionID);
             }
 
             const messagesRef = collection(db, 'users', currentUser.uid, 'gemini_sessions', sessionID!, 'messages');
@@ -233,81 +221,105 @@ export default function GeminiChatScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0 }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Text style={styles.backIcon}>‹</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.headerTitle}>Gemini</Text>
-
-                <View style={styles.headerRight}>
-                    <TouchableOpacity onPress={startNewChat} style={styles.newChatBtnAction}>
-                        <Text style={styles.newChatBtn}>+</Text>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+                {/* Header */}
+                <View style={[styles.header, { paddingVertical: avatarSize / 4 }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Text style={[styles.backText, { fontSize: avatarSize * 0.7 }]}>‹</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={styles.menuBtn}>
-                        <Text style={styles.menuIcon}>☰</Text>
+                    
+                    <View style={styles.userInfo}>
+                        <Image
+                            source={require('../assets/google_g_logo.png')}
+                            style={[
+                                styles.avatar,
+                                {
+                                    width: avatarSize,
+                                    height: avatarSize,
+                                    borderRadius: avatarSize / 2,
+                                },
+                            ]}
+                        />
+                        <Text style={[styles.username, { fontSize: usernameFont }]}>Gemini</Text>
+                    </View>
+
+                    <TouchableOpacity onPress={resetChat} style={styles.resetBtnAction}>
+                        <Text style={styles.resetBtn}>↺</Text>
                     </TouchableOpacity>
                 </View>
-            </View>
 
-            {isSidebarOpen && (
-                <TouchableOpacity activeOpacity={1} style={styles.overlay} onPress={() => setIsSidebarOpen(false)} />
-            )}
-
-            <Animated.View style={[styles.sidebar, { transform: [{ translateX: sidebarAnim }] }]}>
-                <View style={styles.sidebarHeader}>
-                    <Text style={styles.sidebarTitle}>Konuşmalar</Text>
-                    <TouchableOpacity onPress={startNewChat} style={styles.sidebarNewChat}>
-                        <Text style={styles.sidebarNewChatText}>+ Yeni Sohbet</Text>
-                    </TouchableOpacity>
+                {/* Messages */}
+                <View style={{ flex: 1, backgroundColor: colors.background }}>
+                    <FlatList
+                        ref={flatListRef}
+                        inverted
+                        data={[...messages].reverse()}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingBottom: 10 }}
+                        renderItem={({ item }) => {
+                            const isUser = item.sender === 'user';
+                            const bubbleWidth = Math.min(screenWidth * 0.75, Math.max(100, item.text.length * 7));
+                            
+                            return (
+                                <View
+                                    style={[
+                                        styles.messageBubble,
+                                        isUser ? styles.myMessage : styles.otherMessage,
+                                        { maxWidth: bubbleWidth },
+                                    ]}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.messageText,
+                                            !isUser && { color: colors.text },
+                                            { fontSize: messageFont },
+                                        ]}
+                                    >
+                                        {item.text}
+                                    </Text>
+                                </View>
+                            );
+                        }}
+                    />
                 </View>
-                <ScrollView contentContainerStyle={styles.sidebarList}>
-                    {sessions.map((session) => (
-                        <View key={session.id} style={[styles.sessionItemContainer, currentSessionId === session.id && styles.activeSession]}>
-                            <TouchableOpacity style={styles.sessionItem} onPress={() => { setCurrentSessionId(session.id); setIsSidebarOpen(false); }}>
-                                <Text style={styles.sessionItemText} numberOfLines={1}>{session.title}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => deleteSession(session.id)} style={styles.deleteBtn}>
-                                <Text style={styles.deleteIcon}>×</Text>
-                            </TouchableOpacity>
-                        </View>
-                    ))}
-                </ScrollView>
-            </Animated.View>
 
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <FlatList
-                    ref={flatListRef}
-                    data={messages}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.chatList}
-                    renderItem={({ item }) => (
-                        <View style={[styles.msgWrap, item.sender === 'user' ? styles.userWrap : styles.geminiWrap]}>
-                            <View style={[styles.bubble, item.sender === 'user' ? styles.userBubble : styles.geminiBubble]}>
-                                <Text style={styles.msgText}>{item.text}</Text>
-                            </View>
-                        </View>
-                    )}
-                />
                 {loading && (
                     <View style={styles.loadingBox}>
                         <ActivityIndicator size="small" color="#4285F4" />
                         <Text style={styles.loadingText}>Gemini yanıtlıyor...</Text>
                     </View>
                 )}
-                <View style={styles.inputArea}>
-                    <View style={styles.inputFieldWrap}>
-                        <TextInput
-                            value={text}
-                            onChangeText={setText}
-                            placeholder="Gemini'ye sorun..."
-                            style={styles.input}
-                            multiline
-                        />
-                        <TouchableOpacity onPress={sendMessage} disabled={!text.trim() || loading} style={styles.sendBtn}>
-                            <Text style={styles.sendIcon}>↑</Text>
-                        </TouchableOpacity>
-                    </View>
+
+                {/* Input Area */}
+                <View style={[styles.inputContainer, { paddingVertical: inputPaddingVertical }]}>
+                    <TextInput
+                        value={text}
+                        onChangeText={setText}
+                        placeholder="Gemini'ye sorun..."
+                        placeholderTextColor={colors.secondaryText}
+                        style={[
+                            styles.input,
+                            {
+                                fontSize: inputFont,
+                                paddingHorizontal: 14,
+                                paddingVertical: inputPaddingVertical,
+                            },
+                        ]}
+                        multiline
+                    />
+                    <TouchableOpacity
+                        style={[
+                            styles.sendButton,
+                            { paddingHorizontal: 18, paddingVertical: sendButtonPaddingVertical },
+                        ]}
+                        onPress={sendMessage}
+                        disabled={!text.trim() || loading}
+                    >
+                        <Text style={[styles.sendButtonText, { fontSize: buttonFont }]}>Gönder</Text>
+                    </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
         </View>
@@ -315,42 +327,79 @@ export default function GeminiChatScreen() {
 }
 
 const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
-    container: { flex: 1, backgroundColor: isDarkTheme ? '#131314' : '#FFFFFF' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, height: 56, borderBottomWidth: 1, borderBottomColor: isDarkTheme ? '#303134' : '#F0F4F9' },
-    headerRight: { flexDirection: 'row', alignItems: 'center' },
-    backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
-    backIcon: { fontSize: 32, color: colors.text, fontWeight: '300', marginTop: -4 },
-    menuBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-end', marginLeft: 10 },
-    menuIcon: { fontSize: 26, color: colors.text, fontWeight: '300' },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center' },
-    newChatBtnAction: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-    newChatBtn: { fontSize: 28, color: colors.text, fontWeight: '300' },
-    overlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 10 },
-    sidebar: { position: 'absolute', top: 0, bottom: 0, left: 0, width: 280, backgroundColor: isDarkTheme ? '#1E1F20' : '#F0F4F9', zIndex: 11, paddingTop: 50, elevation: 10 },
-    sidebarHeader: { paddingHorizontal: 20, marginBottom: 20 },
-    sidebarTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 15 },
-    sidebarNewChat: { paddingVertical: 10, paddingHorizontal: 15, backgroundColor: isDarkTheme ? '#2B2C2D' : '#D3E3FD', borderRadius: 20, alignItems: 'center' },
-    sidebarNewChatText: { color: isDarkTheme ? '#FFFFFF' : '#041E49', fontWeight: '600' },
-    sidebarList: { paddingHorizontal: 10 },
-    sessionItemContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 10, marginVertical: 2 },
-    sessionItem: { flex: 1, paddingVertical: 12, paddingHorizontal: 15 },
-    activeSession: { backgroundColor: isDarkTheme ? '#303134' : '#E0E5EA' },
-    sessionItemText: { color: colors.text, fontSize: 14 },
-    deleteBtn: { padding: 10, marginRight: 5 },
-    deleteIcon: { color: colors.secondaryText, fontSize: 20, fontWeight: 'bold' },
-    chatList: { paddingHorizontal: 15, paddingBottom: 20 },
-    msgWrap: { marginVertical: 8, flexDirection: 'row', width: '100%' },
-    userWrap: { justifyContent: 'flex-end' },
-    geminiWrap: { justifyContent: 'flex-start' },
-    bubble: { padding: 12, borderRadius: 20, maxWidth: '85%' },
-    userBubble: { backgroundColor: isDarkTheme ? '#2B3D4F' : '#F0F4F9' },
-    geminiBubble: { backgroundColor: 'transparent' },
-    msgText: { fontSize: 16, lineHeight: 24, color: colors.text },
-    loadingBox: { flexDirection: 'row', alignItems: 'center', marginLeft: 20, marginBottom: 15 },
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.card,
+        backgroundColor: colors.background,
+        justifyContent: 'space-between'
+    },
+    backButton: {
+        paddingHorizontal: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    backText: { color: colors.text },
+    userInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    avatar: { marginRight: 12 },
+    username: { fontWeight: '600', color: colors.text },
+    resetBtnAction: { paddingHorizontal: 15, height: 40, justifyContent: 'center' },
+    resetBtn: { fontSize: 24, color: colors.text, fontWeight: '400' },
+    
+    messageBubble: {
+        padding: 14,
+        marginVertical: 6,
+        marginHorizontal: 12,
+        borderRadius: 12,
+    },
+    myMessage: {
+        backgroundColor: isDarkTheme ? '#262626' : '#333333',
+        alignSelf: 'flex-end',
+        borderBottomRightRadius: 4,
+        borderBottomLeftRadius: 20,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+    },
+    otherMessage: {
+        backgroundColor: colors.card,
+        alignSelf: 'flex-start',
+        borderWidth: 1,
+        borderColor: isDarkTheme ? '#404040' : '#E5E5E5',
+        borderBottomRightRadius: 20,
+        borderBottomLeftRadius: 4,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+    },
+    messageText: { color: '#FFFFFF' },
+    
+    loadingBox: { flexDirection: 'row', alignItems: 'center', marginLeft: 20, marginVertical: 10 },
     loadingText: { marginLeft: 10, fontSize: 13, color: colors.secondaryText },
-    inputArea: { paddingHorizontal: 15, paddingBottom: Platform.OS === 'ios' ? 10 : 20 },
-    inputFieldWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkTheme ? '#2B2C2D' : '#F0F4F9', borderRadius: 28, paddingHorizontal: 15, minHeight: 56 },
-    input: { flex: 1, color: colors.text, fontSize: 16, paddingVertical: 10 },
-    sendBtn: { backgroundColor: '#4285F4', width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginLeft: 10 },
-    sendIcon: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+    
+    inputContainer: {
+        flexDirection: 'row',
+        backgroundColor: colors.background,
+        alignItems: 'center',
+        borderTopWidth: 1,
+        borderTopColor: colors.card,
+        paddingHorizontal: 10,
+    },
+    input: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: isDarkTheme ? '#404040' : '#CCCCCC',
+        borderRadius: 22,
+        marginRight: 10,
+        backgroundColor: isDarkTheme ? '#1F1F1F' : '#FAFAFA',
+        color: colors.text,
+    },
+    sendButton: {
+        backgroundColor: isDarkTheme ? '#FFFFFF' : '#333333',
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    sendButtonText: { color: isDarkTheme ? '#000000' : '#FFFFFF', fontWeight: '600' },
 });

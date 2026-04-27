@@ -27,6 +27,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { RootStackParamList } from '../routes/types';
 import { ThemeContext } from '../contexts/ThemeContext';
 import ImageViewer from 'react-native-image-zoom-viewer';
+import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
 
 const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 45) / 2;
@@ -69,11 +70,11 @@ const ProfileScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<ProfileRouteProp>();
   const insets = useSafeAreaInsets();
-  const { colors } = useContext(ThemeContext);
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
-
   const currentUser = auth.currentUser;
   const profileId = route.params?.userId ?? currentUser?.uid ?? '';
+
+  const { colors, isDarkTheme } = useContext(ThemeContext);
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -83,6 +84,7 @@ const ProfileScreen = () => {
   const [selectedTab, setSelectedTab] = useState<'Artworks' | 'About'>('Artworks');
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
   const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
 
   const isOwnProfile = profileId === currentUser?.uid;
 
@@ -150,7 +152,9 @@ const ProfileScreen = () => {
     let rightH = 0;
 
     products.forEach((p) => {
-      const h = imageHeights[p.id] || 250;
+      // Asimetrik düzen için stabil rastgele başlangıç yüksekliği
+      const stableRandomHeight = (parseInt(p.id.substring(0, 8), 16) % 150) + 200;
+      const h = imageHeights[p.id] || stableRandomHeight;
       const total = h + 110;
       if (leftH <= rightH) {
         left.push(p);
@@ -165,20 +169,40 @@ const ProfileScreen = () => {
 
   const { left, right } = distributeProducts();
 
+  const handleFavoriteToggle = (item: any) => {
+    const isFav = favoriteItems.some(fav => fav.id === item.id);
+    const imageUrl = item.imageUrls?.[0] || item.imageUrl || null;
+
+    const favItem: FavoriteItem = {
+      id: item.id,
+      title: item.title || 'Başlık Yok',
+      username: item.username || userData?.username || 'Bilinmeyen',
+      imageUrl: imageUrl,
+      price: item.price || 0,
+      year: item.year || '',
+    };
+    isFav ? removeFavorite(item.id) : addFavorite(favItem);
+  };
+
   const renderProductCard = (item: any) => {
-    const imageHeight = imageHeights[item.id] || 250;
+    const isFavorite = favoriteItems.some(fav => fav.id === item.id);
+    // Asimetrik düzen için stabil rastgele başlangıç yüksekliği
+    const stableRandomHeight = (parseInt(item.id.substring(0, 8), 16) % 150) + 200;
+    const imageHeight = imageHeights[item.id] || stableRandomHeight;
     const firstImage = item.imageUrls?.[0] || item.imageUrl;
+    const displayName = userData?.username || item.username || 'Bilinmeyen';
+
     return (
       <View key={item.id} style={[styles.card, { width: columnWidth }]}>
         <TouchableOpacity
           onPress={() => navigation.navigate('ProductDetail', { product: item })}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
           <View style={styles.imageContainer}>
             {firstImage ? (
               <Image
                 source={{ uri: firstImage }}
-                style={[styles.image, { height: imageHeight }]}
+                style={[styles.image, { height: imageHeight, backgroundColor: isDarkTheme ? '#2a2a2a' : '#f0f0f0' }]}
                 onLoad={(e) => {
                   const { width, height } = e.nativeEvent.source;
                   handleImageLoad(item.id, width, height);
@@ -191,6 +215,17 @@ const ProfileScreen = () => {
             )}
           </View>
           <View style={styles.infoContainer}>
+            <View style={styles.userRow}>
+              <Text style={styles.username} numberOfLines={1}>
+                {displayName}
+              </Text>
+              <TouchableOpacity
+                onPress={() => handleFavoriteToggle(item)}
+                style={styles.favoriteButton}
+              >
+                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#ff4b4b' : colors.text} />
+              </TouchableOpacity>
+            </View>
             <Text style={styles.title} numberOfLines={2}>
               {item.title} {item.year ? `, ${item.year}` : ''}
             </Text>
@@ -438,6 +473,20 @@ const createStyles = (colors: any) => StyleSheet.create({
   noImage: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8E8E8' },
   noImageText: { color: colors.secondaryText },
   infoContainer: { padding: 12, paddingTop: 0 },
+  userRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6
+  },
+  username: {
+    fontSize: 13,
+    color: colors.text,
+    flex: 1
+  },
+  favoriteButton: {
+    padding: 2
+  },
   title: { fontSize: 15, color: colors.secondaryText, marginBottom: 8, lineHeight: 20 },
   price: { fontSize: 17, fontWeight: 'bold', color: colors.text },
   closeButton: { position: 'absolute', top: 40, right: 20, zIndex: 10 },

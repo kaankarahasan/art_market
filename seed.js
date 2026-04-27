@@ -216,8 +216,7 @@ async function seed() {
                     category: faker.helpers.arrayElement(CATEGORIES),
                     dimensions: {
                         width: faker.number.int({ min: 10, max: 200 }),
-                        height: faker.number.int({ min: 10, max: 200 }),
-                        depth: faker.number.int({ min: 1, max: 10 })
+                        height: faker.number.int({ min: 10, max: 200 })
                     },
                     year: faker.date.past({ years: 20 }).getFullYear(),
                     isSold: Math.random() < 0.1,

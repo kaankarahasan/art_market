@@ -6,6 +6,7 @@ buildscript {
     minSdkVersion = 24
     compileSdkVersion = 36
     targetSdkVersion = 36
+    compileSdk = 36
     ndkVersion = "27.1.12297006"
     kotlinVersion = "2.0.0"
   }
@@ -32,8 +33,12 @@ allprojects {
   }
 }
 
-
-
-allprojects {
-    apply plugin: 'eclipse'
+subprojects {
+    plugins.withId("com.android.library") {
+        android {
+            compileSdk rootProject.ext.compileSdkVersion
+        }
+    }
 }
+
+

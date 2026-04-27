@@ -248,9 +248,8 @@ const HomeScreen = () => {
 
         const widthMatch = product.dimensions?.width?.toString().includes(queryLower) ?? false;
         const heightMatch = product.dimensions?.height?.toString().includes(queryLower) ?? false;
-        const depthMatch = product.dimensions?.depth?.toString().includes(queryLower) ?? false;
 
-        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || priceMatch || yearMatch || aiTagsMatch || widthMatch || heightMatch || depthMatch;
+        return titleMatch || descriptionMatch || categoryMatch || usernameMatch || priceMatch || yearMatch || aiTagsMatch || widthMatch || heightMatch;
       });
       currentUserResults = allUsers.filter(user => {
         const usernameMatch = user.username?.toLowerCase().includes(queryLower) ?? false;
@@ -270,9 +269,8 @@ const HomeScreen = () => {
 
         const widthMatch = p.dimensions?.width?.toString().includes(queryLower) ?? false;
         const heightMatch = p.dimensions?.height?.toString().includes(queryLower) ?? false;
-        const depthMatch = p.dimensions?.depth?.toString().includes(queryLower) ?? false;
 
-        return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch || widthMatch || heightMatch || depthMatch;
+        return titleMatch || descriptionMatch || categoryMatch || aiTagsMatch || widthMatch || heightMatch;
       });
     } else if (searchScope === 'Artist') {
       currentUserResults = allUsers.filter(user => user.username?.toLowerCase().includes(queryLower) || user.fullName?.toLowerCase().includes(queryLower));
@@ -281,7 +279,7 @@ const HomeScreen = () => {
     } else if (searchScope === 'Price') {
       currentProductResults = products.filter(p => p.price?.toString().includes(queryLower));
     } else if (searchScope === 'Size') {
-      currentProductResults = products.filter(p => p.dimensions?.width?.toString().includes(queryLower) || p.dimensions?.height?.toString().includes(queryLower) || p.dimensions?.depth?.toString().includes(queryLower));
+      currentProductResults = products.filter(p => p.dimensions?.width?.toString().includes(queryLower) || p.dimensions?.height?.toString().includes(queryLower));
     }
 
     setFilteredProducts(currentProductResults);

@@ -50,9 +50,10 @@ const FavoritesScreen = () => {
     let rightHeight = 0;
 
     favoriteItems.forEach(product => {
-      const imageHeight = imageHeights[product.id] || 250;
-      // Match HomeScreen height estimate
-      const infoHeightEstimate = 12 + 15 + 6 + 20 + 8 + 20 + 12; // approx 93
+      // Asimetrik düzen için stabil rastgele başlangıç yüksekliği
+      const stableRandomHeight = (parseInt(product.id.substring(0, 8), 16) % 150) + 200;
+      const imageHeight = imageHeights[product.id] || stableRandomHeight;
+      const infoHeightEstimate = 100; // HomeScreen'deki tahminle uyumlu
       const cardHeight = imageHeight + infoHeightEstimate;
 
       if (leftHeight <= rightHeight) {
@@ -70,7 +71,9 @@ const FavoritesScreen = () => {
   const { leftColumn, rightColumn } = distributeProducts();
 
   const renderProductCard = (item: FavoriteItem) => {
-    const imageHeight = imageHeights[item.id] || 250;
+    // Asimetrik düzen için stabil rastgele başlangıç yüksekliği
+    const stableRandomHeight = (parseInt(item.id.substring(0, 8), 16) % 150) + 200;
+    const imageHeight = imageHeights[item.id] || stableRandomHeight;
     const firstImage = item.imageUrls?.[0] || item.imageUrl;
 
     const handlePress = () => {
@@ -80,7 +83,6 @@ const FavoritesScreen = () => {
         ownerId: item.ownerId || '',
         imageUrls: item.imageUrls || (item.imageUrl ? [item.imageUrl] : []),
         year: item.year ? Number(item.year) : null,
-        // Match HomeScreen serialization
         createdAt: new Date().toISOString(),
       };
       navigation.navigate('ProductDetail', { product: productForDetail });
@@ -90,13 +92,13 @@ const FavoritesScreen = () => {
       <View key={item.id} style={[styles.card, { width: columnWidth }]}>
         <TouchableOpacity
           onPress={handlePress}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
           <View style={styles.imageContainer}>
             {firstImage ? (
               <Image
                 source={{ uri: firstImage }}
-                style={[styles.image, { height: imageHeight }]}
+                style={[styles.image, { height: imageHeight, backgroundColor: isDarkTheme ? '#2a2a2a' : '#f0f0f0' }]}
                 onLoad={(e) => {
                   const { width, height } = e.nativeEvent.source;
                   handleImageLoad(item.id, width, height);
@@ -118,7 +120,7 @@ const FavoritesScreen = () => {
                 onPress={() => removeFavorite(item.id)}
                 style={styles.favoriteButton}
               >
-                <Ionicons name="heart" size={20} color={colors.text} />
+                <Ionicons name="heart" size={18} color="#ff4b4b" />
               </TouchableOpacity>
             </View>
 

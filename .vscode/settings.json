@@ -1,7 +1,21 @@
 {
     "java.configuration.updateBuildConfiguration": "disabled",
     "java.compile.nullAnalysis.mode": "automatic",
+    "java.jdt.ls.java.home": "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home",
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-17",
+            "path": "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home",
+            "default": true
+        }
+    ],
     "java.import.exclusions": [
+        "**/node_modules/**",
+        "**/.gradle/**",
+        "**/build/**",
+        "**/bin/**"
+    ],
+    "java.project.importExclusions": [
         "**/node_modules/**",
         "**/.gradle/**",
         "**/build/**",
