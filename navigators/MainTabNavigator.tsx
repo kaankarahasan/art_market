@@ -22,6 +22,7 @@ const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 const FavoritesStack = createNativeStackNavigator();
 const InboxStack = createNativeStackNavigator();
+const SearchStack = createNativeStackNavigator();
 
 // HOME STACK
 function HomeStackNavigator() {
@@ -55,6 +56,17 @@ function InboxStackNavigator() {
       <InboxStack.Screen name="Chat" component={ChatScreen} />
       <InboxStack.Screen name="OtherProfile" component={OtherProfileScreen} />
     </InboxStack.Navigator>
+  );
+}
+
+// SEARCH STACK
+function SearchStackNavigator() {
+  return (
+    <SearchStack.Navigator screenOptions={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}>
+      <SearchStack.Screen name="SearchMain" component={SearchScreen} />
+      <SearchStack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <SearchStack.Screen name="OtherProfile" component={OtherProfileScreen} />
+    </SearchStack.Navigator>
   );
 }
 
@@ -115,7 +127,7 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
       />
       <Tab.Screen
         name="SearchTab"
-        component={SearchScreen}
+        component={SearchStackNavigator}
         options={{
           tabBarLabel: ({ focused }) => (
             <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Search</Text>

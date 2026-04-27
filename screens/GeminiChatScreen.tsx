@@ -5,7 +5,6 @@ import {
     TouchableOpacity,
     FlatList,
     Text,
-    Image,
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
@@ -230,21 +229,8 @@ export default function GeminiChatScreen() {
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                         <Text style={[styles.backText, { fontSize: avatarSize * 0.7 }]}>‹</Text>
                     </TouchableOpacity>
-                    
-                    <View style={styles.userInfo}>
-                        <Image
-                            source={require('../assets/google_g_logo.png')}
-                            style={[
-                                styles.avatar,
-                                {
-                                    width: avatarSize,
-                                    height: avatarSize,
-                                    borderRadius: avatarSize / 2,
-                                },
-                            ]}
-                        />
-                        <Text style={[styles.username, { fontSize: usernameFont }]}>Gemini</Text>
-                    </View>
+
+                    <Text style={[styles.username, { fontSize: usernameFont, flex: 1 }]}>Gemini</Text>
 
                     <TouchableOpacity onPress={resetChat} style={styles.resetBtnAction}>
                         <Text style={styles.resetBtn}>↺</Text>
@@ -343,8 +329,6 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
         alignItems: 'center',
     },
     backText: { color: colors.text },
-    userInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-    avatar: { marginRight: 12 },
     username: { fontWeight: '600', color: colors.text },
     resetBtnAction: { paddingHorizontal: 15, height: 40, justifyContent: 'center' },
     resetBtn: { fontSize: 24, color: colors.text, fontWeight: '400' },

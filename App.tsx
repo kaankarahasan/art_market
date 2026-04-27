@@ -100,7 +100,7 @@ function AppContent() {
           <Stack.Screen name="TermsOfService" component={TermsOfUseScreen} />
           <Stack.Screen name="PrivacyFollowerCommentSettings" component={PrivacyFollowerCommentSettingsScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Search" component={SearchScreen} />
+          <Stack.Screen name="Search" component={SearchScreen} options={{ headerShown: false }} />
           <Stack.Screen name="GeminiChat" component={GeminiChatScreen} options={{ headerShown: false }} />
           <Stack.Screen name="ViewInRoom" component={ViewInRoomScreen} options={{ headerShown: false, presentation: 'fullScreenModal', orientation: 'landscape' }} />
         </Stack.Navigator>

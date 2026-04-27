@@ -109,9 +109,12 @@ const SearchScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      navigation.getParent<BottomTabNavigationProp<any>>()?.setOptions({
-        tabBarStyle: { display: 'none' }
-      });
+      // SearchScreen artık bir Stack içinde: getParent() = SearchStack, getParent().getParent() = Tab
+      const tabNav = navigation.getParent<BottomTabNavigationProp<any>>()?.getParent<BottomTabNavigationProp<any>>();
+      tabNav?.setOptions({ tabBarStyle: { display: 'none' } });
+      return () => {
+        tabNav?.setOptions({ tabBarStyle: undefined });
+      };
     }, [navigation])
   );
 
@@ -900,17 +903,17 @@ const createStyles = (colors: any) => StyleSheet.create({
   profileCard: { marginRight: 15, alignItems: 'center', width: 80 },
   profileCardImage: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#eee', marginBottom: 5 },
   profileCardUsername: { color: colors.text, fontSize: 12, textAlign: 'center' },
-  card: { backgroundColor: colors.card, borderRadius: 12, overflow: 'hidden' },
-  imageContainer: { width: '100%' },
-  image: { width: '100%' },
+  card: { backgroundColor: colors.card, borderRadius: 12, overflow: 'hidden', marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  imageContainer: { padding: 10 },
+  image: { width: '100%', resizeMode: 'contain', borderRadius: 8 },
   noImage: { width: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#eee' },
   noImageText: { color: colors.secondaryText },
-  infoContainer: { padding: 10 },
-  userRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-  username: { color: colors.secondaryText, fontSize: 12, flex: 1 },
+  infoContainer: { padding: 12, paddingTop: 0, backgroundColor: colors.card },
+  userRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  username: { color: colors.text, fontSize: 13, flex: 1 },
   favoriteButton: { padding: 2 },
-  title: { color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 5 },
-  price: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  title: { color: colors.secondaryText, fontSize: 15, marginBottom: 8, lineHeight: 20 },
+  price: { color: colors.text, fontSize: 17, fontWeight: 'bold' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContainer: { backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 30, maxHeight: '80%' },
   sortModalContainer: { backgroundColor: colors.background, paddingBottom: 30 },
