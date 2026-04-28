@@ -18,6 +18,7 @@ import { db } from '../firebase';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type Message = {
   id: string;
@@ -54,6 +55,7 @@ export default function ChatScreen() {
   // Tema Entegrasyonu
   const { colors, isDarkTheme } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
+  const { t } = useLanguage();
 
   // Tab bar gizleme
   useFocusEffect(
@@ -255,7 +257,7 @@ export default function ChatScreen() {
           <TextInput
             value={text}
             onChangeText={setText}
-            placeholder="Mesaj..."
+            placeholder={t('messagePlaceholder')}
             placeholderTextColor={colors.secondaryText}
             style={[
               styles.input,

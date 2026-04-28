@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type User = {
   uid: string;
@@ -39,6 +40,7 @@ const FollowersScreen = () => {
   const currentUser = auth.currentUser;
 
   const { colors } = useThemeContext();
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Modular Native onSnapshot usage
@@ -94,7 +96,7 @@ const FollowersScreen = () => {
           >
             <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Takipçiler</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('followersTitle')}</Text>
         </View>
         <View style={styles.center}>
           <Text style={{ color: colors.text }}>{error}</Text>
@@ -112,7 +114,7 @@ const FollowersScreen = () => {
         >
           <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Takipçiler</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('followersTitle')}</Text>
       </View>
 
       {followers.length === 0 ? (

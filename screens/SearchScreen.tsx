@@ -802,7 +802,7 @@ const SearchScreen = () => {
               <View style={styles.priceRow}>
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="Min"
+                  placeholder={t('minPlaceholder')}
                   placeholderTextColor={colors.secondaryText}
                   keyboardType="numeric"
                   value={tempMinPrice}
@@ -810,7 +810,7 @@ const SearchScreen = () => {
                 />
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="Max"
+                  placeholder={t('maxPlaceholder')}
                   placeholderTextColor={colors.secondaryText}
                   keyboardType="numeric"
                   value={tempMaxPrice}

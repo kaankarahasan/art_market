@@ -233,7 +233,7 @@ export default function GeminiChatScreen() {
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                         <Ionicons name="chevron-back" size={28} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Sanat Asistanı</Text>
+                    <Text style={styles.headerTitle}>{t('artAssistant')}</Text>
                     <TouchableOpacity onPress={() => setResetModalVisible(true)} style={styles.resetBtnAction}>
                         <MaterialIcons name="refresh" size={26} color={colors.text} />
                     </TouchableOpacity>
@@ -314,7 +314,7 @@ export default function GeminiChatScreen() {
                     <TextInput
                         value={text}
                         onChangeText={setText}
-                        placeholder="Asistana mesaj yazın..."
+                        placeholder={t('geminiPlaceholder')}
                         placeholderTextColor={colors.secondaryText}
                         style={[
                             styles.input,

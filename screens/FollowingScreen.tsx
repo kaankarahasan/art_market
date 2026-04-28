@@ -8,6 +8,7 @@ import { RootStackParamList } from '../routes/types';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type User = {
   uid: string;
@@ -30,6 +31,7 @@ const FollowingScreen = () => {
 
   const currentUser = auth.currentUser;
   const { colors } = useThemeContext();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!userId) return;
@@ -87,7 +89,7 @@ const FollowingScreen = () => {
         >
           <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Takip Edilenler</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('followingTitle')}</Text>
       </View>
       <View style={styles.center}>
         <Text style={{ color: colors.text }}>{error}</Text>
@@ -105,7 +107,7 @@ const FollowingScreen = () => {
         >
           <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Takip Edilenler</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('followingTitle')}</Text>
       </View>
 
       {following.length === 0 ? (

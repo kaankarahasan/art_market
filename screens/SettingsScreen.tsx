@@ -27,32 +27,21 @@ const SettingsScreen = () => {
 
   const [langModalVisible, setLangModalVisible] = useState(false);
   const [pendingLang, setPendingLang] = useState<Language | null>(null);
+  const [signOutModalVisible, setSignOutModalVisible] = useState(false);
 
   const onToggleTheme = () => {
     toggleTheme();
-    Alert.alert(
-      t('themeChanged'),
-      t('themeChangedMsg').replace('{theme}', !isDarkTheme ? t('themeDark') : t('themeLight'))
-    );
   };
 
   const handleSignOut = () => {
-    Alert.alert(
-      t('signOut'),
-      t('signOutConfirm'),
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('signOut'),
-          onPress: () => {
-            auth.signOut()
-              .then(() => navigation.replace('Login'))
-              .catch(error => Alert.alert(t('error'), error.message));
-          },
-        },
-      ],
-      { cancelable: false }
-    );
+    setSignOutModalVisible(true);
+  };
+
+  const confirmSignOut = () => {
+    setSignOutModalVisible(false);
+    auth.signOut()
+      .then(() => navigation.replace('Login'))
+      .catch(error => Alert.alert(t('error'), error.message));
   };
 
   const requestLanguageChange = (lang: Language) => {
@@ -207,6 +196,42 @@ const SettingsScreen = () => {
                 onPress={confirmLanguageChange}
               >
                 <Text style={[styles.modalConfirmText, { color: colors.background }]}>{t('confirm')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Sign Out Confirmation Modal */}
+      <Modal
+        visible={signOutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSignOutModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSignOutModalVisible(false)}
+        >
+          <View style={[styles.modalBox, { backgroundColor: colors.card }]}>
+            <MaterialIcons name="logout" size={36} color="#ff5252" style={{ marginBottom: 12 }} />
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('signOut')}</Text>
+            <Text style={[styles.modalSubtitle, { color: colors.text + 'aa' }]}>
+              {t('signOutConfirm')}
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalCancelBtn, { borderColor: isDarkTheme ? '#444' : '#E0E0E0' }]}
+                onPress={() => setSignOutModalVisible(false)}
+              >
+                <Text style={[styles.modalCancelText, { color: colors.text }]}>{t('cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmBtn, { backgroundColor: '#ff5252' }]}
+                onPress={confirmSignOut}
+              >
+                <Text style={[styles.modalConfirmText, { color: '#fff' }]}>{t('signOut')}</Text>
               </TouchableOpacity>
             </View>
           </View>

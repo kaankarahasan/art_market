@@ -237,7 +237,7 @@ const AddProductScreen = () => {
           <Text style={styles.label}>{t('year')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Yapım yılı (örn: 2024)"
+            placeholder={t('yearPlaceholder')}
             placeholderTextColor="#6E6E6E"
             keyboardType="numeric"
             value={year}

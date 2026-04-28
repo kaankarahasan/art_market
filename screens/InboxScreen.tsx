@@ -43,12 +43,13 @@ export default function InboxScreen() {
   const insets = useSafeAreaInsets();
   const [profileCache, setProfileCache] = useState<{ [key: string]: { photoURL?: string, displayName?: string } }>({});
   const { colors, isDarkTheme } = useThemeContext();
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
   const { t } = useLanguage();
   
   const [pinnedChats, setPinnedChats] = useState<string[]>([]);
   const [selectedChat, setSelectedChat] = useState<ChatItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
   // Tab bar'ı InboxScreen'e girildiğinde geri göster (diğer stack ekranları gizliyor olabilir)
   useFocusEffect(
@@ -320,14 +321,8 @@ export default function InboxScreen() {
                 <TouchableOpacity 
                   style={styles.modalOption} 
                   onPress={() => {
-                    Alert.alert(
-                      t('deleteChat'),
-                      t('areYouSureDeleteChat') || 'Sohbeti silmek istediğinize emin misiniz?',
-                      [
-                        { text: t('cancel') || 'İptal', style: 'cancel' },
-                        { text: t('delete') || 'Sil', style: 'destructive', onPress: () => deleteChat(selectedChat.id) }
-                      ]
-                    );
+                    setModalVisible(false);
+                    setDeleteModalVisible(true);
                   }}
                 >
                   <MaterialIcons name="delete" size={24} color="#FF3B30" />
@@ -338,11 +333,50 @@ export default function InboxScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Delete Chat Confirmation Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setDeleteModalVisible(false)}
+        >
+          <View style={[styles.confirmModalBox, { backgroundColor: colors.card }]}>
+            <MaterialIcons name="delete" size={36} color="#FF3B30" style={{ marginBottom: 12 }} />
+            <Text style={[styles.confirmModalTitle, { color: colors.text }]}>{t('deleteChat')}</Text>
+            <Text style={[styles.confirmModalSubtitle, { color: colors.text + 'aa' }]}>
+              {t('areYouSureDeleteChat') || 'Sohbeti silmek istediğinize emin misiniz?'}
+            </Text>
+            <View style={styles.confirmModalButtons}>
+              <TouchableOpacity
+                style={[styles.confirmModalCancelBtn, { borderColor: isDarkTheme ? '#444' : '#E0E0E0' }]}
+                onPress={() => setDeleteModalVisible(false)}
+              >
+                <Text style={[styles.confirmModalCancelText, { color: colors.text }]}>{t('cancel') || 'İptal'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmModalConfirmBtn, { backgroundColor: '#FF3B30' }]}
+                onPress={() => {
+                  if (selectedChat) deleteChat(selectedChat.id);
+                  setDeleteModalVisible(false);
+                }}
+              >
+                <Text style={[styles.confirmModalConfirmText, { color: '#fff' }]}>{t('delete') || 'Sil'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 10 },
   header: {
     flexDirection: 'row',
@@ -350,7 +384,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: isDarkTheme ? '#333' : '#eee',
   },
   headerTitle: {
     fontSize: 20,
@@ -371,10 +405,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginVertical: 6,
     borderRadius: 16,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: isDarkTheme ? 0.3 : 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: isDarkTheme ? 2 : 2,
+    borderWidth: isDarkTheme ? 1 : 0,
+    borderColor: isDarkTheme ? '#2a2a2a' : 'transparent',
   },
   optionsButton: {
     padding: 8,
@@ -413,11 +449,13 @@ const createStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 16,
     paddingVertical: 10,
-    elevation: 5,
+    elevation: isDarkTheme ? 2 : 5,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
+    shadowOpacity: isDarkTheme ? 0.3 : 0.2,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 10,
+    borderWidth: isDarkTheme ? 1 : 0,
+    borderColor: isDarkTheme ? '#2a2a2a' : 'transparent',
   },
   modalOption: {
     flexDirection: 'row',
@@ -430,4 +468,42 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontWeight: '500',
     marginLeft: 15,
   },
+  confirmModalBox: {
+    width: '82%',
+    borderRadius: 20,
+    padding: 28,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: isDarkTheme ? 0.4 : 0.18,
+    shadowRadius: 16,
+    elevation: isDarkTheme ? 4 : 8,
+    borderWidth: isDarkTheme ? 1 : 0,
+    borderColor: isDarkTheme ? '#2a2a2a' : 'transparent',
+  },
+  confirmModalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  confirmModalSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  confirmModalButtons: { flexDirection: 'row', gap: 12, width: '100%' },
+  confirmModalCancelBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmModalCancelText: { fontWeight: '600', fontSize: 15 },
+  confirmModalConfirmBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmModalConfirmText: { fontWeight: '700', fontSize: 15 },
 });
