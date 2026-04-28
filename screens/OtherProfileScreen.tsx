@@ -20,6 +20,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { RootStackParamList } from '../routes/types';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type OtherProfileRouteProp = RouteProp<RootStackParamList, 'OtherProfile'>;
 
@@ -31,6 +32,7 @@ const OtherProfileScreen = () => {
   const { colors, isDarkTheme } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const route = useRoute<OtherProfileRouteProp>();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { userId } = route.params;
@@ -184,7 +186,7 @@ const OtherProfileScreen = () => {
               />
             ) : (
               <View style={[styles.image, styles.noImage, { height: 200 }]}>
-                <Text style={styles.noImageText}>Resim yok</Text>
+                <Text style={styles.noImageText}>{t('noImageText')}</Text>
               </View>
             )}
           </View>
@@ -192,7 +194,7 @@ const OtherProfileScreen = () => {
           <View style={styles.infoContainer}>
             <View style={styles.userRow}>
               <Text style={styles.username} numberOfLines={1}>
-                {userData?.fullName || userData?.username || 'Bilinmeyen'}
+                {userData?.fullName || userData?.username || t('unknown')}
               </Text>
               <TouchableOpacity
                 onPress={() => handleFavoriteToggle(item)}
@@ -229,7 +231,7 @@ const OtherProfileScreen = () => {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerUsername}>@{userData?.username || 'Kullanıcı'}</Text>
+        <Text style={styles.headerUsername}>@{userData?.username || t('unknown')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}>
@@ -244,12 +246,12 @@ const OtherProfileScreen = () => {
             </TouchableOpacity>
 
             <View style={styles.profileInfo}>
-              <Text style={styles.fullNameText}>{userData?.fullName || 'Ad Soyad'}</Text>
+              <Text style={styles.fullNameText}>{userData?.fullName || t('unknown')}</Text>
 
               <View style={styles.followRow}>
                 <TouchableOpacity onPress={toggleFollow} style={[styles.followButtonCard, { flex: 1, marginRight: 12 }]}>
                   <Text style={styles.followButtonText}>
-                    {isFollowing ? `Following: ${followersCount}` : `Follow: ${followersCount}`}
+                    {isFollowing ? `${t('following')}: ${followersCount}` : `${t('follow')}: ${followersCount}`}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -261,7 +263,7 @@ const OtherProfileScreen = () => {
                   }
                   style={[styles.followButtonCard, { flex: 1 }]}
                 >
-                  <Text style={styles.followButtonText}>Message</Text>
+                  <Text style={styles.followButtonText}>{t('message')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -273,20 +275,20 @@ const OtherProfileScreen = () => {
               style={[styles.tabButton, activeTab === 'Artworks' && styles.activeTab]}
             >
               <Ionicons name="albums-outline" size={18} color={activeTab === 'Artworks' ? colors.text : colors.secondaryText} />
-              <Text style={[styles.tabText, activeTab === 'Artworks' && styles.activeTabText]}> Artworks</Text>
+              <Text style={[styles.tabText, activeTab === 'Artworks' && styles.activeTabText]}> {t('artworks')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setActiveTab('About')}
               style={[styles.tabButton, activeTab === 'About' && styles.activeTab]}
             >
               <Ionicons name="information-circle-outline" size={18} color={activeTab === 'About' ? colors.text : colors.secondaryText} />
-              <Text style={[styles.tabText, activeTab === 'About' && styles.activeTabText]}> About</Text>
+              <Text style={[styles.tabText, activeTab === 'About' && styles.activeTabText]}> {t('aboutTab')}</Text>
             </TouchableOpacity>
           </View>
 
           {activeTab === 'Artworks' ? (
             products.length === 0 ? (
-              <Text style={[styles.emptyText, { color: colors.text }]}>Henüz ürün eklememiş.</Text>
+              <Text style={[styles.emptyText, { color: colors.text }]}>{t('noProducts')}</Text>
             ) : (
               <View style={styles.masonryContainer}>
                 <View style={styles.column}>{leftColumn.map(renderProductCard)}</View>
@@ -295,7 +297,7 @@ const OtherProfileScreen = () => {
             )
           ) : (
             <View style={{ padding: 16 }}>
-              <Text style={{ color: colors.text }}>{userData?.about || 'No information provided.'}</Text>
+              <Text style={{ color: colors.text }}>{userData?.about || t('noBio')}</Text>
             </View>
           )}
 

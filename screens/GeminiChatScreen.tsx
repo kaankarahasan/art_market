@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { onSnapshot, collection, query, orderBy, limit, doc, getDocs, setDoc, addDoc, getDoc, Timestamp, deleteDoc } from '@react-native-firebase/firestore';
@@ -48,6 +49,7 @@ export default function GeminiChatScreen() {
     const { colors, isDarkTheme } = useThemeContext();
     const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
     const insets = useSafeAreaInsets();
+    const { t } = useLanguage();
     const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
     // Tab bar gizleme (ChatScreen ile aynı)
@@ -206,18 +208,14 @@ export default function GeminiChatScreen() {
         }
     };
 
-    return (
-        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0 }]}>
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            >
-                {/* Header */}
+  const renderContent = () => (
+    <>
+        {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                         <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Gemini</Text>
+                    <Text style={styles.headerTitle}>Sanat Asistanı</Text>
                     <TouchableOpacity onPress={() => setResetModalVisible(true)} style={styles.resetBtnAction}>
                         <MaterialIcons name="refresh" size={26} color={colors.text} />
                     </TouchableOpacity>
@@ -237,14 +235,14 @@ export default function GeminiChatScreen() {
                     >
                         <View style={styles.modalBox}>
                             <MaterialIcons name="refresh" size={36} color={colors.text} style={{ marginBottom: 12 }} />
-                            <Text style={styles.modalTitle}>Sohbeti Sıfırla</Text>
-                            <Text style={styles.modalSubtitle}>Tüm mesaj geçmişini silmek istediğinizden emin misiniz?</Text>
+                            <Text style={styles.modalTitle}>{t('geminiReset')}</Text>
+                            <Text style={styles.modalSubtitle}>{t('geminiResetMsg')}</Text>
                             <View style={styles.modalButtons}>
                                 <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setResetModalVisible(false)}>
-                                    <Text style={styles.modalCancelText}>Vazgeç</Text>
+                                    <Text style={styles.modalCancelText}>{t('geminiCancel')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.modalConfirmBtn} onPress={resetChat}>
-                                    <Text style={styles.modalConfirmText}>Sıfırla</Text>
+                                    <Text style={styles.modalConfirmText}>{t('geminiConfirm')}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -289,7 +287,7 @@ export default function GeminiChatScreen() {
                 {loading && (
                     <View style={styles.loadingBox}>
                         <ActivityIndicator size="small" color="#4285F4" />
-                        <Text style={styles.loadingText}>Gemini yanıtlıyor...</Text>
+                        <Text style={styles.loadingText}>{t('geminiLoading')}</Text>
                     </View>
                 )}
 
@@ -298,7 +296,7 @@ export default function GeminiChatScreen() {
                     <TextInput
                         value={text}
                         onChangeText={setText}
-                        placeholder="Gemini'ye sorun..."
+                        placeholder="Asistana mesaj yazın..."
                         placeholderTextColor={colors.secondaryText}
                         style={[
                             styles.input,
@@ -318,12 +316,25 @@ export default function GeminiChatScreen() {
                         onPress={sendMessage}
                         disabled={!text.trim() || loading}
                     >
-                        <Text style={[styles.sendButtonText, { fontSize: buttonFont }]}>Gönder</Text>
+                        <Text style={[styles.sendButtonText, { fontSize: buttonFont }]}>{t('geminiSend')}</Text>
                     </TouchableOpacity>
                 </View>
-            </KeyboardAvoidingView>
+            </>
+  );
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0 }]}>
+      {Platform.OS === 'ios' ? (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          {renderContent()}
+        </KeyboardAvoidingView>
+      ) : (
+        <View style={{ flex: 1 }}>
+          {renderContent()}
         </View>
-    );
+      )}
+    </View>
+  );
 }
 
 const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
@@ -454,20 +465,28 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     
     inputContainer: {
         flexDirection: 'row',
-        backgroundColor: colors.background,
         alignItems: 'center',
-        borderTopWidth: 1,
-        borderTopColor: colors.card,
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
+        marginHorizontal: 12,
+        marginBottom: Platform.OS === 'ios' ? 8 : 16,
+        marginTop: 8,
+        backgroundColor: colors.card,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: isDarkTheme ? '#404040' : '#E5E5E5',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 2,
     },
     input: {
         flex: 1,
-        borderWidth: 1,
-        borderColor: isDarkTheme ? '#404040' : '#CCCCCC',
-        borderRadius: 22,
-        marginRight: 10,
-        backgroundColor: isDarkTheme ? '#1F1F1F' : '#FAFAFA',
         color: colors.text,
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+        marginRight: 10,
+        paddingHorizontal: 14,
     },
     sendButton: {
         backgroundColor: isDarkTheme ? '#FFFFFF' : '#333333',

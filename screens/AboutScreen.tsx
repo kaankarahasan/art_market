@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 import { useThemeContext } from '../contexts/ThemeContext';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const AboutScreen = () => {
   const { colors } = useThemeContext();
+  const { t } = useLanguage();
 
   // Sosyal medya linkleri
   const socialLinks = {
@@ -29,7 +31,7 @@ const AboutScreen = () => {
     if (supported) {
       await Linking.openURL(url);
     } else {
-      Alert.alert('Hata', 'Bu bağlantı açılamıyor: ' + url);
+      Alert.alert(t('error'), t('linkOpenError') + url);
     }
   };
 
@@ -44,20 +46,15 @@ const AboutScreen = () => {
         resizeMode="contain"
       />
 
-      <Text style={[styles.title, { color: colors.text }]}>Hakkımızda</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{t('aboutTitle')}</Text>
       <Text style={[styles.content, { color: colors.text }]}>
-        Biz, <Text style={{ fontWeight: '700' }}>[Şirket Adı]</Text> olarak sanatçıların eserlerini
-        kolayca sergileyebileceği, satışa sunabileceği ve desteklenebileceği bir platform yaratmayı
-        hedefliyoruz. Kullanıcı dostu arayüzümüzle, sanat severler ve üreticileri buluşturarak sanat
-        ekosistemini güçlendirmek amacındayız.
+        {t('aboutP1')}
       </Text>
       <Text style={[styles.content, { color: colors.text }]}>
-        Platformumuzda sanatçılar; eserlerini yükleyebilir, güncelleyebilir ve takipçi kitlesi
-        oluşturabilir. Alıcılar ise özgün sanat eserlerine kolayca ulaşabilir ve güvenle alışveriş
-        yapabilir.
+        {t('aboutP2')}
       </Text>
       <Text style={[styles.content, { color: colors.text }]}>
-        Daha fazla bilgi ve destek için aşağıdaki iletişim kanallarından bize ulaşabilirsiniz.
+        {t('aboutP3')}
       </Text>
 
       {/* İletişim Butonları */}

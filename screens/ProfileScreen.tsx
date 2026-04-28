@@ -28,6 +28,7 @@ import { RootStackParamList } from '../routes/types';
 import { ThemeContext } from '../contexts/ThemeContext';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 45) / 2;
@@ -75,6 +76,7 @@ const ProfileScreen = () => {
 
   const { colors, isDarkTheme } = useContext(ThemeContext);
   const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const { t } = useLanguage();
 
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -210,7 +212,7 @@ const ProfileScreen = () => {
               />
             ) : (
               <View style={[styles.image, styles.noImage, { height: 200 }]}>
-                <Text style={styles.noImageText}>No Image</Text>
+                <Text style={styles.noImageText}>{t('noImageText')}</Text>
               </View>
             )}
           </View>
@@ -300,7 +302,7 @@ const ProfileScreen = () => {
                 style={styles.followStatItemRow}
               >
                 <Text style={styles.followLabel}>
-                  Followers: <Text style={styles.followNumber}>{followers.length}</Text>
+                  {t('followers')}: <Text style={styles.followNumber}>{followers.length}</Text>
                 </Text>
               </TouchableOpacity>
 
@@ -309,7 +311,7 @@ const ProfileScreen = () => {
                 style={styles.followStatItemRow}
               >
                 <Text style={styles.followLabel}>
-                  Following: <Text style={styles.followNumber}>{following.length}</Text>
+                  {t('following')}: <Text style={styles.followNumber}>{following.length}</Text>
                 </Text>
               </TouchableOpacity>
             </View>
@@ -327,7 +329,7 @@ const ProfileScreen = () => {
               color={selectedTab === 'Artworks' ? colors.text : colors.secondaryText}
             />
             <Text style={[styles.tabText, selectedTab === 'Artworks' && { color: colors.text }]}>
-              Artworks
+              {t('artworks')}
             </Text>
           </TouchableOpacity>
 
@@ -341,7 +343,7 @@ const ProfileScreen = () => {
               color={selectedTab === 'About' ? colors.text : colors.secondaryText}
             />
             <Text style={[styles.tabText, selectedTab === 'About' && { color: colors.text }]}>
-              About
+              {t('aboutTab')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -354,7 +356,7 @@ const ProfileScreen = () => {
         ) : (
           <View style={{ paddingHorizontal: 16, marginTop: 10, paddingBottom: 50 }}>
             <Text style={{ color: colors.secondaryText, fontSize: 14 }}>
-              {userData?.bio || 'No bio available.'}
+              {userData?.bio || t('noBio')}
             </Text>
           </View>
         )}

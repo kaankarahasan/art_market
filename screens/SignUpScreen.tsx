@@ -17,9 +17,10 @@ import {
 } from 'react-native';
 import { createUserWithEmailAndPassword } from '@react-native-firebase/auth';
 import { doc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
-import { auth, db } from '../firebase'; // relative path
+import { auth, db } from '../firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,13 +33,13 @@ type SignUpScreenProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 const SignUpScreen = () => {
   const navigation = useNavigation<SignUpScreenProp>();
+  const { t } = useLanguage();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
 
-  // 🔹 Arka plan animasyon değerleri
   const moveAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1.1)).current;
 
@@ -46,54 +47,28 @@ const SignUpScreen = () => {
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
-          Animated.timing(moveAnim, {
-            toValue: 1,
-            duration: 10000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1.3,
-            duration: 10000,
-            useNativeDriver: true,
-          }),
+          Animated.timing(moveAnim, { toValue: 1, duration: 10000, useNativeDriver: true }),
+          Animated.timing(scaleAnim, { toValue: 1.3, duration: 10000, useNativeDriver: true }),
         ]),
         Animated.parallel([
-          Animated.timing(moveAnim, {
-            toValue: 0,
-            duration: 10000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1.1,
-            duration: 10000,
-            useNativeDriver: true,
-          }),
+          Animated.timing(moveAnim, { toValue: 0, duration: 10000, useNativeDriver: true }),
+          Animated.timing(scaleAnim, { toValue: 1.1, duration: 10000, useNativeDriver: true }),
         ]),
       ])
     ).start();
   }, []);
 
-  const translateX = moveAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-15, 15],
-  });
-
-  const translateY = moveAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-10, 10],
-  });
+  const translateX = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 15] });
+  const translateY = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 10] });
 
   const handleSignUp = async () => {
     if (!email || !password || !fullName || !username) {
-      Alert.alert('Hata', 'Lütfen tüm alanları doldurun.');
+      Alert.alert(t('signUpError'), t('fillAllFields'));
       return;
     }
-
     try {
-      // Native Sign Up
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
       if (user) {
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
@@ -106,12 +81,11 @@ const SignUpScreen = () => {
           followingCount: 0,
           createdAt: serverTimestamp(),
         });
-
-        Alert.alert('Başarılı', 'Hesap oluşturuldu ve profil kaydedildi!');
+        Alert.alert(t('success'), t('signUpSuccess'));
         navigation.navigate('Main');
       }
     } catch (error: any) {
-      Alert.alert('Hata', error.message);
+      Alert.alert(t('signUpError'), error.message);
     }
   };
 
@@ -121,35 +95,21 @@ const SignUpScreen = () => {
         <StatusBar barStyle="light-content" backgroundColor="#000" />
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}
-          style={[
-            styles.backgroundImage,
-            {
-              transform: [{ translateX }, { translateY }, { scale: scaleAnim }],
-            },
-          ]}
+          style={[styles.backgroundImage, { transform: [{ translateX }, { translateY }, { scale: scaleAnim }] }]}
           resizeMode="cover"
         />
-
         <View style={styles.overlay} />
-
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={styles.cardContainer}>
               <View style={styles.card}>
-                <Text style={styles.title}>Sign Up</Text>
-                <Text style={styles.subtitle}>Create a new account.</Text>
+                <Text style={styles.title}>{t('signUpTitle')}</Text>
+                <Text style={styles.subtitle}>{t('signUpSubtitle')}</Text>
 
                 <View style={styles.inputContainer}>
                   <TextInput
                     style={styles.textInput}
-                    placeholder="Name Surname"
+                    placeholder={t('fullNamePlaceholder')}
                     placeholderTextColor="#999"
                     onChangeText={setFullName}
                     value={fullName}
@@ -157,7 +117,7 @@ const SignUpScreen = () => {
                   />
                   <TextInput
                     style={styles.textInput}
-                    placeholder="User Name"
+                    placeholder={t('usernamePlaceholder')}
                     placeholderTextColor="#999"
                     onChangeText={setUsername}
                     autoCapitalize="none"
@@ -166,7 +126,7 @@ const SignUpScreen = () => {
                   />
                   <TextInput
                     style={styles.textInput}
-                    placeholder="Email"
+                    placeholder={t('emailPlaceholder')}
                     placeholderTextColor="#999"
                     autoCapitalize="none"
                     keyboardType="email-address"
@@ -176,7 +136,7 @@ const SignUpScreen = () => {
                   />
                   <TextInput
                     style={styles.textInput}
-                    placeholder="Password"
+                    placeholder={t('passwordPlaceholder')}
                     placeholderTextColor="#999"
                     secureTextEntry
                     onChangeText={setPassword}
@@ -187,15 +147,15 @@ const SignUpScreen = () => {
 
                 <TouchableOpacity onPress={handleSignUp}>
                   <View style={styles.signUpButton}>
-                    <Text style={styles.signUpButtonText}>Sign Up</Text>
+                    <Text style={styles.signUpButtonText}>{t('signUpButton')}</Text>
                   </View>
                 </TouchableOpacity>
 
                 <View style={styles.registerContainer}>
                   <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                     <Text style={styles.registerText}>
-                      Do you already have an account?{' '}
-                      <Text style={styles.registerLink}>Login</Text>
+                      {t('alreadyHaveAccount')}
+                      <Text style={styles.registerLink}>{t('loginLink')}</Text>
                     </Text>
                   </TouchableOpacity>
                 </View>

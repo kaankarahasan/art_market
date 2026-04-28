@@ -1,49 +1,45 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const TermsOfUseScreen = () => {
   const { colors } = useThemeContext();
+  const { t } = useLanguage();
 
   return (
     <ScrollView
       contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}
     >
-      <Text style={[styles.title, { color: colors.text }]}>Kullanım Şartları</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{t('termsOfUseTitle')}</Text>
 
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Bu kullanım şartları, uygulamamızı kullanırken uymanız gereken kuralları ve şartları
-        belirler. Uygulamamızı kullanarak bu şartları kabul etmiş sayılırsınız.
+        {t('touIntro')}
       </Text>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Kullanıcı Sorumlulukları</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('touResp')}</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Kullanıcılar, hizmetleri yasalara uygun şekilde kullanmayı taahhüt eder. Herhangi bir yasa
-        dışı, zarar verici veya etik dışı davranış yasaktır.
+        {t('touRespDesc')}
       </Text>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Hesap Güvenliği</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('touSec')}</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Hesabınızın güvenliğini sağlamak sizin sorumluluğunuzdadır. Şifrenizi başkalarıyla
-        paylaşmamanız ve düzenli olarak güncellemeniz önerilir.
+        {t('touSecDesc')}
       </Text>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Sorumluluğun Sınırlandırılması</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('touLimit')}</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Uygulama, üçüncü taraf içeriklerinden veya hizmetlerinden doğabilecek zararlar için
-        sorumluluk kabul etmez.
+        {t('touLimitDesc')}
       </Text>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Değişiklikler</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('touChanges')}</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Bu kullanım şartları zaman zaman güncellenebilir. Güncellemeler uygulandığında,
-        kullanıcılar bilgilendirilecektir.
+        {t('touChangesDesc')}
       </Text>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>İletişim</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('touContact')}</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Kullanım şartları ile ilgili sorularınız için destek@ornekapp.com adresinden bize
-        ulaşabilirsiniz.
+        {t('touContactDesc')}
       </Text>
     </ScrollView>
   );

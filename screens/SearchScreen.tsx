@@ -24,6 +24,7 @@ import { query, collection, where, limit, getDocs } from '@react-native-firebase
 import { db, auth } from '../firebase';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const screenWidth = Dimensions.get('window').width;
 const boxSize = (screenWidth - 48) / 2;
@@ -31,22 +32,7 @@ const columnWidth = (screenWidth - 30) / 2; // HomeScreen ile aynı: paddingHori
 
 const categoryHeights = [220, 180, 160, 240, 240, 190, 180, 260, 200, 220, 160];
 
-const categories = [
-  { name: 'Yağlı Boya', value: 'yagli_boya', height: categoryHeights[0], imageSource: require('../assets/categories/yagli_boya.jpg') },
-  { name: 'Suluboya', value: 'suluboya', height: categoryHeights[1], imageSource: require('../assets/categories/suluboya.jpg') },
-  { name: 'Akrilik', value: 'akrilik', height: categoryHeights[2], imageSource: require('../assets/categories/akrilik.jpg') },
-  { name: 'Heykel', value: 'heykel', height: categoryHeights[3], imageSource: require('../assets/categories/heykel.jpg') },
-  { name: 'Fotoğraf', value: 'fotograf', height: categoryHeights[4], imageSource: require('../assets/categories/fotograf.jpg') },
-  { name: 'Dijital Sanat', value: 'dijital', height: categoryHeights[5], imageSource: require('../assets/categories/dijital.jpg') },
-  { name: 'Çizim', value: 'cizim', height: categoryHeights[6], imageSource: require('../assets/categories/cizim.jpg') },
-  { name: 'Grafik Tasarım', value: 'grafik', height: categoryHeights[7], imageSource: require('../assets/categories/grafik.jpg') },
-  { name: 'Seramik', value: 'seramik', height: categoryHeights[8], imageSource: require('../assets/categories/seramik.jpg') },
-  { name: 'Kolaj', value: 'kolaj', height: categoryHeights[9], imageSource: require('../assets/categories/kolaj.jpg') },
-  { name: 'Diğer', value: 'diger', height: categoryHeights[10], imageSource: require('../assets/categories/diger.jpg') }
-];
 
-const leftCategories = categories.filter((_, i) => i % 2 === 0);
-const rightCategories = categories.filter((_, i) => i % 2 !== 0);
 
 type UserSearchResult = {
   id: string;
@@ -58,6 +44,25 @@ type UserSearchResult = {
 type SearchScreenRouteProp = RouteProp<{ params: { initialQuery?: string } }, 'params'>;
 
 const SearchScreen = () => {
+  const { t } = useLanguage();
+
+  const categories = React.useMemo(() => [
+    { name: t('cat_yagli_boya'), value: 'yagli_boya', height: categoryHeights[0], imageSource: require('../assets/categories/yagli_boya.jpg') },
+    { name: t('cat_suluboya'), value: 'suluboya', height: categoryHeights[1], imageSource: require('../assets/categories/suluboya.jpg') },
+    { name: t('cat_akrilik'), value: 'akrilik', height: categoryHeights[2], imageSource: require('../assets/categories/akrilik.jpg') },
+    { name: t('cat_heykel'), value: 'heykel', height: categoryHeights[3], imageSource: require('../assets/categories/heykel.jpg') },
+    { name: t('cat_fotograf'), value: 'fotograf', height: categoryHeights[4], imageSource: require('../assets/categories/fotograf.jpg') },
+    { name: t('cat_dijital'), value: 'dijital', height: categoryHeights[5], imageSource: require('../assets/categories/dijital.jpg') },
+    { name: t('cat_cizim'), value: 'cizim', height: categoryHeights[6], imageSource: require('../assets/categories/cizim.jpg') },
+    { name: t('cat_grafik'), value: 'grafik', height: categoryHeights[7], imageSource: require('../assets/categories/grafik.jpg') },
+    { name: t('cat_seramik'), value: 'seramik', height: categoryHeights[8], imageSource: require('../assets/categories/seramik.jpg') },
+    { name: t('cat_kolaj'), value: 'kolaj', height: categoryHeights[9], imageSource: require('../assets/categories/kolaj.jpg') },
+    { name: t('cat_diger'), value: 'diger', height: categoryHeights[10], imageSource: require('../assets/categories/diger.jpg') }
+  ], [t]);
+
+  const leftCategories = React.useMemo(() => categories.filter((_, i) => i % 2 === 0), [categories]);
+  const rightCategories = React.useMemo(() => categories.filter((_, i) => i % 2 !== 0), [categories]);
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
@@ -100,6 +105,7 @@ const SearchScreen = () => {
 
   const { colors, isDarkTheme } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
+
 
   const userMap = React.useMemo(() => {
     const map: { [key: string]: UserSearchResult } = {};
@@ -660,7 +666,7 @@ const SearchScreen = () => {
     return (
       <TouchableOpacity key={user.id} style={styles.profileCard} onPress={() => navigation.navigate('OtherProfile', { userId: user.id })} activeOpacity={0.7}>
         <Image source={user.photoURL ? { uri: user.photoURL } : require('../assets/default-profile.png')} style={styles.profileCardImage} resizeMode="cover" />
-        <Text style={styles.profileCardUsername} numberOfLines={2}> {user.fullName || user.username || 'Kullanıcı'} </Text>
+        <Text style={styles.profileCardUsername} numberOfLines={2}> {user.fullName || user.username || t('unknown')} </Text>
       </TouchableOpacity>
     );
   };
@@ -681,7 +687,7 @@ const SearchScreen = () => {
             <TextInput
               ref={inputRef}
               style={[styles.input, { color: colors.text, fontSize: 16 }]}
-              placeholder="Ara..."
+              placeholder={t('searchPlaceholder')}
               placeholderTextColor={colors.secondaryText}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -719,7 +725,7 @@ const SearchScreen = () => {
             <View style={styles.resultsContainer}>
               {!isSearching && !hasActiveFilters() && isFocused ? (
                 <View style={{ padding: 16 }}>
-                  <Text style={[styles.filterSectionTitle, { marginBottom: 10 }]}>Son Aramalar</Text>
+                  <Text style={[styles.filterSectionTitle, { marginBottom: 10 }]}>{t('recentSearches')}</Text>
                   {recentSearches.map((term, index) => (
                     <TouchableOpacity key={index} onPress={() => { setSearchQuery(term); setDebouncedSearchQuery(term); }} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12 }}>
                       <Ionicons name="time-outline" size={20} color={colors.secondaryText} style={{ marginRight: 10 }} />
@@ -734,11 +740,11 @@ const SearchScreen = () => {
                 filteringLoader ?
                   <ActivityIndicator size="small" color={colors.text} style={{ marginVertical: 20 }} /> :
                   (textFilteredUsers.length === 0 && finalFilteredProducts.length === 0 ?
-                    <Text style={styles.noResultsText}>Sonuç bulunamadı.</Text> :
+                    <Text style={styles.noResultsText}>{t('noResults')}</Text> :
                     <View style={{ padding: 10 }}>
                       {textFilteredUsers.length > 0 && searchScope !== 'Artwork' && (
                         <View style={{ marginBottom: 20 }}>
-                          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 10, marginLeft: 5 }}>Sanatçılar</Text>
+                          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 10, marginLeft: 5 }}>{t('artists')}</Text>
                           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             {textFilteredUsers.map(user => renderProfileCard(user))}
                           </ScrollView>
@@ -760,7 +766,7 @@ const SearchScreen = () => {
             </View>
           ) : (
             <View style={{ padding: 10 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 15, marginLeft: 5 }}>Keşfedin</Text>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 15, marginLeft: 5 }}>{t('discover')}</Text>
 
               <View style={{ flexDirection: 'row' }}>
                 <View style={{ flex: 1, paddingRight: 5 }}>
@@ -785,14 +791,14 @@ const SearchScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filtrele</Text>
+              <Text style={styles.modalTitle}>{t('filter')}</Text>
               <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
                 <Ionicons name="close" size={28} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalContent}>
-              <Text style={styles.filterLabel}>Fiyat Aralığı (₺)</Text>
+              <Text style={styles.filterLabel}>{t('priceRange')}</Text>
               <View style={styles.priceRow}>
                 <TextInput
                   style={styles.priceInput}
@@ -812,11 +818,11 @@ const SearchScreen = () => {
                 />
               </View>
 
-              <Text style={styles.filterLabel}>Boyutlar (cm)</Text>
+              <Text style={styles.filterLabel}>{t('dimensions')}</Text>
               <View style={styles.priceRow}>
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="Genişlik"
+                  placeholder={t('widthFilter')}
                   placeholderTextColor={colors.secondaryText}
                   keyboardType="numeric"
                   value={tempWidth}
@@ -824,7 +830,7 @@ const SearchScreen = () => {
                 />
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="Yükseklik"
+                  placeholder={t('heightFilter')}
                   placeholderTextColor={colors.secondaryText}
                   keyboardType="numeric"
                   value={tempHeight}
@@ -835,10 +841,10 @@ const SearchScreen = () => {
 
             <View style={styles.modalFooter}>
               <TouchableOpacity style={styles.clearBtn} onPress={clearFilters}>
-                <Text style={styles.clearBtnText}>Temizle</Text>
+                <Text style={styles.clearBtnText}>{t('clear')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.applyBtn} onPress={applyFilters}>
-                <Text style={styles.applyBtnText}>Uygula</Text>
+                <Text style={styles.applyBtnText}>{t('apply')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -855,7 +861,7 @@ const SearchScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.sortModalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sıralama</Text>
+              <Text style={styles.modalTitle}>{t('sort')}</Text>
               <TouchableOpacity onPress={() => setSortModalVisible(false)}>
                 <Ionicons name="close" size={28} color={colors.text} />
               </TouchableOpacity>

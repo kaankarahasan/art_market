@@ -17,18 +17,15 @@ import {
   StatusBar,
   Image,
 } from 'react-native';
-// Native Firebase Importları
 import { signInWithEmailAndPassword, signInWithCredential, GoogleAuthProvider } from '@react-native-firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth, db } from '../firebase';
-
-// İkonlar
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,14 +39,12 @@ type RootStackParamList = {
   };
 };
 
-type LoginScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'Login'
->;
+type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { colors } = useThemeContext();
+  const { t } = useLanguage();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -57,14 +52,12 @@ const LoginScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // --- GOOGLE SIGN-IN AYARLARI ---
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: '955753428630-5rk8spap7hc4biqhintbqnl8tq832pkf.apps.googleusercontent.com',
     });
   }, []);
 
-  // --- GÜNCELLENMİŞ GOOGLE GİRİŞ FONKSİYONU ---
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setErrorMessage('');
@@ -73,18 +66,12 @@ const LoginScreen = () => {
       const response = await GoogleSignin.signIn();
       const idToken = response.data?.idToken;
 
-      if (!idToken) {
-        throw new Error('Google ID Token bulunamadı.');
-      }
+      if (!idToken) throw new Error('Google ID Token bulunamadı.');
 
-      // 3. Firebase Credential oluştur (NATIVE)
       const googleCredential = GoogleAuthProvider.credential(idToken);
-
-      // 4. Firebase'e giriş yap (NATIVE)
       const userCredential = await signInWithCredential(auth, googleCredential);
       const user = userCredential.user;
 
-      // 5. Firestore'da kullanıcı kaydı var mı kontrol et (NATIVE)
       const userDocRef = doc(db, 'users', user.uid);
       const userDocSnapshot = await getDoc(userDocRef);
 
@@ -103,11 +90,9 @@ const LoginScreen = () => {
       }
 
       navigation.replace('Main');
-
     } catch (error: any) {
       if (error.code !== 'SIGN_IN_CANCELLED') {
-        console.error("Google Sign-In Hatası:", error);
-        setErrorMessage('Google girişi başarısız: ' + (error.message || error.toString()));
+        setErrorMessage(t('signInWithGoogle') + ': ' + (error.message || error.toString()));
       }
     } finally {
       setIsLoading(false);
@@ -118,29 +103,24 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
     if (!emailRegex.test(email)) {
-      setErrorMessage('Lütfen geçerli bir e-posta adresi girin.');
+      setErrorMessage(t('invalidEmail'));
       return;
     }
-
     setIsLoading(true);
     setErrorMessage('');
-
     try {
-      // Native Sign In
       await signInWithEmailAndPassword(auth, email, password);
       navigation.replace('Main');
     } catch (error: any) {
-      const message = error.message || 'Giriş yapılamadı.';
+      const message = error.message || t('loginError');
       setErrorMessage(message);
-      Alert.alert('Giriş Hatası', message);
+      Alert.alert(t('loginError'), message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 🔹 Arka plan animasyonu
   const moveAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -148,32 +128,12 @@ const LoginScreen = () => {
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
-          Animated.timing(moveAnim, {
-            toValue: 1,
-            duration: 15000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1.2,
-            duration: 15000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
+          Animated.timing(moveAnim, { toValue: 1, duration: 15000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(scaleAnim, { toValue: 1.2, duration: 15000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         ]),
         Animated.parallel([
-          Animated.timing(moveAnim, {
-            toValue: 0,
-            duration: 15000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 15000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
+          Animated.timing(moveAnim, { toValue: 0, duration: 15000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(scaleAnim, { toValue: 1, duration: 15000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         ]),
       ])
     ).start();
@@ -182,195 +142,122 @@ const LoginScreen = () => {
   const translateX = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 15] });
   const translateY = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 10] });
 
-  // Platform kontrolü
-  if (Platform.OS === 'ios') {
-    return <IOSLoginScreen
-      email={email}
-      setEmail={setEmail}
-      password={password}
-      setPassword={setPassword}
-      isPasswordVisible={isPasswordVisible}
-      togglePasswordVisibility={togglePasswordVisibility}
-      handleLogin={handleLogin}
-      handleGoogleLogin={handleGoogleLogin}
-      isLoading={isLoading}
-      errorMessage={errorMessage}
-      navigation={navigation}
-      translateX={translateX}
-      translateY={translateY}
-      scaleAnim={scaleAnim}
-    />;
-  }
+  const sharedProps = {
+    email, setEmail, password, setPassword, isPasswordVisible,
+    togglePasswordVisibility, handleLogin, handleGoogleLogin,
+    isLoading, errorMessage, navigation, translateX, translateY, scaleAnim, t,
+  };
 
-  return <AndroidLoginScreen
-    email={email}
-    setEmail={setEmail}
-    password={password}
-    setPassword={setPassword}
-    isPasswordVisible={isPasswordVisible}
-    togglePasswordVisibility={togglePasswordVisibility}
-    handleLogin={handleLogin}
-    handleGoogleLogin={handleGoogleLogin}
-    isLoading={isLoading}
-    errorMessage={errorMessage}
-    navigation={navigation}
-    translateX={translateX}
-    translateY={translateY}
-    scaleAnim={scaleAnim}
-  />;
+  if (Platform.OS === 'ios') return <IOSLoginScreen {...sharedProps} />;
+  return <AndroidLoginScreen {...sharedProps} />;
 };
 
-// 🍎 iOS Login Screen
-const IOSLoginScreen = ({
-  email, setEmail, password, setPassword, isPasswordVisible,
-  togglePasswordVisibility, handleLogin, handleGoogleLogin,
-  isLoading, errorMessage, navigation, translateX, translateY, scaleAnim
-}: any) => {
-  return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#000" />
-        <Animated.Image
-          source={require('../assets/Edward_Hooper.png')}
-          style={[
-            styles.backgroundImage,
-            { transform: [{ translateX }, { translateY }, { scale: scaleAnim }] },
-          ]}
-          resizeMode="cover"
+const LoginCard = ({ email, setEmail, password, setPassword, isPasswordVisible, togglePasswordVisibility, handleLogin, handleGoogleLogin, isLoading, errorMessage, navigation, t }: any) => (
+  <>
+    <Text style={styles.title}>{t('loginTitle')}</Text>
+    <Text style={styles.subtitle}>{t('loginSubtitle')}</Text>
+
+    <View style={styles.inputContainer}>
+      <View style={styles.inputWrapper}>
+        <MaterialIcons name="mail" size={20} color="#0A0A0A" style={styles.icon} />
+        <TextInput
+          placeholder={t('emailPlaceholder')}
+          placeholderTextColor="#999"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          returnKeyType="next"
+          style={styles.textInput}
         />
-        <View style={styles.overlay} />
-
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior="padding"
-          keyboardVerticalOffset={0}
-        >
-          <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.cardContainer}>
-              <View style={styles.card}>
-                <Text style={styles.title}>Login</Text>
-                <Text style={styles.subtitle}>Please login to continue.</Text>
-
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputWrapper}>
-                    <MaterialIcons name="mail" size={20} color="#0A0A0A" style={styles.icon} />
-                    <TextInput
-                      placeholder="Email"
-                      placeholderTextColor="#999"
-                      value={email}
-                      onChangeText={setEmail}
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                      returnKeyType="next"
-                      style={styles.textInput}
-                    />
-                  </View>
-
-                  <View style={styles.inputWrapper}>
-                    <MaterialIcons name="lock" size={20} color="#0A0A0A" style={styles.icon} />
-                    <TextInput
-                      placeholder="Password"
-                      placeholderTextColor="#999"
-                      value={password}
-                      onChangeText={setPassword}
-                      onSubmitEditing={handleLogin}
-                      secureTextEntry={!isPasswordVisible}
-                      returnKeyType="done"
-                      style={styles.textInput}
-                    />
-                    <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeButton}>
-                      <MaterialIcons
-                        name={isPasswordVisible ? 'visibility' : 'visibility-off'}
-                        size={20}
-                        color="#0A0A0A"
-                      />
-                    </TouchableOpacity>
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.forgotPasswordButton}
-                    onPress={() => navigation.navigate('PasswordReset')}
-                  >
-                    <Text style={styles.forgotPasswordText}>Forgot Your Password?</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
-                    <View style={styles.loginButton}>
-                      <Text style={styles.loginButtonText}>
-                        {isLoading ? 'Logging in...' : 'Login'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity onPress={handleGoogleLogin} disabled={isLoading} style={{ marginTop: 12 }}>
-                    <View style={styles.googleButton}>
-                      <Image
-                        source={require('../assets/google_g_logo.png')}
-                        style={{ width: 22, height: 22, marginRight: 12 }}
-                      />
-                      <Text style={styles.googleButtonText}>Sign in with Google</Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  {errorMessage ? (
-                    <View style={styles.errorMessageContainer}>
-                      <Text style={styles.errorMessage}>{errorMessage}</Text>
-                    </View>
-                  ) : null}
-
-                  <View style={styles.registerContainer}>
-                    <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                      <Text style={styles.registerText}>
-                        Don't have an account?{' '}
-                        <Text style={styles.registerLink}>Sign Up</Text>
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
       </View>
-    </TouchableWithoutFeedback>
-  );
-};
 
-// 🤖 Android Login Screen
-const AndroidLoginScreen = ({
-  email, setEmail, password, setPassword, isPasswordVisible,
-  togglePasswordVisibility, handleLogin, handleGoogleLogin,
-  isLoading, errorMessage, navigation, translateX, translateY, scaleAnim
-}: any) => {
+      <View style={styles.inputWrapper}>
+        <MaterialIcons name="lock" size={20} color="#0A0A0A" style={styles.icon} />
+        <TextInput
+          placeholder={t('passwordPlaceholder')}
+          placeholderTextColor="#999"
+          value={password}
+          onChangeText={setPassword}
+          onSubmitEditing={handleLogin}
+          secureTextEntry={!isPasswordVisible}
+          returnKeyType="done"
+          style={styles.textInput}
+        />
+        <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeButton}>
+          <MaterialIcons name={isPasswordVisible ? 'visibility' : 'visibility-off'} size={20} color="#0A0A0A" />
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity style={styles.forgotPasswordButton} onPress={() => navigation.navigate('PasswordReset')}>
+        <Text style={styles.forgotPasswordText}>{t('forgotPassword')}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
+        <View style={styles.loginButton}>
+          <Text style={styles.loginButtonText}>{isLoading ? t('loginButtonLoading') : t('loginButton')}</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={handleGoogleLogin} disabled={isLoading} style={{ marginTop: 12 }}>
+        <View style={styles.googleButton}>
+          <Image source={require('../assets/google_g_logo.png')} style={{ width: 22, height: 22, marginRight: 12 }} />
+          <Text style={styles.googleButtonText}>{t('signInWithGoogle')}</Text>
+        </View>
+      </TouchableOpacity>
+
+      {errorMessage ? (
+        <View style={styles.errorMessageContainer}>
+          <Text style={styles.errorMessage}>{errorMessage}</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.registerContainer}>
+        <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+          <Text style={styles.registerText}>
+            {t('noAccount')}
+            <Text style={styles.registerLink}>{t('signUpLink')}</Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </>
+);
+
+const IOSLoginScreen = ({ translateX, translateY, scaleAnim, ...rest }: any) => (
+  <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
+      <Animated.Image
+        source={require('../assets/Edward_Hooper.png')}
+        style={[styles.backgroundImage, { transform: [{ translateX }, { translateY }, { scale: scaleAnim }] }]}
+        resizeMode="cover"
+      />
+      <View style={styles.overlay} />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={0}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={styles.cardContainer}>
+            <View style={styles.card}>
+              <LoginCard {...rest} />
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
+  </TouchableWithoutFeedback>
+);
+
+const AndroidLoginScreen = ({ translateX, translateY, scaleAnim, ...rest }: any) => {
   const translateYAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const keyboardShow = Keyboard.addListener('keyboardDidShow', (e) => {
-      Animated.timing(translateYAnim, {
-        toValue: -e.endCoordinates.height * 1.1,
-        duration: 250,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(translateYAnim, { toValue: -e.endCoordinates.height * 1.1, duration: 250, easing: Easing.out(Easing.ease), useNativeDriver: true }).start();
     });
-
     const keyboardHide = Keyboard.addListener('keyboardDidHide', () => {
-      Animated.timing(translateYAnim, {
-        toValue: 0,
-        duration: 250,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(translateYAnim, { toValue: 0, duration: 250, easing: Easing.out(Easing.ease), useNativeDriver: true }).start();
     });
-
-    return () => {
-      keyboardShow.remove();
-      keyboardHide.remove();
-    };
+    return () => { keyboardShow.remove(); keyboardHide.remove(); };
   }, []);
 
   return (
@@ -379,105 +266,14 @@ const AndroidLoginScreen = ({
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}
-          style={[
-            styles.backgroundImage,
-            { transform: [{ translateX }, { translateY }, { scale: scaleAnim }] },
-          ]}
+          style={[styles.backgroundImage, { transform: [{ translateX }, { translateY }, { scale: scaleAnim }] }]}
           resizeMode="cover"
         />
         <View style={styles.overlay} />
-
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <Animated.View
-            style={[
-              styles.cardContainer,
-              { transform: [{ translateY: translateYAnim }] }
-            ]}
-          >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <Animated.View style={[styles.cardContainer, { transform: [{ translateY: translateYAnim }] }]}>
             <View style={styles.card}>
-              <Text style={styles.title}>Login</Text>
-              <Text style={styles.subtitle}>Please login to continue.</Text>
-
-              <View style={styles.inputContainer}>
-                <View style={styles.inputWrapper}>
-                  <MaterialIcons name="mail" size={20} color="#0A0A0A" style={styles.icon} />
-                  <TextInput
-                    placeholder="Email"
-                    placeholderTextColor="#999"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    returnKeyType="next"
-                    style={styles.textInput}
-                  />
-                </View>
-
-                <View style={styles.inputWrapper}>
-                  <MaterialIcons name="lock" size={20} color="#0A0A0A" style={styles.icon} />
-                  <TextInput
-                    placeholder="Password"
-                    placeholderTextColor="#999"
-                    value={password}
-                    onChangeText={setPassword}
-                    onSubmitEditing={handleLogin}
-                    secureTextEntry={!isPasswordVisible}
-                    returnKeyType="done"
-                    style={styles.textInput}
-                  />
-                  <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeButton}>
-                    <MaterialIcons
-                      name={isPasswordVisible ? 'visibility' : 'visibility-off'}
-                      size={20}
-                      color="#0A0A0A"
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.forgotPasswordButton}
-                  onPress={() => navigation.navigate('PasswordReset')}
-                >
-                  <Text style={styles.forgotPasswordText}>Forgot Your Password?</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
-                  <View style={styles.loginButton}>
-                    <Text style={styles.loginButtonText}>
-                      {isLoading ? 'Logging in...' : 'Login'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={handleGoogleLogin} disabled={isLoading} style={{ marginTop: 12 }}>
-                  <View style={styles.googleButton}>
-                    <Image
-                      source={require('../assets/google_g_logo.png')}
-                      style={{ width: 22, height: 22, marginRight: 12 }}
-                    />
-                    <Text style={styles.googleButtonText}>Sign in with Google</Text>
-                  </View>
-                </TouchableOpacity>
-
-                {errorMessage ? (
-                  <View style={styles.errorMessageContainer}>
-                    <Text style={styles.errorMessage}>{errorMessage}</Text>
-                  </View>
-                ) : null}
-
-                <View style={styles.registerContainer}>
-                  <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                    <Text style={styles.registerText}>
-                      Don't have an account?{' '}
-                      <Text style={styles.registerLink}>Sign Up</Text>
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              <LoginCard {...rest} />
             </View>
           </Animated.View>
         </ScrollView>
@@ -531,18 +327,8 @@ const styles = StyleSheet.create({
   registerContainer: { justifyContent: 'center', alignItems: 'center', marginTop: 10 },
   registerText: { fontSize: 14, color: '#0A0A0A' },
   registerLink: { fontWeight: 'bold', color: '#333333' },
-
-  forgotPasswordButton: {
-    alignSelf: 'flex-end',
-    marginTop: 4,
-    marginBottom: 0,
-  },
-  forgotPasswordText: {
-    color: '#333333',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-
+  forgotPasswordButton: { alignSelf: 'flex-end', marginTop: 4, marginBottom: 0 },
+  forgotPasswordText: { color: '#333333', fontSize: 14, fontWeight: 'bold' },
   googleButton: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 14,
@@ -558,9 +344,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  googleButtonText: {
-    color: '#333333',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  googleButtonText: { color: '#333333', fontSize: 16, fontWeight: '600' },
 });

@@ -24,6 +24,7 @@ import { db, auth } from '../firebase';
 import { useThemeContext } from '../contexts/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 45) / 2;
@@ -58,6 +59,7 @@ const HomeScreen = () => {
   const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
 
   const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const { t } = useLanguage();
 
   // Dinamik tab bar yüksekliği
   const tabBarHeight = 60 + insets.bottom;
@@ -526,7 +528,7 @@ const HomeScreen = () => {
                   onPress={() => setIsSearchActive(true)}
                   activeOpacity={1}
                 >
-                  <Text style={styles.searchPlaceholder}>Ara...</Text>
+                  <Text style={styles.searchPlaceholder}>{t('searchPlaceholder')}</Text>
                 </TouchableOpacity>
               )}
 
@@ -575,7 +577,7 @@ const HomeScreen = () => {
                   searchScope === scope && styles.scopeChipTextSelected,
                   { color: searchScope === scope ? colors.background : colors.text }
                 ]}>
-                  {scope === 'Artwork' ? 'Eser' : scope === 'Artist' ? 'Sanatçı' : scope === 'Price' ? 'Fiyat' : scope === 'Size' ? 'Boyut' : 'Tümü'}
+                  {scope === 'Artwork' ? t('artwork') : scope === 'Artist' ? t('artist') : scope === 'Price' ? t('price') : scope === 'Size' ? t('sizeScope') : t('all')}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -589,7 +591,7 @@ const HomeScreen = () => {
             <View style={{ padding: 16 }}>
               {filteredUsers.length > 0 && (
                 <View style={{ marginBottom: 20 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>Kullanıcılar</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>{t('users')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     {filteredUsers.map(user => (
                       <TouchableOpacity key={user.id} style={{ marginRight: 16, alignItems: 'center' }} onPress={() => navigation.navigate('OtherProfile', { userId: user.id })}>
@@ -603,7 +605,7 @@ const HomeScreen = () => {
 
               {filteredProducts.length > 0 ? (
                 <View>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>Eserler</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 10 }}>{t('artworksSection')}</Text>
                   {filteredProducts.map(item => (
                     <TouchableOpacity key={item.id} style={{ flexDirection: 'row', marginBottom: 12, alignItems: 'center' }} onPress={() => navigation.navigate('ProductDetail', { product: { ...item, createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString() } })}>
                       <Image source={{ uri: Array.isArray(item.imageUrls) && item.imageUrls[0] ? item.imageUrls[0] : (item.mainImageUrl || item.imageUrl) }} style={{ width: 50, height: 50, borderRadius: 8, marginRight: 12, backgroundColor: '#eee' }} />
@@ -616,14 +618,14 @@ const HomeScreen = () => {
                 </View>
               ) : (
                 filteredUsers.length === 0 && (
-                  <Text style={{ color: colors.secondaryText, textAlign: 'center', marginTop: 20 }}>Sonuç bulunamadı.</Text>
+                  <Text style={{ color: colors.secondaryText, textAlign: 'center', marginTop: 20 }}>{t('noResults')}</Text>
                 )
               )}
             </View>
           ) : (
             recentSearches.length > 0 && (
               <View style={{ padding: 16 }}>
-                <Text style={{ color: colors.secondaryText, marginBottom: 10, fontSize: 14 }}>Son Aramalar</Text>
+                <Text style={{ color: colors.secondaryText, marginBottom: 10, fontSize: 14 }}>{t('recentSearches')}</Text>
                 {recentSearches.map((item, index) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border || '#e0e0e0' }}>
                     <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }} onPress={() => handleRecentSearchPress(item)}>

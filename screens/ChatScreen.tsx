@@ -16,6 +16,7 @@ import { doc, getDoc, collection, addDoc, serverTimestamp, onSnapshot, query, or
 import { db } from '../firebase';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 type Message = {
   id: string;
@@ -101,14 +102,25 @@ export default function ChatScreen() {
     };
     fetchOtherUser();
 
+    let clearedAtTimestamp: any = null;
+    
+    getDoc(doc(db, 'chats', chatId)).then(snap => {
+       clearedAtTimestamp = snap.data()?.clearedAt?.[currentUserId];
+    });
+
     // Messages snapshot listener
     const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('createdAt', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (snapshot) {
-        const msgs = snapshot.docs.map((doc: any) => ({
+        let msgs: Message[] = snapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...(doc.data() as Omit<Message, 'id'>),
         }));
+
+        if (clearedAtTimestamp) {
+           msgs = msgs.filter((m: Message) => m.createdAt ? m.createdAt.toMillis() > clearedAtTimestamp.toMillis() : true);
+        }
+
         setMessages(msgs);
       }
     });
@@ -157,40 +169,35 @@ export default function ChatScreen() {
   const inputPaddingVertical = Math.min(Math.max(screenHeight * 0.012, 8), 12);
   const sendButtonPaddingVertical = Math.min(Math.max(screenHeight * 0.012, 8), 12);
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0 }]}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-        {/* Üst Bar */}
-        <View style={[styles.header, { paddingVertical: avatarSize / 4 }]}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={[styles.backText, { fontSize: avatarSize * 0.7 }]}>‹</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.userInfo}
-            onPress={() => navigation.navigate('OtherProfile', { userId: otherUserId })}
-          >
-            <Image
-              source={
-                otherUser.photoURL
-                  ? { uri: otherUser.photoURL }
-                  : require('../assets/default-avatar.png')
-              }
-              style={[
-                styles.avatar,
-                {
-                  width: avatarSize,
-                  height: avatarSize,
-                  borderRadius: avatarSize / 2,
-                },
-              ]}
-            />
-            <Text style={[styles.username, { fontSize: usernameFont }]}>{otherUser.displayName}</Text>
-          </TouchableOpacity>
-        </View>
+  const renderContent = () => (
+    <>
+      {/* Üst Bar */}
+      <View style={[styles.header, { paddingVertical: avatarSize / 4 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.userInfo}
+          onPress={() => navigation.navigate('OtherProfile', { userId: otherUserId })}
+        >
+          <Image
+            source={
+              otherUser.photoURL
+                ? { uri: otherUser.photoURL }
+                : require('../assets/default-avatar.png')
+            }
+            style={[
+              styles.avatar,
+              {
+                width: avatarSize,
+                height: avatarSize,
+                borderRadius: avatarSize / 2,
+              },
+            ]}
+          />
+          <Text style={[styles.username, { fontSize: usernameFont }]}>{otherUser.displayName}</Text>
+        </TouchableOpacity>
+      </View>
 
 
         {/* Mesajlar */}
@@ -252,7 +259,20 @@ export default function ChatScreen() {
             <Text style={[styles.sendButtonText, { fontSize: buttonFont }]}>Gönder</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+    </>
+  );
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0 }]}>
+      {Platform.OS === 'ios' ? (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          {renderContent()}
+        </KeyboardAvoidingView>
+      ) : (
+        <View style={{ flex: 1 }}>
+          {renderContent()}
+        </View>
+      )}
     </View>
   );
 }
@@ -268,12 +288,10 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   backButton: {
-    paddingHorizontal: 12,
+    paddingRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
   },
-  backText: { color: colors.text },
   userInfo: { flexDirection: 'row', alignItems: 'center' },
   avatar: { marginRight: 12 },
   username: { fontWeight: '600', color: colors.text },
@@ -304,19 +322,28 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
   messageText: { color: '#FFFFFF' },
   inputContainer: {
     flexDirection: 'row',
-    backgroundColor: colors.background,
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.card,
+    paddingHorizontal: 8,
+    marginHorizontal: 12,
+    marginBottom: Platform.OS === 'ios' ? 8 : 16,
+    marginTop: 8,
+    backgroundColor: colors.card,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: isDarkTheme ? '#404040' : '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: isDarkTheme ? '#404040' : '#CCCCCC',
-    borderRadius: 22,
-    marginRight: 10,
-    backgroundColor: isDarkTheme ? '#1F1F1F' : '#FAFAFA',
     color: colors.text,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    marginRight: 10,
+    paddingHorizontal: 14,
   },
   sendButton: {
     backgroundColor: isDarkTheme ? '#FFFFFF' : '#333333',

@@ -8,6 +8,7 @@ import { onAuthStateChanged } from '@react-native-firebase/auth';
 import { doc, getDoc } from '@react-native-firebase/firestore';
 import { auth, db } from '../firebase';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
@@ -73,9 +74,9 @@ function SearchStackNavigator() {
 // MAIN TAB
 function MainTabNavigatorContent({ userData }: { userData: any }) {
   const insets = useSafeAreaInsets();
-  const { colors, isDarkTheme } = useThemeContext(); // Tema renklerini al
+  const { colors, isDarkTheme } = useThemeContext();
+  const { t } = useLanguage();
 
-  // İkon rengi artık temadan geliyor
   const iconColor = colors.text;
 
   return (
@@ -106,7 +107,7 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
         component={HomeStackNavigator}
         options={{
           tabBarLabel: ({ focused }) => (
-            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Home</Text>
+            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>{t('home')}</Text>
           ),
           tabBarIcon: ({ focused, size }) =>
             focused ? <Ionicons name="home" size={size} color={iconColor} />
@@ -118,7 +119,7 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
         component={FavoritesStackNavigator}
         options={{
           tabBarLabel: ({ focused }) => (
-            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Favorites</Text>
+            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>{t('favorites')}</Text>
           ),
           tabBarIcon: ({ focused, size }) =>
             focused ? <Ionicons name="heart" size={size} color={iconColor} />
@@ -130,7 +131,7 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
         component={SearchStackNavigator}
         options={{
           tabBarLabel: ({ focused }) => (
-            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Search</Text>
+            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>{t('search')}</Text>
           ),
           tabBarIcon: ({ focused, size }) =>
             focused ? <Ionicons name="search" size={30} color={iconColor} />
@@ -142,7 +143,7 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
         component={InboxStackNavigator}
         options={{
           tabBarLabel: ({ focused }) => (
-            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Inbox</Text>
+            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>{t('inbox')}</Text>
           ),
           tabBarIcon: ({ focused, size }) =>
             focused ? <Ionicons name="mail" size={size} color={iconColor} />
@@ -154,7 +155,7 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
         component={ProfileScreen}
         options={{
           tabBarLabel: ({ focused }) => (
-            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>Profile</Text>
+            <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>{t('profile')}</Text>
           ),
           tabBarIcon: ({ focused, size }) => {
             const borderWidth = focused ? 2 : 0;

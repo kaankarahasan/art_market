@@ -12,10 +12,12 @@ import {
 import { Product } from '../routes/types';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../routes/types';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const screenWidth = Dimensions.get('window').width;
 const columnWidth = (screenWidth - 45) / 2;
@@ -27,6 +29,7 @@ const FavoritesScreen = () => {
   const insets = useSafeAreaInsets();
   const [imageHeights, setImageHeights] = useState<{ [key: string]: number }>({});
   const [isLoading, setIsLoading] = useState(true);
+  const { t } = useLanguage();
 
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -106,7 +109,7 @@ const FavoritesScreen = () => {
               />
             ) : (
               <View style={[styles.image, styles.noImage, { height: 200 }]}>
-                <Text style={styles.noImageText}>Resim yok</Text>
+                <Text style={styles.noImageText}>{t('noImageText')}</Text>
               </View>
             )}
           </View>
@@ -114,7 +117,7 @@ const FavoritesScreen = () => {
           <View style={styles.infoContainer}>
             <View style={styles.userRow}>
               <Text style={styles.username} numberOfLines={1}>
-                {item.username || 'Bilinmeyen'}
+                {item.username || t('unknown')}
               </Text>
               <TouchableOpacity
                 onPress={() => removeFavorite(item.id)}
@@ -147,18 +150,18 @@ const FavoritesScreen = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
-      <View style={styles.headerContainer}>
+      <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Favoriler</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('favorites')}</Text>
       </View>
 
       {favoriteItems.length === 0 ? (
-        <Text style={[styles.emptyText, { color: colors.text }]}>Henüz favori ürün yok.</Text>
+        <Text style={[styles.emptyText, { color: colors.text }]}>{t('noFavorites')}</Text>
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 80 + insets.bottom, paddingTop: 10 }} showsVerticalScrollIndicator={false}>
           <View style={styles.masonryContainer}>
@@ -178,16 +181,18 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background
   },
-  headerContainer: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 15,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    borderBottomColor: colors.border || 'rgba(0,0,0,0.05)',
   },
   backButton: {
-    marginRight: 12,
+    paddingRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 20,

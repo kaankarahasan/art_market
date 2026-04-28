@@ -18,6 +18,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../routes/types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,11 +33,12 @@ const PasswordResetScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const { t } = useLanguage();
 
   const handlePasswordReset = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setErrorMessage('Lütfen geçerli bir e-posta adresi girin.');
+      setErrorMessage(t('invalidEmail'));
       setSuccessMessage('');
       return;
     }
@@ -47,13 +49,13 @@ const PasswordResetScreen = () => {
 
     try {
       await auth.sendPasswordResetEmail(email);
-      setSuccessMessage('Şifre sıfırlama e-postası gönderildi. Lütfen gelen kutunuzu (ve spam klasörünü) kontrol edin.');
+      setSuccessMessage(t('resetEmailSent'));
       setEmail('');
     } catch (error: any) {
       console.error("Password reset error:", error);
-      let friendlyMessage = 'Bir hata oluştu. Lütfen tekrar deneyin.';
+      let friendlyMessage = t('error');
       if (error.code === 'auth/user-not-found') {
-        friendlyMessage = 'Bu e-posta adresine kayıtlı bir kullanıcı bulunamadı.';
+        friendlyMessage = t('noAccount');
       }
       setErrorMessage(friendlyMessage);
     } finally {
@@ -142,14 +144,14 @@ const PasswordResetScreen = () => {
                 <MaterialIcons name="arrow-back" size={24} color="#0A0A0A" />
               </TouchableOpacity>
 
-              <Text style={styles.title}>Şifre Sıfırla</Text>
-              <Text style={styles.subtitle}>Sıfırlama linki için e-postanızı girin.</Text>
+              <Text style={styles.title}>{t('passwordResetTitle')}</Text>
+              <Text style={styles.subtitle}>{t('passwordResetSubtitle')}</Text>
 
               <View style={styles.inputContainer}>
                 <View style={styles.inputWrapper}>
                   <MaterialIcons name="mail" size={20} color="#0A0A0A" style={styles.icon} />
                   <TextInput
-                    placeholder="Email"
+                    placeholder={t('emailPlaceholder')}
                     placeholderTextColor="#999"
                     value={email}
                     onChangeText={(text) => {
@@ -168,7 +170,7 @@ const PasswordResetScreen = () => {
                 <TouchableOpacity onPress={handlePasswordReset} disabled={isLoading}>
                   <View style={styles.loginButton}>
                     <Text style={styles.loginButtonText}>
-                      {isLoading ? 'Gönderiliyor...' : 'Sıfırlama Linki Gönder'}
+                      {isLoading ? t('sending') : t('sendResetLink')}
                     </Text>
                   </View>
                 </TouchableOpacity>

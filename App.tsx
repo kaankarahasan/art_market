@@ -38,6 +38,7 @@ import { RootStackParamList } from './routes/types';
 import { FavoriteUsersProvider } from './contexts/FavoritesContext';
 import { FavoriteItemsProvider } from './contexts/FavoritesContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 // Firebase'i initialize etmek için içeri aktarıyoruz (tek seferlik tetiklenir)
 import './firebase';
@@ -112,13 +113,15 @@ function AppContent() {
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <FavoriteUsersProvider>
-        <FavoriteItemsProvider>
-          <ThemeProvider>
-            <AppContent />
-          </ThemeProvider>
-        </FavoriteItemsProvider>
-      </FavoriteUsersProvider>
+      <LanguageProvider>
+        <FavoriteUsersProvider>
+          <FavoriteItemsProvider>
+            <ThemeProvider>
+              <AppContent />
+            </ThemeProvider>
+          </FavoriteItemsProvider>
+        </FavoriteUsersProvider>
+      </LanguageProvider>
     </GestureHandlerRootView>
   );
 }

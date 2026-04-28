@@ -11,6 +11,7 @@ import {
 import { doc, getDoc } from '@react-native-firebase/firestore';
 import { db, auth } from '../firebase';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const numColumns = 2;
 const itemMargin = 10;
@@ -28,6 +29,7 @@ const SoldScreen = () => {
   const { colors } = useThemeContext();
   const [soldProducts, setSoldProducts] = useState<SoldProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchSoldProducts = async () => {
@@ -76,7 +78,7 @@ const SoldScreen = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {soldProducts.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.text + '99' }]}>
-          Henüz satılan ürün yok.
+          {t('noSold')}
         </Text>
       ) : (
         <FlatList

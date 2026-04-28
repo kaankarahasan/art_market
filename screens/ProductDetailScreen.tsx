@@ -39,6 +39,7 @@ import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context'
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
 import { useThemeContext } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -50,6 +51,7 @@ const ProductDetailScreen = () => {
     useNavigation<NativeStackNavigationProp<RootStackParamList, 'ProductDetail'>>();
   const route = useRoute<ProductDetailRouteProp>();
   const { product } = route.params;
+  const { t } = useLanguage();
 
   const { favoriteUsers, addToFavoriteUsers, removeFromFavoriteUsers } =
     useFavoriteUsers();
@@ -221,7 +223,7 @@ const ProductDetailScreen = () => {
         dimensions: productData.dimensions 
       });
     } else {
-      Alert.alert('Hata', 'Görüntülenecek bir görsel bulunamadı.');
+      Alert.alert(t('error'), t('viewInRoomError'));
     }
   };
 
@@ -241,7 +243,7 @@ const ProductDetailScreen = () => {
             color={colors.secondaryText}
           />
           <Text style={{ color: colors.secondaryText, marginTop: 8 }}>
-            Görsel bulunamadı
+            {t('noImage')}
           </Text>
         </View>
       );
@@ -303,21 +305,21 @@ const ProductDetailScreen = () => {
       : [];
 
   const categories = [
-    { label: 'Yağlı Boya', value: 'yagli_boya' },
-    { label: 'Suluboya', value: 'suluboya' },
-    { label: 'Akrilik', value: 'akrilik' },
-    { label: 'Heykel', value: 'heykel' },
-    { label: 'Fotoğraf', value: 'fotograf' },
-    { label: 'Dijital Sanat', value: 'dijital' },
-    { label: 'Çizim', value: 'cizim' },
-    { label: 'Grafik Tasarım', value: 'grafik' },
-    { label: 'Seramik', value: 'seramik' },
-    { label: 'Kolaj', value: 'kolaj' },
-    { label: 'Diğer', value: 'diger' },
+    { label: t('cat_yagli_boya'), value: 'yagli_boya' },
+    { label: t('cat_suluboya'), value: 'suluboya' },
+    { label: t('cat_akrilik'), value: 'akrilik' },
+    { label: t('cat_heykel'), value: 'heykel' },
+    { label: t('cat_fotograf'), value: 'fotograf' },
+    { label: t('cat_dijital'), value: 'dijital' },
+    { label: t('cat_cizim'), value: 'cizim' },
+    { label: t('cat_grafik'), value: 'grafik' },
+    { label: t('cat_seramik'), value: 'seramik' },
+    { label: t('cat_kolaj'), value: 'kolaj' },
+    { label: t('cat_diger'), value: 'diger' },
   ];
 
   const getCategoryLabel = (value: string | undefined) => {
-    if (!value) return 'Bilinmiyor';
+    if (!value) return t('unknown');
     const cat = categories.find((c) => c.value === value);
     return cat ? cat.label : value;
   };
@@ -328,8 +330,8 @@ const ProductDetailScreen = () => {
 
     const favItem: FavoriteItem = {
       id: item.id,
-      title: item.title || 'Başlık Yok',
-      username: ownerData?.username || 'Bilinmeyen',
+      title: item.title || t('noTitle'),
+      username: ownerData?.username || t('unknown'),
       imageUrl: imageUrl || undefined,
       price: item.price || 0,
       year: item.year || '',
@@ -367,7 +369,7 @@ const ProductDetailScreen = () => {
             />
           ) : (
             <View style={[styles.noImage, { height: imageHeight }]}>
-              <Text style={styles.noImageText}>Resim yok</Text>
+              <Text style={styles.noImageText}>{t('noImageText')}</Text>
             </View>
           )}
         </View>
@@ -375,7 +377,7 @@ const ProductDetailScreen = () => {
         <View style={styles.infoContainer}>
           <View style={styles.userRow}>
             <Text style={styles.username} numberOfLines={1}>
-              {ownerData?.fullName || 'Satıcı'}
+              {ownerData?.fullName || t('unknownSeller')}
             </Text>
             <TouchableOpacity
               onPress={() => handleFavoriteToggle(item)}
@@ -455,7 +457,7 @@ const ProductDetailScreen = () => {
                   <Text style={styles.ownerName}>
                     {ownerData.fullName ||
                       ownerData.email ||
-                      'Bilinmiyor'}
+                      t('unknown')}
                   </Text>
                 </TouchableOpacity>
 
@@ -483,19 +485,18 @@ const ProductDetailScreen = () => {
           </Text>
 
           <Text style={styles.mainPrice}>
-            {productData.price ? `₺${Number(productData.price).toLocaleString('tr-TR')}` : 'Belirtilmemiş'}
+            {productData.price ? `₺${Number(productData.price).toLocaleString('tr-TR')}` : t('unknown')}
           </Text>
 
           <Text style={styles.description}>
-            {productData.description ||
-              'Bu ürün hakkında detaylı bilgi bulunmamaktadır.'}
+            {productData.description || t('noDescription')}
           </Text>
 
           <View style={styles.divider} />
 
           {productData.dimensions && (
             <Text style={styles.detail}>
-              Boyut:{' '}
+              {t('dimension')}:{' '}
               {['height', 'width']
                 .map((key) =>
                   productData.dimensions
@@ -511,11 +512,11 @@ const ProductDetailScreen = () => {
           )}
 
           <Text style={styles.detail}>
-            Kategori: {getCategoryLabel(productData.category)}
+            {t('category')}: {getCategoryLabel(productData.category)}
           </Text>
           {productData.createdAt && (
             <Text style={styles.detail}>
-              Eklenme Tarihi: {formatDate(productData.createdAt)}
+              {t('addedDate')}: {formatDate(productData.createdAt)}
             </Text>
           )}
         </View>
@@ -526,7 +527,7 @@ const ProductDetailScreen = () => {
           <View style={styles.otherProductsContainer}>
             <View style={styles.otherProductsHeader}>
               <Text style={styles.otherProductsTitle}>
-                {ownerData?.fullName || 'Satıcının'} Diğer Ürünleri
+                {ownerData?.fullName || t('seller')} {t('otherProducts')}
               </Text>
             </View>
 
@@ -541,7 +542,7 @@ const ProductDetailScreen = () => {
               />
             ) : (
               <Text style={styles.noOtherProductsText}>
-                Bu satıcının başka bir ürünü bulunmamaktadır.
+                {t('noOtherProducts')}
               </Text>
             )}
           </View>
@@ -560,7 +561,7 @@ const ProductDetailScreen = () => {
               activeOpacity={0.8}
             >
               <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.background} />
-              <Text style={[styles.messageButtonText, { color: colors.background }]}>Mesaj Gönder</Text>
+              <Text style={[styles.messageButtonText, { color: colors.background }]}>{t('sendMessage')}</Text>
             </TouchableOpacity>
           )}
 
@@ -570,7 +571,7 @@ const ProductDetailScreen = () => {
             activeOpacity={0.8}
           >
             <Ionicons name="easel-outline" size={22} color={colors.text} />
-            <Text style={[styles.arButtonText, { color: colors.text }]}>Odada Gör</Text>
+            <Text style={[styles.arButtonText, { color: colors.text }]}>{t('viewInRoom')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -716,7 +717,6 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
 
   card: {
     borderRadius: 12,
-    overflow: 'hidden',
     backgroundColor: colors.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

@@ -9,6 +9,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -19,6 +21,7 @@ import { RootStackParamList } from '../routes/types';
 import uuid from 'react-native-uuid';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { Product } from '../routes/types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type UpdateProductRouteProp = RouteProp<RootStackParamList, 'UpdateProduct'>;
 
@@ -28,12 +31,33 @@ const UpdateProductScreen = () => {
   const { product } = route.params;
 
   const { colors } = useThemeContext();
+  const { t } = useLanguage();
 
   const [title, setTitle] = useState(product.title || '');
   const [description, setDescription] = useState(product.description || '');
   const [price, setPrice] = useState(product.price ? String(product.price) : '');
   const [category, setCategory] = useState(product.category || '');
+  const [modalVisible, setModalVisible] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>(product.imageUrls || []);
+
+  const categories = [
+    { label: t('cat_yagli_boya'), value: 'yagli_boya' },
+    { label: t('cat_suluboya'), value: 'suluboya' },
+    { label: t('cat_akrilik'), value: 'akrilik' },
+    { label: t('cat_heykel'), value: 'heykel' },
+    { label: t('cat_fotograf'), value: 'fotograf' },
+    { label: t('cat_dijital'), value: 'dijital' },
+    { label: t('cat_cizim'), value: 'cizim' },
+    { label: t('cat_grafik'), value: 'grafik' },
+    { label: t('cat_seramik'), value: 'seramik' },
+    { label: t('cat_kolaj'), value: 'kolaj' },
+    { label: t('cat_diger'), value: 'diger' },
+  ];
+
+  const getCategoryLabel = (value: string) => {
+    const cat = categories.find((c) => c.value === value);
+    return cat ? cat.label : t('selectCategory');
+  };
   const [uploading, setUploading] = useState(false);
 
   const pickImage = async () => {
@@ -48,7 +72,7 @@ const UpdateProductScreen = () => {
       }
     } catch (err) {
       console.warn(err);
-      Alert.alert('Hata', 'Resim seçilirken bir hata oluştu');
+      Alert.alert(t('error'), t('imagePickError'));
     }
   };
 
@@ -61,14 +85,14 @@ const UpdateProductScreen = () => {
       return downloadURL;
     } catch (error) {
       console.error('Resim yükleme hatası:', error);
-      Alert.alert('Hata', 'Resim yüklenemedi.');
+      Alert.alert(t('error'), t('imageUploadError'));
       return '';
     }
   };
 
   const handleUpdate = async () => {
     if (!title.trim() || !description.trim()) {
-      Alert.alert('Uyarı', 'Başlık ve açıklama zorunludur.');
+      Alert.alert(t('warning'), t('titleAndDescRequired'));
       return;
     }
 
@@ -94,11 +118,11 @@ const UpdateProductScreen = () => {
         mainImageUrl: uploadedUrls[0] || '',
       });
 
-      Alert.alert('Başarılı', 'Ürün güncellendi.');
+      Alert.alert(t('success'), t('productUpdated'));
       navigation.goBack();
     } catch (error: any) {
       console.error('Update product error:', error);
-      Alert.alert('Hata', 'Ürün güncellenemedi.');
+      Alert.alert(t('error'), t('productUpdateError'));
     } finally {
       setUploading(false);
     }
@@ -110,16 +134,16 @@ const UpdateProductScreen = () => {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.label, { color: colors.text }]}>Ürün Adı</Text>
+      <Text style={[styles.label, { color: colors.text }]}>{t('productNameLabel')}</Text>
       <TextInput
         style={[styles.input, { borderColor: colors.border, color: colors.text }]}
         value={title}
         onChangeText={setTitle}
-        placeholder="Ürün adı"
+        placeholder={t('productName')}
         placeholderTextColor={colors.text + '99'}
       />
 
-      <Text style={[styles.label, { color: colors.text }]}>Açıklama</Text>
+      <Text style={[styles.label, { color: colors.text }]}>{t('descriptionLabel')}</Text>
       <TextInput
         style={[
           styles.input,
@@ -128,35 +152,36 @@ const UpdateProductScreen = () => {
         value={description}
         onChangeText={setDescription}
         multiline
-        placeholder="Ürün açıklaması"
+        placeholder={t('description')}
         placeholderTextColor={colors.text + '99'}
       />
 
-      <Text style={[styles.label, { color: colors.text }]}>Fiyat (₺)</Text>
+      <Text style={[styles.label, { color: colors.text }]}>{t('priceLabel')}</Text>
       <TextInput
         style={[styles.input, { borderColor: colors.border, color: colors.text }]}
         value={price}
         onChangeText={setPrice}
         keyboardType="decimal-pad"
-        placeholder="Fiyat"
+        placeholder={t('price')}
         placeholderTextColor={colors.text + '99'}
       />
 
-      <Text style={[styles.label, { color: colors.text }]}>Kategori</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-        value={category}
-        onChangeText={setCategory}
-        placeholder="Kategori"
-        placeholderTextColor={colors.text + '99'}
-      />
+      <Text style={[styles.label, { color: colors.text }]}>{t('categoryLabel')}</Text>
+      <TouchableOpacity
+        style={[styles.input, { borderColor: colors.border, justifyContent: 'center' }]}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={{ color: colors.text }}>
+          {category ? getCategoryLabel(category) : t('selectCategory')}
+        </Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.imagePicker, { backgroundColor: colors.card }]}
         onPress={pickImage}
       >
         <Text style={[styles.imagePickerText, { color: colors.primary }]}>
-          Resim Ekle
+          {t('addImage')}
         </Text>
       </TouchableOpacity>
 
@@ -185,9 +210,35 @@ const UpdateProductScreen = () => {
         {uploading ? (
           <ActivityIndicator color={colors.background} />
         ) : (
-          <Text style={styles.updateButtonText}>Güncelle</Text>
+          <Text style={styles.updateButtonText}>{t('update2')}</Text>
         )}
       </TouchableOpacity>
+
+      <Modal visible={modalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('selectCategory')}</Text>
+            <FlatList
+              data={categories}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    setCategory(item.value);
+                    setModalVisible(false);
+                  }}
+                >
+                  <Text style={{ color: colors.text }}>{item.label}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity style={[styles.closeButton, { backgroundColor: colors.primary }]} onPress={() => setModalVisible(false)}>
+              <Text style={{ color: colors.background, textAlign: 'center', fontWeight: 'bold' }}>{t('close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -237,4 +288,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' },
+  modalContent: { borderRadius: 10, padding: 20, width: '80%', maxHeight: '70%' },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
+  modalItem: { padding: 12, borderBottomWidth: 1 },
+  closeButton: { padding: 12, borderRadius: 10, marginTop: 10 },
 });

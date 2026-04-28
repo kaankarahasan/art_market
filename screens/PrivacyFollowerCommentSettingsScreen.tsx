@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { getDoc, doc, updateDoc } from '@react-native-firebase/firestore';
 import { auth, db } from '../firebase';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type FollowerPermission = 'everyone' | 'approved' | 'none';
 type CommentPermission = 'everyone' | 'following' | 'none';
@@ -11,22 +12,25 @@ const options = {
   comment: ['everyone', 'following', 'none'] as const,
 };
 
-const labels = {
-  follower: {
-    everyone: 'Herkes',
-    approved: 'Sadece Onayladıklarım',
-    none: 'Kimse',
-  },
-  comment: {
-    everyone: 'Herkes',
-    following: 'Takip Ettiklerim',
-    none: 'Kimse',
-  },
-};
-
 const PrivacyFollowerCommentSettingsScreen = () => {
   const [followerSetting, setFollowerSetting] = useState<FollowerPermission>('everyone');
   const [commentSetting, setCommentSetting] = useState<CommentPermission>('everyone');
+  const { t } = useLanguage();
+
+  const getLabels = () => ({
+    follower: {
+      everyone: t('everyone'),
+      approved: t('approvedOnly'),
+      none: t('none'),
+    },
+    comment: {
+      everyone: t('everyone'),
+      following: t('followingOnly'),
+      none: t('none'),
+    },
+  });
+
+  const labels = getLabels();
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -53,7 +57,7 @@ const PrivacyFollowerCommentSettingsScreen = () => {
   const saveSettings = async () => {
     const uid = auth.currentUser?.uid;
     if (!uid) {
-      Alert.alert('Hata', 'Kullanıcı oturumu bulunamadı.');
+      Alert.alert(t('error'), t('loginRequired'));
       return;
     }
 
@@ -64,16 +68,16 @@ const PrivacyFollowerCommentSettingsScreen = () => {
           commentPermission: commentSetting,
         },
       });
-      Alert.alert('Başarılı', 'Ayarlar kaydedildi.');
+      Alert.alert(t('success'), t('settingsSaved'));
     } catch (err) {
       console.error('Ayarlar kaydedilirken hata:', err);
-      Alert.alert('Hata', 'Ayarlar kaydedilirken bir hata oluştu.');
+      Alert.alert(t('error'), t('settingsSaveError'));
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Takipçi Ayarları</Text>
+      <Text style={styles.header}>{t('followerSettings')}</Text>
       {options.follower.map((option) => (
         <TouchableOpacity
           key={option}
@@ -84,7 +88,7 @@ const PrivacyFollowerCommentSettingsScreen = () => {
         </TouchableOpacity>
       ))}
 
-      <Text style={styles.header}>Yorum Ayarları</Text>
+      <Text style={styles.header}>{t('commentSettings')}</Text>
       {options.comment.map((option) => (
         <TouchableOpacity
           key={option}
@@ -96,7 +100,7 @@ const PrivacyFollowerCommentSettingsScreen = () => {
       ))}
 
       <TouchableOpacity style={styles.saveButton} onPress={saveSettings}>
-        <Text style={styles.saveText}>Kaydet</Text>
+        <Text style={styles.saveText}>{t('saveButton')}</Text>
       </TouchableOpacity>
     </View>
   );

@@ -1,42 +1,43 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useThemeContext } from '../contexts/ThemeContext'; // Relative path
+import { useLanguage } from '../contexts/LanguageContext';
 
 const PrivacyPolicyScreen = () => {
   const { colors } = useThemeContext();
+  const { t } = useLanguage();
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.text }]}>Gizlilik Politikası</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{t('privacyPolicyTitle')}</Text>
 
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Biz kullanıcılarımızın gizliliğine büyük önem veriyoruz. Bu gizlilik politikası, 
-        kişisel bilgilerinizin nasıl toplandığını, kullanıldığını ve korunduğunu açıklar.
+        {t('ppIntro')}
       </Text>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Toplanan Bilgiler</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('ppInfoCol')}</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Kayıt sırasında e-posta adresiniz, kullanıcı adınız gibi temel bilgileri toplarız. Ayrıca uygulamamızın kullanımını analiz etmek için anonim veriler toplayabiliriz.
+        {t('ppInfoColDesc')}
       </Text>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Bilgi Kullanımı</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('ppInfoUse')}</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Toplanan bilgiler, hizmetlerimizi geliştirmek, kullanıcı deneyimini iyileştirmek ve gerektiğinde size bildirim göndermek için kullanılır.
+        {t('ppInfoUseDesc')}
       </Text>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Bilgi Güvenliği</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('ppSecurity')}</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Kişisel bilgileriniz güvenli sunucularda saklanır ve yetkisiz erişimlere karşı korunur.
+        {t('ppSecurityDesc')}
       </Text>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Üçüncü Taraflarla Paylaşım</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('ppThirdParty')}</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Kişisel bilgileriniz üçüncü taraflarla paylaşılmaz, ancak yasal zorunluluklar halinde yetkili kurumlarla paylaşılabilir.
+        {t('ppThirdPartyDesc')}
       </Text>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>İletişim</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('ppContact')}</Text>
       <Text style={[styles.paragraph, { color: colors.text }]}>
-        Gizlilik politikamız hakkında sorularınız için lütfen destek@ornekapp.com adresinden bizimle iletişime geçin.
+        {t('ppContactDesc')}
       </Text>
     </ScrollView>
   );

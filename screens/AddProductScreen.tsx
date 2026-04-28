@@ -23,11 +23,13 @@ import { analyzeArtworkImage } from '../utils/aiEnrichment';
 import { ThemeContext } from '../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const AddProductScreen = () => {
   const { isDarkTheme } = useContext(ThemeContext);
   const styles = getStyles(isDarkTheme);
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -43,22 +45,22 @@ const AddProductScreen = () => {
   const navigation = useNavigation();
 
   const categories = [
-    { label: 'Yağlı Boya', value: 'yagli_boya' },
-    { label: 'Suluboya', value: 'suluboya' },
-    { label: 'Akrilik', value: 'akrilik' },
-    { label: 'Heykel', value: 'heykel' },
-    { label: 'Fotoğraf', value: 'fotograf' },
-    { label: 'Dijital Sanat', value: 'dijital' },
-    { label: 'Çizim', value: 'cizim' },
-    { label: 'Grafik Tasarım', value: 'grafik' },
-    { label: 'Seramik', value: 'seramik' },
-    { label: 'Kolaj', value: 'kolaj' },
-    { label: 'Diğer', value: 'diger' },
+    { label: t('cat_yagli_boya'), value: 'yagli_boya' },
+    { label: t('cat_suluboya'), value: 'suluboya' },
+    { label: t('cat_akrilik'), value: 'akrilik' },
+    { label: t('cat_heykel'), value: 'heykel' },
+    { label: t('cat_fotograf'), value: 'fotograf' },
+    { label: t('cat_dijital'), value: 'dijital' },
+    { label: t('cat_cizim'), value: 'cizim' },
+    { label: t('cat_grafik'), value: 'grafik' },
+    { label: t('cat_seramik'), value: 'seramik' },
+    { label: t('cat_kolaj'), value: 'kolaj' },
+    { label: t('cat_diger'), value: 'diger' },
   ];
 
   const pickImages = async () => {
     if (images.length >= 3) {
-      Alert.alert('Uyarı', 'En fazla 3 fotoğraf ekleyebilirsiniz.');
+      Alert.alert(t('warning'), t('maxPhotos'));
       return;
     }
 
@@ -72,7 +74,7 @@ const AddProductScreen = () => {
       if (result.didCancel) return;
 
       if (result.errorCode) {
-        Alert.alert('Hata', result.errorMessage || 'Resim seçilirken bir hata oluştu');
+        Alert.alert(t('error'), result.errorMessage || 'Resim seçilirken bir hata oluştu');
         return;
       }
 
@@ -82,13 +84,13 @@ const AddProductScreen = () => {
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Galeri açılırken bir sorun oluştu.');
+      Alert.alert(t('error'), 'Galeri açılırken bir sorun oluştu.');
     }
   };
 
   const takePhoto = async () => {
     if (images.length >= 3) {
-      Alert.alert('Uyarı', 'En fazla 3 fotoğraf ekleyebilirsiniz.');
+      Alert.alert(t('warning'), t('maxPhotos'));
       return;
     }
 
@@ -102,7 +104,7 @@ const AddProductScreen = () => {
       if (result.didCancel) return;
 
       if (result.errorCode) {
-        Alert.alert('Hata', result.errorMessage || 'Kamera açılırken bir hata oluştu');
+        Alert.alert(t('error'), result.errorMessage || 'Kamera açılırken bir hata oluştu');
         return;
       }
 
@@ -111,7 +113,7 @@ const AddProductScreen = () => {
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Kamera açılırken bir sorun oluştu.');
+      Alert.alert(t('error'), 'Kamera açılırken bir sorun oluştu.');
     }
   };
 
@@ -128,11 +130,11 @@ const AddProductScreen = () => {
 
   const handleAddProduct = async () => {
     if (!title.trim() || !description.trim() || !price.trim() || !category.trim()) {
-      Alert.alert('Uyarı', 'Lütfen tüm zorunlu alanları doldurun.');
+      Alert.alert(t('warning'), t('fillRequired'));
       return;
     }
     if (year && (parseInt(year) < 1000 || parseInt(year) > new Date().getFullYear())) {
-      Alert.alert('Uyarı', 'Lütfen geçerli bir yıl girin.');
+      Alert.alert(t('warning'), t('validYear'));
       return;
     }
 
@@ -189,7 +191,7 @@ const AddProductScreen = () => {
         aiVisualTags,
       });
 
-      Alert.alert('Başarılı', 'Ürün başarıyla eklendi.');
+      Alert.alert(t('success'), t('productAdded'));
       setTitle('');
       setDescription('');
       setPrice('');
@@ -201,7 +203,7 @@ const AddProductScreen = () => {
       navigation.goBack();
     } catch (error) {
       console.error('Ürün eklenirken hata:', error);
-      Alert.alert('Hata', 'Ürün eklenirken bir sorun oluştu.');
+      Alert.alert(t('error'), t('productAddError'));
     } finally {
       setUploading(false);
     }
@@ -209,30 +211,30 @@ const AddProductScreen = () => {
 
   const getCategoryLabel = (value: string) => {
     const cat = categories.find((c) => c.value === value);
-    return cat ? cat.label : 'Kategori Seçin';
+    return cat ? cat.label : t('selectCategory');
   };
 
   return (
     <View style={[styles.mainContainer, { paddingTop: insets.top, backgroundColor: isDarkTheme ? '#121212' : '#F4F4F4' }]}>
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={isDarkTheme ? '#fff' : '#333'} />
+          <Ionicons name="chevron-back" size={28} color={isDarkTheme ? '#fff' : '#333'} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Yeni Eser Ekle</Text>
+        <Text style={styles.headerTitle}>{t('addNewProduct')}</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Ürün Adı</Text>
+          <Text style={styles.label}>{t('productName')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Ürün adı girin"
+            placeholder={t('productName')}
             placeholderTextColor="#6E6E6E"
             value={title}
             onChangeText={setTitle}
           />
 
-          <Text style={styles.label}>Yıl</Text>
+          <Text style={styles.label}>{t('year')}</Text>
           <TextInput
             style={styles.input}
             placeholder="Yapım yılı (örn: 2024)"
@@ -243,40 +245,40 @@ const AddProductScreen = () => {
             maxLength={4}
           />
 
-          <Text style={styles.label}>Açıklama</Text>
+          <Text style={styles.label}>{t('description')}</Text>
           <TextInput
             style={[styles.input, { height: 100 }]}
-            placeholder="Açıklama girin"
+            placeholder={t('description')}
             placeholderTextColor="#6E6E6E"
             multiline
             value={description}
             onChangeText={setDescription}
           />
 
-          <Text style={styles.label}>Fiyat (₺)</Text>
+          <Text style={styles.label}>{t('price')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Fiyat girin"
+            placeholder={t('price')}
             placeholderTextColor="#6E6E6E"
             keyboardType="numeric"
             value={price}
             onChangeText={setPrice}
           />
 
-          <Text style={styles.label}>Kategori</Text>
+          <Text style={styles.label}>{t('category')}</Text>
           <TouchableOpacity
             style={styles.categorySelector}
             onPress={() => setModalVisible(true)}
           >
             <Text style={styles.categorySelectorText}>
-              {category ? getCategoryLabel(category) : 'Kategori Seçin'}
+              {category ? getCategoryLabel(category) : t('selectCategory')}
             </Text>
           </TouchableOpacity>
 
-          <Text style={styles.label}>Boyut (cm)</Text>
+          <Text style={styles.label}>{t('size')}</Text>
           <View style={styles.dimensionsContainer}>
             <View style={styles.dimensionBox}>
-              <Text style={styles.dimensionLabel}>Yükseklik</Text>
+              <Text style={styles.dimensionLabel}>{t('height')}</Text>
               <TextInput
                 style={styles.dimensionInput}
                 keyboardType="numeric"
@@ -285,7 +287,7 @@ const AddProductScreen = () => {
               />
             </View>
             <View style={styles.dimensionBox}>
-              <Text style={styles.dimensionLabel}>Genişlik</Text>
+              <Text style={styles.dimensionLabel}>{t('width')}</Text>
               <TextInput
                 style={styles.dimensionInput}
                 keyboardType="numeric"
@@ -297,7 +299,7 @@ const AddProductScreen = () => {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Fotoğraflar (max 3)</Text>
+          <Text style={styles.label}>{t('photos')}</Text>
           <View style={styles.imageRow}>
             {images.map((uri, index) => (
               <Image key={index} source={{ uri }} style={styles.imagePreview} />
@@ -306,10 +308,10 @@ const AddProductScreen = () => {
 
           <View style={styles.imageButtons}>
             <TouchableOpacity style={styles.button} onPress={pickImages}>
-              <Text style={styles.buttonText}>Galeriden Seç</Text>
+              <Text style={styles.buttonText}>{t('pickFromGallery')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={takePhoto}>
-              <Text style={styles.buttonText}>Kameradan Çek</Text>
+              <Text style={styles.buttonText}>{t('takeFromCamera')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -319,13 +321,13 @@ const AddProductScreen = () => {
           onPress={handleAddProduct}
           disabled={uploading}
         >
-          {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Kaydet</Text>}
+          {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('save')}</Text>}
         </TouchableOpacity>
 
         <Modal visible={modalVisible} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Kategori Seçin</Text>
+              <Text style={styles.modalTitle}>{t('selectCategory')}</Text>
               <FlatList
                 data={categories}
                 keyExtractor={(item) => item.value}
@@ -342,7 +344,7 @@ const AddProductScreen = () => {
                 )}
               />
               <TouchableOpacity style={[styles.button, { marginTop: 10 }]} onPress={() => setModalVisible(false)}>
-                <Text style={styles.buttonText}>Kapat</Text>
+                <Text style={styles.buttonText}>{t('close')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -359,10 +361,12 @@ const getStyles = (isDarkTheme: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 15,
-      paddingVertical: 10,
+      paddingVertical: 12,
       backgroundColor: isDarkTheme ? '#121212' : '#F4F4F4',
+      borderBottomWidth: 1,
+      borderBottomColor: isDarkTheme ? '#333' : '#E0E0E0',
     },
-    backButton: { marginRight: 15 },
+    backButton: { paddingRight: 10, justifyContent: 'center', alignItems: 'center' },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: isDarkTheme ? '#fff' : '#333' },
     scrollContent: { padding: 20 },
     // container: { flexGrow: 1, padding: 20, backgroundColor: isDarkTheme ? '#121212' : '#F4F4F4' }, // Replaced by mainContainer+scrollContent, kept if needed for other refs logic but commented out to avoid confusion or keep as legacy

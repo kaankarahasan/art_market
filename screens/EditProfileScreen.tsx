@@ -17,11 +17,13 @@ import { ref } from '@react-native-firebase/storage';
 import { auth, db, storage } from '../firebase';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { ThemeContext } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const EditProfileScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDarkTheme } = useContext(ThemeContext);
   const styles = getStyles(isDarkTheme);
+  const { t } = useLanguage();
 
   const userId = auth.currentUser?.uid;
   const [username, setUsername] = useState('');
@@ -45,7 +47,7 @@ const EditProfileScreen = () => {
         }
       } catch (err) {
         console.error("Profile load error:", err);
-        Alert.alert('Error', 'Failed to load profile');
+        Alert.alert(t('error'), 'Failed to load profile');
       } finally {
         setLoading(false);
       }
@@ -94,7 +96,7 @@ const EditProfileScreen = () => {
       return await storageRef.getDownloadURL();
     } catch (error: any) {
       console.error("Upload error:", error);
-      Alert.alert('Upload Error', error.message || 'Failed to upload image');
+      Alert.alert(t('error'), error.message || 'Failed to upload image');
       return null;
     } finally {
       setUploading(false);
@@ -128,11 +130,11 @@ const EditProfileScreen = () => {
         photoURL: photoURL || '',
       });
 
-      Alert.alert('Success', 'Profile updated!');
+      Alert.alert(t('success'), t('profileUpdated'));
       navigation.goBack();
     } catch (error: any) {
       console.error("Profile update error:", error);
-      Alert.alert('Error', error.message || 'Failed to update profile.');
+      Alert.alert(t('error'), error.message || 'Failed to update profile.');
     }
   };
 
@@ -146,27 +148,27 @@ const EditProfileScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Edit Profile</Text>
+      <Text style={styles.title}>{t('editProfileTitle')}</Text>
 
       <TouchableOpacity onPress={pickImage}>
         {image ? (
           <Image source={{ uri: image }} style={styles.avatar} />
         ) : (
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>Add Photo</Text>
+            <Text style={styles.avatarText}>{t('addPhoto')}</Text>
           </View>
         )}
       </TouchableOpacity>
 
       <View style={styles.photoButtons}>
         <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-          <Text style={styles.photoButtonText}>Kameradan Çek</Text>
+          <Text style={styles.photoButtonText}>{t('takeFromCamera')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.photoButton, { backgroundColor: '#ccc' }]}
           onPress={removeImage}
         >
-          <Text style={[styles.photoButtonText, { color: '#333' }]}>Fotoğrafı Kaldır</Text>
+          <Text style={[styles.photoButtonText, { color: '#333' }]}>{t('removePhoto')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -178,19 +180,19 @@ const EditProfileScreen = () => {
         />
       )}
 
-      <Text style={styles.label}>Username</Text>
+      <Text style={styles.label}>{t('usernameLabel')}</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter your username"
+        placeholder={t('usernamePlaceholderEdit')}
         placeholderTextColor={isDarkTheme ? '#aaa' : '#666'}
         value={username}
         onChangeText={setUsername}
       />
 
-      <Text style={styles.label}>Bio</Text>
+      <Text style={styles.label}>{t('bioLabel')}</Text>
       <TextInput
         style={[styles.input, { height: 100 }]}
-        placeholder="Tell us about yourself"
+        placeholder={t('bioPlaceholder')}
         placeholderTextColor={isDarkTheme ? '#aaa' : '#666'}
         value={bio}
         onChangeText={setBio}
@@ -198,7 +200,7 @@ const EditProfileScreen = () => {
       />
 
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Save</Text>
+        <Text style={styles.saveButtonText}>{t('saveButton')}</Text>
       </TouchableOpacity>
     </View>
   );

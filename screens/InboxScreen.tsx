@@ -10,7 +10,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { query, collection, where, orderBy, onSnapshot, getDoc, doc, deleteDoc } from '@react-native-firebase/firestore';
+import { query, collection, where, orderBy, onSnapshot, getDoc, doc, deleteDoc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import { db, auth } from '../firebase';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,7 +18,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../routes/types';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -42,6 +44,7 @@ export default function InboxScreen() {
   const [profileCache, setProfileCache] = useState<{ [key: string]: { photoURL?: string, displayName?: string } }>({});
   const { colors, isDarkTheme } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const { t } = useLanguage();
   
   const [pinnedChats, setPinnedChats] = useState<string[]>([]);
   const [selectedChat, setSelectedChat] = useState<ChatItem | null>(null);
@@ -97,8 +100,12 @@ export default function InboxScreen() {
 
   const deleteChat = async (chatId: string) => {
     try {
-      await deleteDoc(doc(db, 'chats', chatId));
-      // Optional: Delete messages subcollection (requires Cloud Function or manual loop in a real app)
+      if (!currentUser) return;
+      await setDoc(doc(db, 'chats', chatId), {
+        clearedAt: {
+          [currentUser.uid]: serverTimestamp()
+        }
+      }, { merge: true });
     } catch (e) {
       console.log('Error deleting chat', e);
       Alert.alert('Hata', 'Mesaj silinirken bir hata oluştu.');
@@ -138,7 +145,14 @@ export default function InboxScreen() {
           otherUserName: info.displayName || info.fullName || info.username || info.name || 'Bilinmeyen',
           otherUserPhoto: info.photoURL || info.profilePicture || info.profileImage || undefined,
           unreadCount,
+          _data: data,
         };
+      }).filter((chat: any) => {
+        const clearedAt = chat._data.clearedAt?.[currentUser.uid];
+        if (!clearedAt) return true;
+        const lastTimestamp = chat._data.lastTimestamp;
+        if (!lastTimestamp) return false;
+        return lastTimestamp.toMillis() > clearedAt.toMillis();
       });
 
       setChats(chatsWithDetails);
@@ -169,7 +183,7 @@ export default function InboxScreen() {
             if (userData) {
               newProfiles[uid] = {
                 photoURL: userData.photoURL || userData.profilePicture || userData.profileImage,
-                displayName: userData.displayName || userData.fullName || userData.username || userData.name || 'Kullanıcı'
+                displayName: userData.displayName || userData.fullName || userData.username || userData.name || t('unknown')
               };
             }
           }
@@ -189,7 +203,7 @@ export default function InboxScreen() {
   if (!currentUser) {
     return (
       <View style={styles.centered}>
-        <Text style={{ color: colors.text }}>Kullanıcı bilgisi alınamadı, lütfen giriş yapınız.</Text>
+        <Text style={{ color: colors.text }}>{t('loginRequired')}</Text>
       </View>
     );
   }
@@ -254,9 +268,9 @@ export default function InboxScreen() {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mesajlar</Text>
+        <Text style={styles.headerTitle}>{t('messages')}</Text>
       </View>
 
       <FlatList
@@ -265,7 +279,7 @@ export default function InboxScreen() {
         renderItem={renderChatItem}
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Text style={{ color: colors.text }}>Hiç sohbet yok.</Text>
+            <Text style={{ color: colors.text }}>{t('noChats')}</Text>
           </View>
         }
         contentContainerStyle={[
@@ -299,16 +313,25 @@ export default function InboxScreen() {
                     color={colors.text} 
                   />
                   <Text style={[styles.modalOptionText, { color: colors.text }]}>
-                    {pinnedChats.includes(selectedChat.id) ? "Sabitlemeyi Kaldır" : "Sohbeti Sabitle"}
+                    {pinnedChats.includes(selectedChat.id) ? t('unpinChat') : t('pinChat')}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
                   style={styles.modalOption} 
-                  onPress={() => deleteChat(selectedChat.id)}
+                  onPress={() => {
+                    Alert.alert(
+                      t('deleteChat'),
+                      t('areYouSureDeleteChat') || 'Sohbeti silmek istediğinize emin misiniz?',
+                      [
+                        { text: t('cancel') || 'İptal', style: 'cancel' },
+                        { text: t('delete') || 'Sil', style: 'destructive', onPress: () => deleteChat(selectedChat.id) }
+                      ]
+                    );
+                  }}
                 >
                   <MaterialIcons name="delete" size={24} color="#FF3B30" />
-                  <Text style={[styles.modalOptionText, { color: '#FF3B30' }]}>Sohbeti Sil</Text>
+                  <Text style={[styles.modalOptionText, { color: '#FF3B30' }]}>{t('deleteChat')}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -324,19 +347,18 @@ const createStyles = (colors: any) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingVertical: 10,
-    paddingHorizontal: 5,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.text,
-    marginLeft: 5,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    paddingRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
