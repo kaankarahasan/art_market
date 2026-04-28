@@ -18,6 +18,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { onSnapshot, collection, query, orderBy, limit, doc, getDocs, setDoc, addDoc, getDoc, Timestamp, deleteDoc } from '@react-native-firebase/firestore';
 import { db, auth, getRemoteValue } from '../firebase';
@@ -208,12 +209,29 @@ export default function GeminiChatScreen() {
         }
     };
 
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+    useEffect(() => {
+        if (Platform.OS === 'android') {
+            const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+                setKeyboardHeight(e.endCoordinates.height);
+            });
+            const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+                setKeyboardHeight(0);
+            });
+            return () => {
+                showSub.remove();
+                hideSub.remove();
+            };
+        }
+    }, []);
+
   const renderContent = () => (
     <>
         {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <MaterialIcons name="arrow-back-ios" size={24} color={colors.text} />
+                        <Ionicons name="chevron-back" size={28} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Sanat Asistanı</Text>
                     <TouchableOpacity onPress={() => setResetModalVisible(true)} style={styles.resetBtnAction}>
@@ -323,9 +341,9 @@ export default function GeminiChatScreen() {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0 }]}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : (keyboardHeight > 0 ? keyboardHeight + 12 : 0) }]}>
       {Platform.OS === 'ios' ? (
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={12}>
           {renderContent()}
         </KeyboardAvoidingView>
       ) : (
@@ -342,16 +360,13 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-start',
-        paddingVertical: 10,
-        paddingHorizontal: 14,
+        paddingHorizontal: 15,
+        paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: colors.card,
-        backgroundColor: colors.background,
+        borderBottomColor: isDarkTheme ? '#333' : '#E0E0E0',
     },
     backButton: {
-        width: 40,
-        height: 40,
+        paddingRight: 10,
         justifyContent: 'center',
         alignItems: 'center',
     },

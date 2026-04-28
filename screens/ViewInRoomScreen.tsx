@@ -23,20 +23,32 @@ const IMG_HEIGHT = 2232;
 const IMG_ASPECT = IMG_WIDTH / IMG_HEIGHT;
 
 // --- GERÇEK DÜNYA OPTİK & PERSPEKTİF DEĞERLERİ (NORMAL ODA) ---
-const REAL_DOOR_HEIGHT_CM = 210; // Kullanıcının belirttiği referans kapı boyu
-const REAL_WALL_WIDTH_CM = 500;  // Kapının sağındaki duvar genişliği
-const CAMERA_DISTANCE_M = 2;     // Duvara olan izleme mesafesi (2 Metre)
+const REAL_WALL_WIDTH_CM = 500;  // Referans kırmızı alanın genişliği (5 Metre)
 
 // 2D Piksel Tahminleri (Normal Oda):
-const DOOR_HEIGHT_IN_IMAGE_PCT = 0.72; 
-const DOOR_RIGHT_EDGE_PCT = 0.20;
+// Kullanıcının referans görselindeki kırmızı dikdörtgene göre:
+const WALL_START_X_PCT = 0.255;  // Kırmızı alanın sol başlangıcı (Kapının sağı)
+const WALL_END_X_PCT = 0.930;    // Kırmızı alanın sağ bitişi
+const WALL_WIDTH_PCT = WALL_END_X_PCT - WALL_START_X_PCT;
+const WALL_CENTER_X_PCT = WALL_START_X_PCT + (WALL_WIDTH_PCT / 2);
+
+const WALL_TOP_Y_PCT = 0.03;     // Kırmızı alanın üst başlangıcı
+const WALL_BOTTOM_Y_PCT = 0.78;  // Kırmızı alanın alt bitişi
+const WALL_CENTER_Y_PCT = (WALL_TOP_Y_PCT + WALL_BOTTOM_Y_PCT) / 2;
 
 // --- GERÇEK DÜNYA OPTİK & PERSPEKTİF DEĞERLERİ (BÜYÜK GALERİ ODASI) ---
-const BIG_WALL_WIDTH_CM = 2000;
-const BIG_WALL_HEIGHT_CM = 1000;
-const BIG_CAMERA_DISTANCE_M = 10;
-// Büyük oda için duvarın dikeyde tahmini kapladığı alan (%70 varsayıldı)
-const BIG_WALL_HEIGHT_IN_IMAGE_PCT = 0.70;
+const BIG_WALL_WIDTH_CM = 2000;  // Referans kırmızı alanın genişliği (20 Metre)
+
+// 2D Piksel Tahminleri (Büyük Oda):
+// Kullanıcının referans görselindeki kırmızı dikdörtgene göre:
+const BIG_WALL_START_X_PCT = 0.155;  // Kırmızı alanın sol başlangıcı
+const BIG_WALL_END_X_PCT = 0.845;    // Kırmızı alanın sağ bitişi
+const BIG_WALL_WIDTH_PCT = BIG_WALL_END_X_PCT - BIG_WALL_START_X_PCT;
+const BIG_WALL_CENTER_X_PCT = BIG_WALL_START_X_PCT + (BIG_WALL_WIDTH_PCT / 2);
+
+const BIG_WALL_TOP_Y_PCT = 0.210;    // Kırmızı alanın üst başlangıcı
+const BIG_WALL_BOTTOM_Y_PCT = 0.710; // Kırmızı alanın alt bitişi
+const BIG_WALL_CENTER_Y_PCT = (BIG_WALL_TOP_Y_PCT + BIG_WALL_BOTTOM_Y_PCT) / 2;
 // ----------------------------------
 
 type ViewInRoomRouteProp = RouteProp<RootStackParamList, 'ViewInRoom'>;
@@ -74,39 +86,29 @@ const ViewInRoomScreen = () => {
 
   if (isBigArtwork) {
     // 2. Optik Piksel Haritalaması (Büyük Oda Kalibrasyonu)
-    const bigWallPixelHeight = renderHeight * BIG_WALL_HEIGHT_IN_IMAGE_PCT;
-    
-    // 1 cm = X piksel oranı (Duvarın 10m = 1000cm olmasından)
-    const basePixelsPerCm = bigWallPixelHeight / BIG_WALL_HEIGHT_CM;
-    const perspectiveRatio = 10.0 / BIG_CAMERA_DISTANCE_M; // 10 / 10 = 1.0
-    pixelsPerCm = basePixelsPerCm * perspectiveRatio;
+    // Görseldeki kırmızı dikdörtgen referans alınarak ölçekleme (Genişlik = 20 Metre = 2000cm)
+    const bigWallWidthPx = renderWidth * BIG_WALL_WIDTH_PCT;
+    pixelsPerCm = bigWallWidthPx / BIG_WALL_WIDTH_CM;
 
     const artworkWidthPx = artworkWidthCm * pixelsPerCm;
     const artworkHeightPx = artworkHeightCm * pixelsPerCm;
 
     // 3. Duvar ve Merkezi Konumlandırma (Büyük Oda)
-    // Doğrudan ekranın ortasına
-    artworkLeftPx = (renderWidth / 2) - (artworkWidthPx / 2);
-    artworkTopPx = (renderHeight / 2) - (artworkHeightPx / 2);
+    artworkLeftPx = (renderWidth * BIG_WALL_CENTER_X_PCT) - (artworkWidthPx / 2);
+    artworkTopPx = (renderHeight * BIG_WALL_CENTER_Y_PCT) - (artworkHeightPx / 2);
 
   } else {
     // 2. Optik Piksel Haritalaması (Normal Oda Kalibrasyonu)
-    const doorPixelHeight = renderHeight * DOOR_HEIGHT_IN_IMAGE_PCT;
-    
-    const basePixelsPerCm = doorPixelHeight / REAL_DOOR_HEIGHT_CM;
-    const perspectiveRatio = 2.0 / CAMERA_DISTANCE_M; 
-    pixelsPerCm = basePixelsPerCm * perspectiveRatio;
+    // Görseldeki kırmızı dikdörtgen referans alınarak ölçekleme (Genişlik = 5 Metre = 500cm)
+    const wallWidthPx = renderWidth * WALL_WIDTH_PCT;
+    pixelsPerCm = wallWidthPx / REAL_WALL_WIDTH_CM;
 
     const artworkWidthPx = artworkWidthCm * pixelsPerCm;
     const artworkHeightPx = artworkHeightCm * pixelsPerCm;
 
     // 3. Duvar ve Merkezi Konumlandırma (Normal Oda)
-    const wallWidthPx = REAL_WALL_WIDTH_CM * pixelsPerCm;
-    const wallStartX = renderWidth * DOOR_RIGHT_EDGE_PCT;
-    const wallCenterXPx = wallStartX + (wallWidthPx / 2);
-
-    artworkLeftPx = wallCenterXPx - (artworkWidthPx / 2);
-    artworkTopPx = (renderHeight * 0.45) - (artworkHeightPx / 2); 
+    artworkLeftPx = (renderWidth * WALL_CENTER_X_PCT) - (artworkWidthPx / 2);
+    artworkTopPx = (renderHeight * WALL_CENTER_Y_PCT) - (artworkHeightPx / 2); 
   }
 
   const artworkWidthPx = artworkWidthCm * pixelsPerCm;
