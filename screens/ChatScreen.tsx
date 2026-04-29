@@ -19,6 +19,7 @@ import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navig
 import { useThemeContext } from '../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { sendPushNotification } from '../utils/notificationService';
 
 type Message = {
   id: string;
@@ -175,6 +176,23 @@ export default function ChatScreen() {
         },
         { merge: true }
       );
+
+      // Alıcıya push notification gönder (non-blocking)
+      const currentUserSnap = await getDoc(doc(db, 'users', currentUserId));
+      const currentUserData = currentUserSnap.data() as any;
+      const senderName =
+        currentUserData?.displayName ||
+        currentUserData?.fullName ||
+        currentUserData?.username ||
+        'Birisi';
+
+      sendPushNotification({
+        recipientUserId: otherUserId,
+        senderName,
+        messageText: textToSend,
+        chatId,
+        senderUserId: currentUserId,
+      });
     } catch (error) {
       console.error('Mesaj gönderilirken hata oluştu:', error);
     }

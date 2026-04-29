@@ -3,11 +3,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import React from 'react';
 import { StatusBar } from 'react-native';
 import 'react-native-get-random-values';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
 import { auth } from './firebase';
+import messaging from '@react-native-firebase/messaging';
 
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
@@ -46,8 +47,25 @@ import './firebase';
 import { DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { useThemeContext } from './contexts/ThemeContext';
 import { fetchRemoteConfig } from './firebase';
+import { saveFCMToken } from './utils/notificationService';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// Bildirime tıklanınca navigasyon için global ref
+const navigationRef = React.createRef<NavigationContainerRef<RootStackParamList>>();
+
+// Bildirim data'sından chat ekranına git
+function navigateToChat(data: any) {
+  if (!data?.chatId || !data?.senderUserId || !data?.recipientUserId) return;
+  try {
+    navigationRef.current?.navigate('Chat', {
+      currentUserId: data.recipientUserId,
+      otherUserId: data.senderUserId,
+    });
+  } catch (e) {
+    console.log('[FCM] Navigate hatası:', e);
+  }
+}
 
 function AppContent() {
   const { isDarkTheme, colors } = useThemeContext();
@@ -60,9 +78,49 @@ function AppContent() {
     const subscriber = onAuthStateChanged(auth, (usr) => {
       setUser(usr);
       if (initializing) setInitializing(false);
+
+      // Kullanıcı giriş yaptığında FCM token'ı kaydet
+      if (usr?.uid) {
+        saveFCMToken(usr.uid);
+      }
     });
     return subscriber;
   }, [initializing]);
+
+  React.useEffect(() => {
+    // ─── Foreground mesajları (uygulama açıkken gelen bildirimler) ───────────
+    // Foreground'da FCM otomatik bildirim göstermez; biz handle ederiz
+    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+      console.log('[FCM] Foreground mesaj:', remoteMessage.notification?.title);
+      // Foreground'da bildirim göstermek için react-native'in Notification API'si yok,
+      // FCM'nin onMessage'ı sadece data alır. Kullanıcı uygulamadaysa zaten görür.
+      // Arka plan/kapalı durumda sistem tepsisi bildirimi gösterir.
+    });
+
+    // ─── Arka planda bildirime tıklanınca (uygulama arka planda açık) ────────
+    const unsubscribeBackground = messaging().onNotificationOpenedApp((remoteMessage) => {
+      console.log('[FCM] Arka planda bildirime tıklandı:', remoteMessage.data);
+      if (remoteMessage.data) {
+        navigateToChat(remoteMessage.data);
+      }
+    });
+
+    // ─── Uygulama kapalıyken bildirime tıklanınca (quit state) ───────────────
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        if (remoteMessage?.data) {
+          console.log('[FCM] Kapalıyken bildirime tıklandı:', remoteMessage.data);
+          // Navigation hazır olana kadar kısa bir gecikme
+          setTimeout(() => navigateToChat(remoteMessage.data), 1000);
+        }
+      });
+
+    return () => {
+      unsubscribeForeground();
+      unsubscribeBackground();
+    };
+  }, []);
 
   if (initializing) {
     return (
@@ -78,7 +136,7 @@ function AppContent() {
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
         backgroundColor={theme.colors.background}
       />
-      <NavigationContainer theme={theme}>
+      <NavigationContainer theme={theme} ref={navigationRef}>
         <Stack.Navigator initialRouteName={user ? "Main" : "Login"} screenOptions={{ gestureEnabled: true, animation: 'slide_from_right' }}>
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
           <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
