@@ -343,15 +343,21 @@ export default function GeminiChatScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} backgroundColor={colors.background} translucent={false} />
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
-        behavior="padding"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-        <View style={{ flex: 1, paddingBottom: Platform.OS === 'ios' ? (keyboardHeight > 0 ? 0 : insets.bottom) : insets.bottom }}>
+      {Platform.OS === 'ios' ? (
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }} 
+          behavior="padding"
+          keyboardVerticalOffset={0}
+        >
+          <View style={{ flex: 1, paddingBottom: keyboardHeight > 0 ? 0 : insets.bottom }}>
+            {renderContent()}
+          </View>
+        </KeyboardAvoidingView>
+      ) : (
+        <View style={{ flex: 1, paddingBottom: keyboardHeight > 0 ? keyboardHeight + 12 : insets.bottom }}>
           {renderContent()}
         </View>
-      </KeyboardAvoidingView>
+      )}
     </View>
   );
 }
