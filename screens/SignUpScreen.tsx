@@ -21,6 +21,7 @@ import { auth, db } from '../firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -34,6 +35,7 @@ type SignUpScreenProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 const SignUpScreen = () => {
   const navigation = useNavigation<SignUpScreenProp>();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -91,7 +93,7 @@ const SignUpScreen = () => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
         <StatusBar barStyle="light-content" backgroundColor="#000" />
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}

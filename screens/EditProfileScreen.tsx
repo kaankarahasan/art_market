@@ -15,15 +15,18 @@ import { RootStackParamList } from '../routes/types';
 import { getDoc, doc, updateDoc } from '@react-native-firebase/firestore';
 import { ref } from '@react-native-firebase/storage';
 import { auth, db, storage } from '../firebase';
+import ImagePicker from 'react-native-image-crop-picker';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { ThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const EditProfileScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDarkTheme } = useContext(ThemeContext);
   const styles = getStyles(isDarkTheme);
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   const userId = auth.currentUser?.uid;
   const [username, setUsername] = useState('');
@@ -57,32 +60,69 @@ const EditProfileScreen = () => {
 
   const pickImage = async () => {
     try {
-      const result = await launchImageLibrary({
+      const image = await ImagePicker.openPicker({
+        width: 400,
+        height: 400,
+        cropping: true,
+        cropperCircleOverlay: true,
         mediaType: 'photo',
-        quality: 0.7,
       });
 
-      if (!result.didCancel && result.assets && result.assets.length > 0 && result.assets[0].uri) {
-        setImage(result.assets[0].uri);
+      if (image.path) {
+        setImage(image.path);
       }
-    } catch (err) {
-      console.warn(err);
+    } catch (err: any) {
+      if (err.message !== 'User cancelled image selection') {
+        console.warn(err);
+      }
     }
   };
 
   const takePhoto = async () => {
     try {
-      const result = await launchCamera({
+      const image = await ImagePicker.openCamera({
+        width: 400,
+        height: 400,
+        cropping: true,
+        cropperCircleOverlay: true,
         mediaType: 'photo',
-        saveToPhotos: true,
-        quality: 0.7,
       });
 
-      if (!result.didCancel && result.assets && result.assets.length > 0 && result.assets[0].uri) {
-        setImage(result.assets[0].uri);
+      if (image.path) {
+        setImage(image.path);
       }
-    } catch (err) {
-      console.warn(err);
+    } catch (err: any) {
+      if (err.message !== 'User cancelled image selection') {
+        console.warn(err);
+      }
+    }
+  };
+
+  const cropExistingImage = async () => {
+    if (!image) return;
+    try {
+      const cleanUri = image.startsWith('http') ? image : (image.startsWith('file://') ? image : `file://${image}`);
+      const cropped = await ImagePicker.openCropper({
+        path: cleanUri,
+        width: 400,
+        height: 400,
+        cropping: true,
+        cropperCircleOverlay: true,
+        mediaType: 'photo',
+        cropperToolbarTitle: t('cropImage') || 'Görseli Kırp',
+        cropperActiveWidgetColor: '#FF3040',
+        cropperToolbarColor: isDarkTheme ? '#121212' : '#F4F4F4',
+        cropperToolbarWidgetColor: isDarkTheme ? '#FFFFFF' : '#333333',
+        hideBottomControls: false,
+      });
+
+      if (cropped.path) {
+        setImage(cropped.path);
+      }
+    } catch (err: any) {
+      if (err.message !== 'User cancelled image selection') {
+        console.warn(err);
+      }
     }
   };
 
@@ -147,10 +187,10 @@ const EditProfileScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 20 }]}>
       <Text style={styles.title}>{t('editProfileTitle')}</Text>
 
-      <TouchableOpacity onPress={pickImage}>
+      <TouchableOpacity onPress={image ? cropExistingImage : pickImage}>
         {image ? (
           <Image source={{ uri: image }} style={styles.avatar} />
         ) : (

@@ -41,7 +41,7 @@ type UserSearchResult = {
   photoURL?: string;
 };
 
-type SearchScreenRouteProp = RouteProp<{ params: { initialQuery?: string } }, 'params'>;
+type SearchScreenRouteProp = RouteProp<{ params: { initialQuery?: string; refreshTimeStamp?: number; initialScope?: any } }, 'params'>;
 
 const SearchScreen = () => {
   const { t } = useLanguage();
@@ -101,6 +101,7 @@ const SearchScreen = () => {
   const insets = useSafeAreaInsets();
   const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
   const inputRef = useRef<TextInput>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
   const debounceTimeout = useRef<any>(null);
 
   const { colors, isDarkTheme } = useThemeContext();
@@ -141,7 +142,15 @@ const SearchScreen = () => {
       setSearchQuery(query);
       setDebouncedSearchQuery(query);
     }
-  }, [route.params?.initialQuery]);
+    if (route.params?.refreshTimeStamp) {
+      setSearchQuery('');
+      setDebouncedSearchQuery('');
+      Keyboard.dismiss();
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      fetchAllData();
+      navigation.setParams({ refreshTimeStamp: undefined } as any);
+    }
+  }, [route.params?.initialQuery, route.params?.refreshTimeStamp, navigation]);
 
   const saveRecentSearches = async (searches: string[]) => {
     try {
@@ -592,7 +601,7 @@ const SearchScreen = () => {
   const handleFavoriteToggle = (item: Product) => {
     const isFav = favoriteItems.some(fav => fav.id === item.id);
     const imageUrl = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls || undefined;
-    const favItem: FavoriteItem = { id: item.id, title: item.title || 'Başlık Yok', username: item.username || 'Bilinmeyen', imageUrl: imageUrl, price: item.price || 0, year: item.year || '', };
+    const favItem: FavoriteItem = { id: item.id, title: item.title || 'Başlık Yok', username: item.username || 'Bilinmeyen', imageUrl: imageUrl, price: item.price || 0, year: item.year || '', createdAt: item.createdAt };
     isFav ? removeFavorite(item.id) : addFavorite(favItem);
   };
 
@@ -601,6 +610,12 @@ const SearchScreen = () => {
     const firstImage = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls;
     const owner = userMap[item.ownerId || ''];
     const displayName = owner?.fullName || owner?.username || item.username || 'Bilinmeyen';
+
+    const isProductNew = (() => {
+      if (!item.createdAt) return false;
+      const date = item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt);
+      return (new Date().getTime() - date.getTime()) < 48 * 60 * 60 * 1000;
+    })();
 
     // Asimetrik düzen için stabil rastgele başlangıç yüksekliği
     const stableRandomHeight = (parseInt(item.id.substring(0, 8), 16) % 150) + 200;
@@ -634,6 +649,14 @@ const SearchScreen = () => {
                 <Text style={styles.noImageText}>Resim yok</Text>
               </View>
             )}
+
+            {isProductNew && (
+              <View style={styles.newBadgeContainer}>
+                <View style={styles.newBadgeBackground}>
+                  <Text style={styles.newBadgeText}>{t('newBadge')}</Text>
+                </View>
+              </View>
+            )}
           </View>
 
           <View style={styles.infoContainer}>
@@ -645,7 +668,7 @@ const SearchScreen = () => {
                 onPress={() => handleFavoriteToggle(item)}
                 style={styles.favoriteButton}
               >
-                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#ff4b4b' : colors.text} />
+                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#FF3040' : colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -715,6 +738,7 @@ const SearchScreen = () => {
         <View style={styles.loadingContainer}><ActivityIndicator size="large" color={colors.text} /></View>
       ) : (
         <ScrollView
+          ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
           style={styles.scrollView}
           contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
@@ -920,6 +944,37 @@ const createStyles = (colors: any) => StyleSheet.create({
   favoriteButton: { padding: 2 },
   title: { color: colors.secondaryText, fontSize: 15, marginBottom: 8, lineHeight: 20 },
   price: { color: colors.text, fontSize: 17, fontWeight: 'bold' },
+  newBadgeContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 60,
+    height: 60,
+    overflow: 'hidden',
+  },
+  newBadgeBackground: {
+    position: 'absolute',
+    top: 5,
+    right: -20,
+    backgroundColor: '#FF3040',
+    width: 80,
+    height: 24,
+    transform: [{ rotate: '45deg' }],
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  newBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContainer: { backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 30, maxHeight: '80%' },
   sortModalContainer: { backgroundColor: colors.background, paddingBottom: 30 },

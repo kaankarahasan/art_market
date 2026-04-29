@@ -13,6 +13,8 @@ import {
   FlatList,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
+import ImagePicker from 'react-native-image-crop-picker';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { updateProduct } from '../utils/updateProduct';
 import { ref } from '@react-native-firebase/storage';
@@ -22,6 +24,7 @@ import uuid from 'react-native-uuid';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { Product } from '../routes/types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type UpdateProductRouteProp = RouteProp<RootStackParamList, 'UpdateProduct'>;
 
@@ -32,10 +35,17 @@ const UpdateProductScreen = () => {
 
   const { colors } = useThemeContext();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   const [title, setTitle] = useState(product.title || '');
   const [description, setDescription] = useState(product.description || '');
-  const [price, setPrice] = useState(product.price ? String(product.price) : '');
+  const [price, setPrice] = useState(() => {
+    if (product.price) {
+      const numericValue = String(product.price).replace(/[^0-9]/g, '');
+      return parseInt(numericValue, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+    return '';
+  });
   const [category, setCategory] = useState(product.category || '');
   const [modalVisible, setModalVisible] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>(product.imageUrls || []);
@@ -62,17 +72,56 @@ const UpdateProductScreen = () => {
 
   const pickImage = async () => {
     try {
-      const result = await launchImageLibrary({
+      const pickedImages = await ImagePicker.openPicker({
+        multiple: true,
+        maxFiles: 5 - imageUrls.length,
         mediaType: 'photo',
-        quality: 0.7,
+        cropping: false,
       });
 
-      if (!result.didCancel && result.assets && result.assets.length > 0 && result.assets[0].uri) {
-        setImageUrls((prev) => [...prev, result.assets![0].uri as string]);
+      if (pickedImages && Array.isArray(pickedImages)) {
+        const uris = pickedImages.map((img) => img.path);
+        setImageUrls((prev) => [...prev, ...uris]);
+        
       }
-    } catch (err) {
-      console.warn(err);
-      Alert.alert(t('error'), t('imagePickError'));
+    } catch (err: any) {
+      if (err.message !== 'User cancelled image selection') {
+        console.warn(err);
+        Alert.alert(t('error'), t('imagePickError'));
+      }
+    }
+  };
+
+  const cropImage = async (uri: string, index: number) => {
+    try {
+      const cleanUri = uri.startsWith('http') ? uri : (uri.startsWith('file://') ? uri : `file://${uri}`);
+      
+      const image = await ImagePicker.openCropper({
+        path: cleanUri,
+        width: 1200,
+        height: 1200,
+        freeStyleCropEnabled: true,
+        cropping: true,
+        mediaType: 'photo',
+        cropperToolbarTitle: t('cropImage') || 'Görseli Kırp',
+        cropperActiveWidgetColor: '#FF3040',
+        cropperToolbarColor: '#121212',
+        cropperToolbarWidgetColor: '#FFFFFF',
+        hideBottomControls: false,
+      });
+
+      if (image.path) {
+        setImageUrls((prev) => {
+          const newUrls = [...prev];
+          newUrls[index] = image.path;
+          return newUrls;
+        });
+      }
+    } catch (error: any) {
+      if (error.message !== 'User cancelled image selection') {
+        console.error(error);
+        Alert.alert(t('error'), 'Görsel kırpılırken bir sorun oluştu.');
+      }
     }
   };
 
@@ -88,6 +137,16 @@ const UpdateProductScreen = () => {
       Alert.alert(t('error'), t('imageUploadError'));
       return '';
     }
+  };
+
+  const handlePriceChange = (text: string) => {
+    const numericValue = text.replace(/[^0-9]/g, '');
+    if (!numericValue) {
+      setPrice('');
+      return;
+    }
+    const formatted = parseInt(numericValue, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    setPrice(formatted);
   };
 
   const handleUpdate = async () => {
@@ -112,7 +171,7 @@ const UpdateProductScreen = () => {
       await updateProduct(product.id, {
         title,
         description,
-        price: parseFloat(price),
+        price: parseFloat(price.replace(/\./g, '')),
         category,
         imageUrls: uploadedUrls,
         mainImageUrl: uploadedUrls[0] || '',
@@ -133,7 +192,7 @@ const UpdateProductScreen = () => {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}>
       <Text style={[styles.label, { color: colors.text }]}>{t('productNameLabel')}</Text>
       <TextInput
         style={[styles.input, { borderColor: colors.border, color: colors.text }]}
@@ -157,14 +216,17 @@ const UpdateProductScreen = () => {
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('priceLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-        value={price}
-        onChangeText={setPrice}
-        keyboardType="decimal-pad"
-        placeholder={t('price')}
-        placeholderTextColor={colors.text + '99'}
-      />
+      <View style={[styles.priceInputContainer, { borderColor: colors.border }]}>
+        <Text style={[styles.currencySymbol, { color: colors.text }]}>₺</Text>
+        <TextInput
+          style={[styles.priceInput, { color: colors.text }]}
+          value={price}
+          onChangeText={handlePriceChange}
+          keyboardType="number-pad"
+          placeholder="0"
+          placeholderTextColor={colors.text + '99'}
+        />
+      </View>
 
       <Text style={[styles.label, { color: colors.text }]}>{t('categoryLabel')}</Text>
       <TouchableOpacity
@@ -188,7 +250,14 @@ const UpdateProductScreen = () => {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 15 }}>
         {imageUrls.map((img, index) => (
           <View key={index} style={{ marginRight: 10, position: 'relative' }}>
-            <Image source={{ uri: img }} style={styles.previewImage} />
+            <TouchableOpacity onPress={() => cropImage(img, index)} activeOpacity={0.7}>
+              <View style={{ position: 'relative' }}>
+                <Image source={{ uri: img }} style={styles.previewImage} />
+                <View style={[styles.cropIconBadge, { borderColor: colors.background }]}>
+                  <Ionicons name="crop" size={14} color="#fff" />
+                </View>
+              </View>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => removeImage(index)}
               style={styles.removeImageButton}
@@ -254,6 +323,24 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   label: { fontWeight: 'bold', marginBottom: 5 },
+  priceInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 6,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+  },
+  currencySymbol: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginRight: 5,
+  },
+  priceInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
   imagePicker: {
     padding: 12,
     alignItems: 'center',
@@ -278,6 +365,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   removeImageText: { color: '#fff', fontWeight: 'bold' },
+  cropIconBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    backgroundColor: '#333',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+  },
   updateButton: {
     paddingVertical: 15,
     borderRadius: 6,

@@ -79,6 +79,12 @@ const FavoritesScreen = () => {
     const imageHeight = imageHeights[item.id] || stableRandomHeight;
     const firstImage = item.imageUrls?.[0] || item.imageUrl;
 
+    const isProductNew = (() => {
+      if (!item.createdAt) return false;
+      const date = item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt);
+      return (new Date().getTime() - date.getTime()) < 48 * 60 * 60 * 1000;
+    })();
+
     const handlePress = () => {
       const productForDetail: Product = {
         ...item,
@@ -112,6 +118,14 @@ const FavoritesScreen = () => {
                 <Text style={styles.noImageText}>{t('noImageText')}</Text>
               </View>
             )}
+
+            {isProductNew && (
+              <View style={styles.newBadgeContainer}>
+                <View style={styles.newBadgeBackground}>
+                  <Text style={styles.newBadgeText}>{t('newBadge')}</Text>
+                </View>
+              </View>
+            )}
           </View>
 
           <View style={styles.infoContainer}>
@@ -123,7 +137,7 @@ const FavoritesScreen = () => {
                 onPress={() => removeFavorite(item.id)}
                 style={styles.favoriteButton}
               >
-                <Ionicons name="heart" size={18} color="#ff4b4b" />
+                <Ionicons name="heart" size={18} color="#FF3040" />
               </TouchableOpacity>
             </View>
 
@@ -227,4 +241,35 @@ const createStyles = (colors: any) => StyleSheet.create({
   favoriteButton: { padding: 2 },
   title: { fontSize: 15, color: colors.secondaryText, marginBottom: 8, lineHeight: 20 },
   price: { fontSize: 17, fontWeight: 'bold', color: colors.text },
+  newBadgeContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 60,
+    height: 60,
+    overflow: 'hidden',
+  },
+  newBadgeBackground: {
+    position: 'absolute',
+    top: 5,
+    right: -20,
+    backgroundColor: '#FF3040',
+    width: 80,
+    height: 24,
+    transform: [{ rotate: '45deg' }],
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  newBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 });

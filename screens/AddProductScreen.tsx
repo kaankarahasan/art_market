@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import ImagePicker from 'react-native-image-crop-picker';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import { ref } from '@react-native-firebase/storage';
 import { auth, db, storage } from '../firebase';
@@ -58,36 +59,6 @@ const AddProductScreen = () => {
     { label: t('cat_diger'), value: 'diger' },
   ];
 
-  const pickImages = async () => {
-    if (images.length >= 3) {
-      Alert.alert(t('warning'), t('maxPhotos'));
-      return;
-    }
-
-    try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-        selectionLimit: 3 - images.length,
-        quality: 0.7,
-      });
-
-      if (result.didCancel) return;
-
-      if (result.errorCode) {
-        Alert.alert(t('error'), result.errorMessage || 'Resim seçilirken bir hata oluştu');
-        return;
-      }
-
-      if (result.assets && result.assets.length > 0) {
-        const uris = result.assets.map((a) => a.uri || '').filter(uri => uri);
-        setImages((prev) => [...prev, ...uris].slice(0, 3));
-      }
-    } catch (error) {
-      console.error(error);
-      Alert.alert(t('error'), 'Galeri açılırken bir sorun oluştu.');
-    }
-  };
-
   const takePhoto = async () => {
     if (images.length >= 3) {
       Alert.alert(t('warning'), t('maxPhotos'));
@@ -95,25 +66,83 @@ const AddProductScreen = () => {
     }
 
     try {
-      const result = await launchCamera({
+      const image = await ImagePicker.openCamera({
+        width: 1200,
+        height: 1200,
+        cropping: true,
+        freeStyleCropEnabled: true,
         mediaType: 'photo',
-        saveToPhotos: true,
-        quality: 0.7,
       });
 
-      if (result.didCancel) return;
-
-      if (result.errorCode) {
-        Alert.alert(t('error'), result.errorMessage || 'Kamera açılırken bir hata oluştu');
-        return;
+      if (image.path) {
+        setImages((prev) => [...prev, image.path].slice(0, 3));
       }
-
-      if (result.assets && result.assets.length > 0 && result.assets[0].uri) {
-        setImages((prev) => [...prev, result.assets![0].uri as string].slice(0, 3));
+    } catch (error: any) {
+      if (error.message !== 'User cancelled image selection') {
+        console.error(error);
+        Alert.alert(t('error'), 'Kamera açılırken bir sorun oluştu.');
       }
-    } catch (error) {
-      console.error(error);
-      Alert.alert(t('error'), 'Kamera açılırken bir sorun oluştu.');
+    }
+  };
+
+  const cropImage = async (uri: string, index: number) => {
+    try {
+      // Sorunlu uri temizliği (bazı durumlarda file:// gerekebilir veya gerekmez)
+      const cleanUri = uri.startsWith('file://') ? uri : `file://${uri}`;
+      
+      const image = await ImagePicker.openCropper({
+        path: cleanUri,
+        width: 1200,
+        height: 1200,
+        freeStyleCropEnabled: true,
+        cropping: true,
+        mediaType: 'photo',
+        cropperToolbarTitle: t('cropImage') || 'Görseli Kırp',
+        cropperActiveWidgetColor: '#FF3040',
+        cropperToolbarColor: isDarkTheme ? '#121212' : '#F4F4F4',
+        cropperToolbarWidgetColor: isDarkTheme ? '#FFFFFF' : '#333333',
+        hideBottomControls: false,
+      });
+
+      if (image.path) {
+        setImages((prev) => {
+          const newImages = [...prev];
+          newImages[index] = image.path;
+          return newImages;
+        });
+      }
+    } catch (error: any) {
+      if (error.message !== 'User cancelled image selection') {
+        console.error(error);
+        Alert.alert(t('error'), 'Görsel kırpılırken bir sorun oluştu.');
+      }
+    }
+  };
+
+  const pickImages = async () => {
+    if (images.length >= 3) {
+      Alert.alert(t('warning'), t('maxPhotos'));
+      return;
+    }
+
+    try {
+      const pickedImages = await ImagePicker.openPicker({
+        multiple: true,
+        maxFiles: 3 - images.length,
+        mediaType: 'photo',
+        cropping: false, // Çoklu seçimde cropping kapalıdır, sonra tek tek yapılacak
+      });
+
+      if (pickedImages && Array.isArray(pickedImages)) {
+        const uris = pickedImages.map((img) => img.path);
+        setImages((prev) => [...prev, ...uris].slice(0, 3));
+        
+      }
+    } catch (error: any) {
+      if (error.message !== 'User cancelled image selection') {
+        console.error(error);
+        Alert.alert(t('error'), 'Galeri açılırken bir sorun oluştu.');
+      }
     }
   };
 
@@ -126,6 +155,16 @@ const AddProductScreen = () => {
     await imageRef.putFile(uri);
     const downloadURL = await imageRef.getDownloadURL();
     return downloadURL;
+  };
+
+  const handlePriceChange = (text: string) => {
+    const numericValue = text.replace(/[^0-9]/g, '');
+    if (!numericValue) {
+      setPrice('');
+      return;
+    }
+    const formatted = parseInt(numericValue, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    setPrice(formatted);
   };
 
   const handleAddProduct = async () => {
@@ -179,7 +218,7 @@ const AddProductScreen = () => {
         ownerId: userId,
         username,
         userProfileImage,
-        price: parseFloat(price),
+        price: parseFloat(price.replace(/\./g, '')),
         category,
         dimensions,
         year: year ? parseInt(year) : null,
@@ -222,7 +261,7 @@ const AddProductScreen = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('addNewProduct')}</Text>
       </View>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}>
 
         <View style={styles.card}>
           <Text style={styles.label}>{t('productName')}</Text>
@@ -256,14 +295,17 @@ const AddProductScreen = () => {
           />
 
           <Text style={styles.label}>{t('price')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t('price')}
-            placeholderTextColor="#6E6E6E"
-            keyboardType="numeric"
-            value={price}
-            onChangeText={setPrice}
-          />
+          <View style={styles.priceInputContainer}>
+            <Text style={styles.currencySymbol}>₺</Text>
+            <TextInput
+              style={styles.priceInput}
+              placeholder="0"
+              placeholderTextColor="#6E6E6E"
+              keyboardType="number-pad"
+              value={price}
+              onChangeText={handlePriceChange}
+            />
+          </View>
 
           <Text style={styles.label}>{t('category')}</Text>
           <TouchableOpacity
@@ -302,7 +344,14 @@ const AddProductScreen = () => {
           <Text style={styles.label}>{t('photos')}</Text>
           <View style={styles.imageRow}>
             {images.map((uri, index) => (
-              <Image key={index} source={{ uri }} style={styles.imagePreview} />
+              <TouchableOpacity key={index} onPress={() => cropImage(uri, index)} activeOpacity={0.7}>
+                <View style={styles.imageContainer}>
+                  <Image source={{ uri }} style={styles.imagePreview} />
+                  <View style={styles.cropIconBadge}>
+                    <Ionicons name="crop" size={16} color="#fff" />
+                  </View>
+                </View>
+              </TouchableOpacity>
             ))}
           </View>
 
@@ -374,14 +423,31 @@ const getStyles = (isDarkTheme: boolean) =>
     card: { backgroundColor: isDarkTheme ? '#1E1E1E' : '#fff', borderRadius: 12, padding: 15, marginBottom: 15, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 },
     label: { color: '#6E6E6E', marginBottom: 5, fontWeight: '600' },
     input: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, padding: 10, backgroundColor: '#F4F4F4', color: '#333333', marginBottom: 15 },
+    priceInputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, backgroundColor: '#F4F4F4', marginBottom: 15, paddingHorizontal: 10 },
+    currencySymbol: { fontSize: 16, color: '#333333', fontWeight: 'bold', marginRight: 5 },
+    priceInput: { flex: 1, paddingVertical: 10, color: '#333333', fontSize: 16 },
     categorySelector: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, backgroundColor: '#F4F4F4', padding: 12, marginBottom: 15 },
     categorySelectorText: { color: '#333333' },
     dimensionsContainer: { flexDirection: 'row', justifyContent: 'space-between' },
     dimensionBox: { flex: 1, alignItems: 'center' },
     dimensionLabel: { color: '#6E6E6E', fontSize: 12, marginBottom: 4 },
     dimensionInput: { width: '80%', backgroundColor: '#F4F4F4', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, textAlign: 'center', color: '#333333', padding: 6 },
-    imageRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 10 },
-    imagePreview: { width: 90, height: 90, borderRadius: 8, marginHorizontal: 5 },
+    imageRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 10, flexWrap: 'wrap' },
+    imageContainer: { position: 'relative', marginHorizontal: 5 },
+    imagePreview: { width: 90, height: 90, borderRadius: 8 },
+    cropIconBadge: {
+      position: 'absolute',
+      bottom: -5,
+      right: -5,
+      backgroundColor: '#333',
+      borderRadius: 12,
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: isDarkTheme ? '#1E1E1E' : '#fff',
+    },
     imageButtons: { flexDirection: 'row', justifyContent: 'space-around' },
     button: { backgroundColor: '#333333', padding: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     buttonText: { color: '#fff', fontWeight: '600' },

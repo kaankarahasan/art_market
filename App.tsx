@@ -168,18 +168,22 @@ function AppContent() {
   );
 }
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <LanguageProvider>
-        <FavoriteUsersProvider>
-          <FavoriteItemsProvider>
-            <ThemeProvider>
-              <AppContent />
-            </ThemeProvider>
-          </FavoriteItemsProvider>
-        </FavoriteUsersProvider>
-      </LanguageProvider>
+      <SafeAreaProvider>
+        <LanguageProvider>
+          <FavoriteUsersProvider>
+            <FavoriteItemsProvider>
+              <ThemeProvider>
+                <AppContent />
+              </ThemeProvider>
+            </FavoriteItemsProvider>
+          </FavoriteUsersProvider>
+        </LanguageProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

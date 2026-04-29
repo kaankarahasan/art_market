@@ -112,6 +112,10 @@ const translations = {
     productUpdateError: 'Ürün güncellenemedi.',
     imagePickError: 'Resim seçilirken bir hata oluştu',
     imageUploadError: 'Resim yüklenemedi.',
+    cropImage: 'Görseli Kırp',
+    doYouWantToCrop: 'Görseli kırpmak ister misiniz?',
+    yes: 'Evet',
+    no: 'Hayır',
 
     // Product Detail
     sendMessage: 'Mesaj Gönder',
@@ -205,6 +209,7 @@ const translations = {
     descriptionLabel: 'Açıklama',
     priceLabel: 'Fiyat (₺)',
     categoryLabel: 'Kategori',
+    newBadge: 'Yeni',
 
     // Categories
     cat_yagli_boya: 'Yağlı Boya',
@@ -381,6 +386,10 @@ const translations = {
     productUpdateError: 'Could not update product.',
     imagePickError: 'An error occurred while picking image.',
     imageUploadError: 'Could not upload image.',
+    cropImage: 'Crop Image',
+    doYouWantToCrop: 'Do you want to crop this image?',
+    yes: 'Yes',
+    no: 'No',
 
     // Product Detail
     sendMessage: 'Send Message',
@@ -474,6 +483,7 @@ const translations = {
     descriptionLabel: 'Description',
     priceLabel: 'Price (₺)',
     categoryLabel: 'Category',
+    newBadge: 'New',
 
     // Categories
     cat_yagli_boya: 'Oil Painting',

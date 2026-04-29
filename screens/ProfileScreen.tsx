@@ -182,6 +182,7 @@ const ProfileScreen = () => {
       imageUrl: imageUrl,
       price: item.price || 0,
       year: item.year || '',
+      createdAt: item.createdAt,
     };
     isFav ? removeFavorite(item.id) : addFavorite(favItem);
   };
@@ -193,6 +194,12 @@ const ProfileScreen = () => {
     const imageHeight = imageHeights[item.id] || stableRandomHeight;
     const firstImage = item.imageUrls?.[0] || item.imageUrl;
     const displayName = userData?.username || item.username || 'Bilinmeyen';
+
+    const isProductNew = (() => {
+      if (!item.createdAt) return false;
+      const date = item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt);
+      return (new Date().getTime() - date.getTime()) < 48 * 60 * 60 * 1000;
+    })();
 
     return (
       <View key={item.id} style={[styles.card, { width: columnWidth }]}>
@@ -215,6 +222,14 @@ const ProfileScreen = () => {
                 <Text style={styles.noImageText}>{t('noImageText')}</Text>
               </View>
             )}
+
+            {isProductNew && (
+              <View style={styles.newBadgeContainer}>
+                <View style={styles.newBadgeBackground}>
+                  <Text style={styles.newBadgeText}>{t('newBadge')}</Text>
+                </View>
+              </View>
+            )}
           </View>
           <View style={styles.infoContainer}>
             <View style={styles.userRow}>
@@ -225,7 +240,7 @@ const ProfileScreen = () => {
                 onPress={() => handleFavoriteToggle(item)}
                 style={styles.favoriteButton}
               >
-                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#ff4b4b' : colors.text} />
+                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#FF3040' : colors.text} />
               </TouchableOpacity>
             </View>
             <Text style={styles.title} numberOfLines={2}>
@@ -491,5 +506,36 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   title: { fontSize: 15, color: colors.secondaryText, marginBottom: 8, lineHeight: 20 },
   price: { fontSize: 17, fontWeight: 'bold', color: colors.text },
+  newBadgeContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 60,
+    height: 60,
+    overflow: 'hidden',
+  },
+  newBadgeBackground: {
+    position: 'absolute',
+    top: 5,
+    right: -20,
+    backgroundColor: '#FF3040',
+    width: 80,
+    height: 24,
+    transform: [{ rotate: '45deg' }],
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  newBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   closeButton: { position: 'absolute', top: 40, right: 20, zIndex: 10 },
 });

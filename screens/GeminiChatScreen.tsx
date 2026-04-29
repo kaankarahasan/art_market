@@ -12,6 +12,7 @@ import {
     ActivityIndicator,
     Keyboard,
     Modal,
+    StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -209,21 +210,20 @@ export default function GeminiChatScreen() {
         }
     };
 
+    // Klavye yüksekliği takibi
     const [keyboardHeight, setKeyboardHeight] = useState(0);
 
     useEffect(() => {
-        if (Platform.OS === 'android') {
-            const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
-                setKeyboardHeight(e.endCoordinates.height);
-            });
-            const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-                setKeyboardHeight(0);
-            });
-            return () => {
-                showSub.remove();
-                hideSub.remove();
-            };
-        }
+        const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => {
+            setKeyboardHeight(e.endCoordinates.height);
+        });
+        const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => {
+            setKeyboardHeight(0);
+        });
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
     }, []);
 
   const renderContent = () => (
@@ -341,16 +341,17 @@ export default function GeminiChatScreen() {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Platform.OS === 'ios' ? insets.bottom : (keyboardHeight > 0 ? keyboardHeight + 12 : 0) }]}>
-      {Platform.OS === 'ios' ? (
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={12}>
-          {renderContent()}
-        </KeyboardAvoidingView>
-      ) : (
-        <View style={{ flex: 1 }}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} backgroundColor={colors.background} translucent={false} />
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        <View style={{ flex: 1, paddingBottom: Platform.OS === 'ios' ? (keyboardHeight > 0 ? 0 : insets.bottom) : insets.bottom }}>
           {renderContent()}
         </View>
-      )}
+      </KeyboardAvoidingView>
     </View>
   );
 }

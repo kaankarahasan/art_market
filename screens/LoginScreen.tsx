@@ -23,6 +23,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth, db } from '../firebase';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -45,6 +46,7 @@ const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { colors } = useThemeContext();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -148,8 +150,8 @@ const LoginScreen = () => {
     isLoading, errorMessage, navigation, translateX, translateY, scaleAnim, t,
   };
 
-  if (Platform.OS === 'ios') return <IOSLoginScreen {...sharedProps} />;
-  return <AndroidLoginScreen {...sharedProps} />;
+  if (Platform.OS === 'ios') return <IOSLoginScreen {...sharedProps} insets={insets} />;
+  return <AndroidLoginScreen {...sharedProps} insets={insets} />;
 };
 
 const LoginCard = ({ email, setEmail, password, setPassword, isPasswordVisible, togglePasswordVisibility, handleLogin, handleGoogleLogin, isLoading, errorMessage, navigation, t }: any) => (
@@ -224,9 +226,9 @@ const LoginCard = ({ email, setEmail, password, setPassword, isPasswordVisible, 
   </>
 );
 
-const IOSLoginScreen = ({ translateX, translateY, scaleAnim, ...rest }: any) => (
+const IOSLoginScreen = ({ translateX, translateY, scaleAnim, insets, ...rest }: any) => (
   <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
       <Animated.Image
         source={require('../assets/Edward_Hooper.png')}
@@ -247,7 +249,7 @@ const IOSLoginScreen = ({ translateX, translateY, scaleAnim, ...rest }: any) => 
   </TouchableWithoutFeedback>
 );
 
-const AndroidLoginScreen = ({ translateX, translateY, scaleAnim, ...rest }: any) => {
+const AndroidLoginScreen = ({ translateX, translateY, scaleAnim, insets, ...rest }: any) => {
   const translateYAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -262,7 +264,7 @@ const AndroidLoginScreen = ({ translateX, translateY, scaleAnim, ...rest }: any)
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <Animated.Image
           source={require('../assets/Edward_Hooper.png')}

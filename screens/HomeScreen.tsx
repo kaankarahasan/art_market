@@ -14,7 +14,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -54,12 +54,31 @@ const HomeScreen = () => {
   const searchInputRef = useRef<TextInput>(null);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<any>();
   const insets = useSafeAreaInsets();
   const { colors, isDarkTheme } = useThemeContext();
   const { favoriteItems, addFavorite, removeFavorite } = useFavoriteItems();
 
   const styles = React.useMemo(() => createStyles(colors), [colors]);
   const { t } = useLanguage();
+
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (route.params?.refreshTimeStamp) {
+      setIsSearchActive(false);
+      setSearchQuery('');
+      setSearchScope('All');
+      setFilteredProducts([]);
+      setFilteredUsers([]);
+      Keyboard.dismiss();
+      
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      onRefresh();
+      
+      navigation.setParams({ refreshTimeStamp: undefined });
+    }
+  }, [route.params?.refreshTimeStamp, navigation]);
 
   // Dinamik tab bar yüksekliği
   const tabBarHeight = 60 + insets.bottom;
@@ -410,14 +429,7 @@ const HomeScreen = () => {
     const isFav = favoriteItems.some(fav => fav.id === item.id);
     const imageUrl = item.imageUrls?.[0] || item.imageUrl || null;
 
-    const favItem: FavoriteItem = {
-      id: item.id,
-      title: item.title || 'Başlık Yok',
-      username: item.username || 'Bilinmeyen',
-      imageUrl: imageUrl,
-      price: item.price || 0,
-      year: item.year || '',
-    };
+    const favItem: FavoriteItem = { id: item.id, title: item.title || 'Başlık Yok', username: item.username || 'Bilinmeyen', imageUrl: imageUrl, price: item.price || 0, year: item.year || '', createdAt: item.createdAt };
     isFav ? removeFavorite(item.id) : addFavorite(favItem);
   };
 
@@ -432,6 +444,12 @@ const HomeScreen = () => {
       : (item.mainImageUrl || item.imageUrl || (typeof item.imageUrls === 'string' ? item.imageUrls : null));
 
     const displayName = userNames[item.username] || item.username || 'Bilinmeyen';
+    
+    const isProductNew = (() => {
+      if (!item.createdAt) return false;
+      const date = item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt);
+      return (new Date().getTime() - date.getTime()) < 48 * 60 * 60 * 1000;
+    })();
 
     const handlePress = () => {
       const serializableProduct = {
@@ -462,6 +480,14 @@ const HomeScreen = () => {
                 <Text style={styles.noImageText}>Resim yok</Text>
               </View>
             )}
+            
+            {isProductNew && (
+              <View style={styles.newBadgeContainer}>
+                <View style={styles.newBadgeBackground}>
+                  <Text style={styles.newBadgeText}>{t('newBadge')}</Text>
+                </View>
+              </View>
+            )}
           </View>
 
           <View style={styles.infoContainer}>
@@ -473,7 +499,7 @@ const HomeScreen = () => {
                 onPress={() => handleFavoriteToggle(item)}
                 style={styles.favoriteButton}
               >
-                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#ff4b4b' : colors.text} />
+                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#FF3040' : colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -649,6 +675,7 @@ const HomeScreen = () => {
             </View>
           ) : (
             <ScrollView
+              ref={scrollViewRef}
               showsVerticalScrollIndicator={false}
               refreshControl={
                 <RefreshControl
@@ -790,6 +817,37 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontSize: 17,
     fontWeight: 'bold',
     color: colors.text
+  },
+  newBadgeContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 60,
+    height: 60,
+    overflow: 'hidden',
+  },
+  newBadgeBackground: {
+    position: 'absolute',
+    top: 5,
+    right: -20,
+    backgroundColor: '#FF3040',
+    width: 80,
+    height: 24,
+    transform: [{ rotate: '45deg' }],
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  newBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   loadingContainer: {
     flex: 1,

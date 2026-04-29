@@ -96,6 +96,12 @@ const ProductDetailScreen = () => {
     (fav: FavoriteItem) => fav.id === productData.id
   );
 
+  const isProductNew = (() => {
+    if (!productData.createdAt) return false;
+    const date = productData.createdAt instanceof Date ? productData.createdAt : new Date(productData.createdAt);
+    return (new Date().getTime() - date.getTime()) < 48 * 60 * 60 * 1000;
+  })();
+
   useFocusEffect(
     useCallback(() => {
       isNavigatingToModal.current = false;
@@ -386,7 +392,7 @@ const ProductDetailScreen = () => {
               <Ionicons
                 name={isFavorite ? 'heart' : 'heart-outline'}
                 size={20}
-                color={colors.text}
+                color={isFavorite ? '#FF3040' : colors.text}
               />
             </TouchableOpacity>
           </View>
@@ -472,7 +478,7 @@ const ProductDetailScreen = () => {
                   <Ionicons
                     name={isFavoriteItem ? 'heart' : 'heart-outline'}
                     size={26}
-                    color={colors.text}
+                    color={isFavoriteItem ? '#FF3040' : colors.text}
                   />
                 </TouchableOpacity>
               </View>
@@ -517,6 +523,9 @@ const ProductDetailScreen = () => {
           {productData.createdAt && (
             <Text style={styles.detail}>
               {t('addedDate')}: {formatDate(productData.createdAt)}
+              {isProductNew && (
+                <Text style={{ color: '#FF3040', fontWeight: 'bold' }}> ({t('newBadge').toLowerCase()})</Text>
+              )}
             </Text>
           )}
         </View>

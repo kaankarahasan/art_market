@@ -105,6 +105,15 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
       <Tab.Screen
         name="HomeTab"
         component={HomeStackNavigator}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('HomeTab', {
+              screen: 'Home',
+              params: { refreshTimeStamp: Date.now() },
+            });
+          },
+        })}
         options={{
           tabBarLabel: ({ focused }) => (
             <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>{t('home')}</Text>
@@ -129,6 +138,15 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
       <Tab.Screen
         name="SearchTab"
         component={SearchStackNavigator}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('SearchTab', {
+              screen: 'SearchMain',
+              params: { refreshTimeStamp: Date.now() },
+            });
+          },
+        })}
         options={{
           tabBarLabel: ({ focused }) => (
             <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>{t('search')}</Text>
