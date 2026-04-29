@@ -10,10 +10,7 @@ def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
  */
 react {
     entryFile = file("${projectRoot}/index.ts")
-    reactNativeDir = new File(["sh", "-c", "node --print \"require.resolve('react-native/package.json')\""].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
-    hermesCommand = new File(["sh", "-c", "node --print \"require.resolve('react-native/package.json')\""].execute(null, rootDir).text.trim()).getParentFile().getAbsolutePath() + "/sdks/hermesc/%OS-BIN%/hermesc"
-    codegenDir = new File(["sh", "-c", "node --print \"require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/package.json')] })\""].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
-
+    // Let the plugin handle the paths automatically for better compatibility
     enableBundleCompression = (findProperty('android.enableBundleCompression') ?: false).toBoolean()
     
     // Bundle generation options
