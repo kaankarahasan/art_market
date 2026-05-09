@@ -3,7 +3,7 @@ import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet, 
 import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { onSnapshot, collection, doc, getDoc } from '@react-native-firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth } from '../firebaseConfig';
 import { RootStackParamList } from '../routes/types';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';

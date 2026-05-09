@@ -7,8 +7,18 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# react-native-reanimated
--keep class com.swmansion.reanimated.** { *; }
--keep class com.facebook.react.turbomodule.** { *; }
+# react-native-gesture-handler
+-keep class com.swmansion.gesturehandler.** { *; }
 
-# Add any project specific keep options here:
+# react-native-safe-area-context
+-keep class com.th3rdwave.safeareacontext.** { *; }
+
+# stripe-react-native
+-dontwarn com.stripe.android.pushProvisioning.**
+-keep class com.stripe.android.pushProvisioning.** { *; }
+
+# Keep React Native internal classes
+-keep class com.facebook.react.** { *; }
+-keep class com.facebook.soloader.** { *; }
+-dontwarn com.facebook.react.**
+-dontwarn com.facebook.soloader.**

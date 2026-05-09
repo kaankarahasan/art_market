@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { getDoc, doc, updateDoc } from '@react-native-firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth, db } from '../firebaseConfig';
 import { useLanguage } from '../contexts/LanguageContext';
 
 type FollowerPermission = 'everyone' | 'approved' | 'none';

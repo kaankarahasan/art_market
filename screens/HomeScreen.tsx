@@ -19,8 +19,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getDocs, collection, query, where, limit, orderBy, startAfter, FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
-import { db, auth } from '../firebase';
+import { getDocs, onSnapshot, collection, query, where, limit, orderBy, startAfter, FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { db, auth } from '../firebaseConfig';
 import { useThemeContext } from '../contexts/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
@@ -209,6 +209,19 @@ const HomeScreen = () => {
       setLoading(false);
     };
     loadData();
+  }, []);
+
+  // Realtime listener: Firestore'da isSold değişince anında UI'dan kaldır
+  useEffect(() => {
+    const productsRef = collection(db, 'products');
+    const q = query(productsRef, where('isSold', '==', true));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (snapshot.docs.length > 0) {
+        const soldIds = new Set(snapshot.docs.map((d: any) => d.id));
+        setProducts(prev => prev.filter(p => !soldIds.has(p.id)));
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   useFocusEffect(

@@ -5,8 +5,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import { doc, getDoc } from '@react-native-firebase/firestore';
-import { auth, db } from '../firebase';
+import { collection, query, where, onSnapshot, doc, getDoc } from '@react-native-firebase/firestore';
+import { auth, db } from '../firebaseConfig';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -76,8 +76,30 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
   const insets = useSafeAreaInsets();
   const { colors, isDarkTheme } = useThemeContext();
   const { t } = useLanguage();
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const iconColor = colors.text;
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const q = query(
+      collection(db, 'chats'),
+      where('participants', 'array-contains', auth.currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let total = 0;
+      snapshot.docs.forEach((doc: any) => {
+        const data = doc.data();
+        const count = data.unreadCounts?.[auth.currentUser!.uid] || 0;
+        total += count;
+      });
+      setUnreadCount(total);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <Tab.Navigator
@@ -163,9 +185,41 @@ function MainTabNavigatorContent({ userData }: { userData: any }) {
           tabBarLabel: ({ focused }) => (
             <Text style={{ fontSize: 12, marginTop: 4, fontWeight: focused ? '800' : 'normal', color: iconColor }}>{t('inbox')}</Text>
           ),
-          tabBarIcon: ({ focused, size }) =>
-            focused ? <Ionicons name="mail" size={size} color={iconColor} />
-              : <Ionicons name="mail-outline" size={size} color={iconColor} />,
+          tabBarIcon: ({ focused, size }) => (
+            <View>
+              {focused ? <Ionicons name="mail" size={size} color={iconColor} />
+                : <Ionicons name="mail-outline" size={size} color={iconColor} />}
+              {unreadCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    right: -6,
+                    top: -3,
+                    backgroundColor: '#FF3B30',
+                    borderRadius: 10,
+                    minWidth: 18,
+                    height: 18,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    paddingHorizontal: 4,
+                    borderWidth: 1.5,
+                    borderColor: colors.background,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: '#FFF',
+                      fontSize: 10,
+                      fontWeight: '800',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ),
         }}
       />
       <Tab.Screen

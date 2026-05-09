@@ -1,5 +1,5 @@
 import { doc, updateDoc, arrayUnion, arrayRemove } from '@react-native-firebase/firestore';
-import { db, auth } from './firebase';
+import { db, auth } from './firebaseConfig';
 
 /**
  * Kullanıcıyı takip et

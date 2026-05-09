@@ -22,7 +22,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { onSnapshot, collection, query, orderBy, limit, doc, getDocs, setDoc, addDoc, getDoc, Timestamp, deleteDoc } from '@react-native-firebase/firestore';
-import { db, auth, getRemoteValue } from '../firebase';
+import { db, auth, getRemoteValue } from '../firebaseConfig';
 import { serverTimestamp } from '@react-native-firebase/firestore';
 
 type Message = {

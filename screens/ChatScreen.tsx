@@ -14,8 +14,9 @@ import {
   StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { doc, getDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, setDoc } from '@react-native-firebase/firestore';
-import { db } from '../firebase';
+import { doc, getDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, setDoc, increment } from '@react-native-firebase/firestore';
+
+import { db } from '../firebaseConfig';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useThemeContext } from '../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -68,6 +69,22 @@ export default function ChatScreen() {
   );
 
   useEffect(() => {
+    // Mesajları okundu olarak işaretle
+    const resetUnreadCount = async () => {
+      try {
+        await setDoc(
+          doc(db, 'chats', chatId),
+          {
+            [`unreadCounts.${currentUserId}`]: 0,
+          },
+          { merge: true }
+        );
+      } catch (error) {
+        console.error('Okunmadı sayısı sıfırlanamadı:', error);
+      }
+    };
+    resetUnreadCount();
+
     const fetchOtherUser = async () => {
       try {
         const snap = await getDoc(doc(db, 'users', otherUserId));
@@ -173,6 +190,7 @@ export default function ChatScreen() {
             displayName: other.displayName || 'Bilinmeyen',
             photoURL: other.photoURL ?? null,
           },
+          [`unreadCounts.${otherUserId}`]: increment(1),
         },
         { merge: true }
       );

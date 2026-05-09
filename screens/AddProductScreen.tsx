@@ -15,8 +15,8 @@ import {
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import ImagePicker from 'react-native-image-crop-picker';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from '@react-native-firebase/firestore';
-import { ref } from '@react-native-firebase/storage';
-import { auth, db, storage } from '../firebase';
+import { ref, putFile, getDownloadURL } from '@react-native-firebase/storage';
+import { auth, db, storage } from '../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import uuid from 'react-native-uuid';
 import RNFS from 'react-native-fs';
@@ -152,8 +152,8 @@ const AddProductScreen = () => {
     const imageRef = ref(storage, imagePath);
 
     // Native putFile çok daha hızlıdır (blob'a gerek duymaz)
-    await imageRef.putFile(uri);
-    const downloadURL = await imageRef.getDownloadURL();
+    await putFile(imageRef, uri);
+    const downloadURL = await getDownloadURL(imageRef);
     return downloadURL;
   };
 

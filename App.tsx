@@ -1,14 +1,17 @@
-import 'fast-text-encoding';
+import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import React from 'react';
-import { StatusBar } from 'react-native';
+import 'fast-text-encoding';
 import 'react-native-get-random-values';
+import React from 'react';
+import { StatusBar, ActivityIndicator, View } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StripeProvider } from '@stripe/stripe-react-native';
+
+import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import { auth } from './firebase';
-import messaging from '@react-native-firebase/messaging';
+import { getMessaging, onMessage, onNotificationOpenedApp, getInitialNotification } from '@react-native-firebase/messaging';
 
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
@@ -34,6 +37,7 @@ import GeminiChatScreen from './screens/GeminiChatScreen';
 import PasswordResetScreen from './screens/PasswordResetScreen';
 import SearchScreen from './screens/SearchScreen';
 import ViewInRoomScreen from './screens/ViewInRoomScreen';
+import NotificationScreen from './screens/NotificationScreen';
 
 import { RootStackParamList } from './routes/types';
 import { FavoriteUsersProvider } from './contexts/FavoritesContext';
@@ -41,12 +45,10 @@ import { FavoriteItemsProvider } from './contexts/FavoritesContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 
-// Firebase'i initialize etmek için içeri aktarıyoruz (tek seferlik tetiklenir)
-import './firebase';
 
 import { DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { useThemeContext } from './contexts/ThemeContext';
-import { fetchRemoteConfig } from './firebase';
+import { fetchRemoteConfig, getRemoteValue } from './firebaseConfig';
 import { saveFCMToken } from './utils/notificationService';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -74,8 +76,10 @@ function AppContent() {
   const [user, setUser] = React.useState<any>(null);
 
   React.useEffect(() => {
-    fetchRemoteConfig();
-    const subscriber = onAuthStateChanged(auth, (usr) => {
+    if (typeof fetchRemoteConfig === 'function') {
+      fetchRemoteConfig();
+    }
+    const subscriber = onAuthStateChanged(auth, (usr: any) => {
       setUser(usr);
       if (initializing) setInitializing(false);
 
@@ -90,7 +94,7 @@ function AppContent() {
   React.useEffect(() => {
     // ─── Foreground mesajları (uygulama açıkken gelen bildirimler) ───────────
     // Foreground'da FCM otomatik bildirim göstermez; biz handle ederiz
-    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+    const unsubscribeForeground = onMessage(getMessaging(), async (remoteMessage) => {
       console.log('[FCM] Foreground mesaj:', remoteMessage.notification?.title);
       // Foreground'da bildirim göstermek için react-native'in Notification API'si yok,
       // FCM'nin onMessage'ı sadece data alır. Kullanıcı uygulamadaysa zaten görür.
@@ -98,7 +102,7 @@ function AppContent() {
     });
 
     // ─── Arka planda bildirime tıklanınca (uygulama arka planda açık) ────────
-    const unsubscribeBackground = messaging().onNotificationOpenedApp((remoteMessage) => {
+    const unsubscribeBackground = onNotificationOpenedApp(getMessaging(), (remoteMessage) => {
       console.log('[FCM] Arka planda bildirime tıklandı:', remoteMessage.data);
       if (remoteMessage.data) {
         navigateToChat(remoteMessage.data);
@@ -106,8 +110,7 @@ function AppContent() {
     });
 
     // ─── Uygulama kapalıyken bildirime tıklanınca (quit state) ───────────────
-    messaging()
-      .getInitialNotification()
+    getInitialNotification(getMessaging())
       .then((remoteMessage) => {
         if (remoteMessage?.data) {
           console.log('[FCM] Kapalıyken bildirime tıklandı:', remoteMessage.data);
@@ -136,39 +139,41 @@ function AppContent() {
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
         backgroundColor={theme.colors.background}
       />
-      <NavigationContainer theme={theme} ref={navigationRef}>
-        <Stack.Navigator initialRouteName={user ? "Main" : "Login"} screenOptions={{ gestureEnabled: true, animation: 'slide_from_right' }}>
-          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="PasswordReset" component={PasswordResetScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
-          <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Followers" component={FollowersScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Following" component={FollowingScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Sold" component={SoldScreen} options={{ title: 'Sold Products' }} />
-          <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'User Profile' }} />
-          <Stack.Screen name="OtherProfile" component={OtherProfileScreen} options={{ title: 'Other Profile' }} />
-          <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="UpdateProduct" component={UpdateProductScreen} options={{ title: 'Update Product' }} />
-          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-          <Stack.Screen name="ChangeEmailAndPassword" component={ChangeEmailAndPasswordScreen} />
-          <Stack.Screen name="About" component={AboutScreen} />
-          <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-          <Stack.Screen name="TermsOfService" component={TermsOfUseScreen} />
-          <Stack.Screen name="PrivacyFollowerCommentSettings" component={PrivacyFollowerCommentSettingsScreen} />
-          <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Search" component={SearchScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="GeminiChat" component={GeminiChatScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ViewInRoom" component={ViewInRoomScreen} options={{ headerShown: false, presentation: 'fullScreenModal', orientation: 'landscape' }} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <StripeProvider publishableKey={(() => { const k = getRemoteValue('STRIPE_PUBLISHABLE_KEY'); return (k && k.startsWith('pk_')) ? k : 'pk_test_51TTJqzBgPkYoEHZGAlqj7C0rLy1tHISChUmnxrfOCPjncg8TWpsi8UisdwlNxfXtYB34gb8mmWhRGyyRknVRkcHo00SeR1v7Sm'; })()}>
+        <NavigationContainer theme={theme} ref={navigationRef}>
+          <Stack.Navigator initialRouteName={user ? "Main" : "Login"} screenOptions={{ gestureEnabled: true, animation: 'slide_from_right' }}>
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="PasswordReset" component={PasswordResetScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Followers" component={FollowersScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Following" component={FollowingScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Sold" component={SoldScreen} options={{ title: 'Sold Products' }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'User Profile' }} />
+            <Stack.Screen name="OtherProfile" component={OtherProfileScreen} options={{ title: 'Other Profile' }} />
+            <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="UpdateProduct" component={UpdateProductScreen} options={{ title: 'Update Product' }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="ChangeEmailAndPassword" component={ChangeEmailAndPasswordScreen} />
+            <Stack.Screen name="About" component={AboutScreen} />
+            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+            <Stack.Screen name="TermsOfService" component={TermsOfUseScreen} />
+            <Stack.Screen name="PrivacyFollowerCommentSettings" component={PrivacyFollowerCommentSettingsScreen} />
+            <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Search" component={SearchScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="GeminiChat" component={GeminiChatScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ViewInRoom" component={ViewInRoomScreen} options={{ headerShown: false, presentation: 'fullScreenModal', orientation: 'landscape' }} />
+            <Stack.Screen name="NotificationScreen" component={NotificationScreen} options={{ headerShown: false }} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </StripeProvider>
     </>
   );
 }
 
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function App() {
   return (

@@ -17,8 +17,8 @@ import ImagePicker from 'react-native-image-crop-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { updateProduct } from '../utils/updateProduct';
-import { ref } from '@react-native-firebase/storage';
-import { storage } from '../firebase';
+import { ref, putFile, getDownloadURL } from '@react-native-firebase/storage';
+import { storage } from '../firebaseConfig';
 import { RootStackParamList } from '../routes/types';
 import uuid from 'react-native-uuid';
 import { useThemeContext } from '../contexts/ThemeContext';
@@ -129,8 +129,8 @@ const UpdateProductScreen = () => {
     try {
       const imageId = uuid.v4();
       const storageRef = ref(storage, `product_images/${imageId}.jpg`);
-      await storageRef.putFile(uri);
-      const downloadURL = await storageRef.getDownloadURL();
+      await putFile(storageRef, uri);
+      const downloadURL = await getDownloadURL(storageRef);
       return downloadURL;
     } catch (error) {
       console.error('Resim yükleme hatası:', error);

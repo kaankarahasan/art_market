@@ -20,7 +20,7 @@ import {
 import { signInWithEmailAndPassword, signInWithCredential, GoogleAuthProvider } from '@react-native-firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { auth, db } from '../firebase';
+import { auth, db } from '../firebaseConfig';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

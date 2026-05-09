@@ -59,4 +59,5 @@ export type RootStackParamList = {
     imageUrl: string; 
     dimensions?: { height?: number | null; width?: number | null; };
   };
+  NotificationScreen: undefined;
 };

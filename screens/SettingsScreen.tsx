@@ -9,7 +9,7 @@ import {
   Switch,
   Modal,
 } from 'react-native';
-import { auth } from '../firebase';
+import { auth } from '../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';

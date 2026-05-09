@@ -13,8 +13,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { getDoc, doc, updateDoc } from '@react-native-firebase/firestore';
-import { ref } from '@react-native-firebase/storage';
-import { auth, db, storage } from '../firebase';
+import { ref, putFile, getDownloadURL, deleteObject } from '@react-native-firebase/storage';
+import { auth, db, storage } from '../firebaseConfig';
 import ImagePicker from 'react-native-image-crop-picker';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { ThemeContext } from '../contexts/ThemeContext';
@@ -132,8 +132,8 @@ const EditProfileScreen = () => {
 
     try {
       const storageRef = ref(storage, `profilePictures/${userId}.jpg`);
-      await storageRef.putFile(uri);
-      return await storageRef.getDownloadURL();
+      await putFile(storageRef, uri);
+      return await getDownloadURL(storageRef);
     } catch (error: any) {
       console.error("Upload error:", error);
       Alert.alert(t('error'), error.message || 'Failed to upload image');
@@ -147,7 +147,7 @@ const EditProfileScreen = () => {
     if (!userId) return;
     try {
       const storageRef = ref(storage, `profilePictures/${userId}.jpg`);
-      await storageRef.delete();
+      await deleteObject(storageRef);
       setImage(null);
     } catch (error: any) {
       console.log('Image removal error:', error.message);

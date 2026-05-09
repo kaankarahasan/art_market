@@ -31,8 +31,10 @@ import {
   useFavoriteItems,
   FavoriteItem,
 } from '../contexts/FavoritesContext';
-import { doc, getDoc, collection, query, where, limit, getDocs } from '@react-native-firebase/firestore';
-import { auth, db } from '../firebase';
+import { doc, getDoc, collection, query, where, limit, getDocs, updateDoc } from '@react-native-firebase/firestore';
+import { auth, db, functions } from '../firebaseConfig';
+import { httpsCallable } from '@react-native-firebase/functions';
+import { useStripe } from '@stripe/stripe-react-native';
 import ImageViewing from 'react-native-image-viewing';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -84,6 +86,9 @@ const ProductDetailScreen = () => {
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
+
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const [isBuying, setIsBuying] = useState(false);
 
   const styles = React.useMemo(() => createStyles(colors, isDarkTheme), [colors, isDarkTheme]);
 
@@ -230,6 +235,108 @@ const ProductDetailScreen = () => {
       });
     } else {
       Alert.alert(t('error'), t('viewInRoomError'));
+    }
+  };
+
+  const handleBuy = async () => {
+    if (!currentUser) {
+      Alert.alert('Giriş Yapın', 'Satın alma işlemi için giriş yapmalısınız.');
+      return;
+    }
+    
+    if (!productData.price) {
+      Alert.alert('Hata', 'Bu ürün için fiyat bilgisi bulunamadı.');
+      return;
+    }
+
+    try {
+      setIsBuying(true);
+      console.log('[Stripe] handleBuy started. Product:', productData.id, 'Price:', productData.price);
+
+      if (!functions) {
+        console.error('[Stripe] Firebase Functions başlatılamadı.');
+        Alert.alert('Hata', 'Ödeme servisi hazır değil. Lütfen uygulamayı yeniden başlatın.');
+        setIsBuying(false);
+        return;
+      }
+
+      // 1. Backend'den clientSecret al
+      const createPaymentIntentFn = httpsCallable(functions, 'createPaymentIntent');
+      console.log('[Stripe] Calling createPaymentIntent...');
+      
+      const response = await createPaymentIntentFn({
+        amount: Math.round(Number(productData.price) * 100),
+        currency: 'try',
+        productId: productData.id,
+        sellerId: productData.ownerId,
+      });
+
+      console.log('[Stripe] Raw response from function:', JSON.stringify(response.data));
+
+      const responseData = response.data as any;
+      const clientSecret = responseData?.clientSecret;
+
+      if (!clientSecret) {
+        console.error('[Stripe] clientSecret is missing from response:', responseData);
+        Alert.alert('Hata', 'Ödeme oturumu başlatılamadı. Sunucudan clientSecret gelmedi.');
+        setIsBuying(false);
+        return;
+      }
+
+      console.log('[Stripe] clientSecret received (first 20 chars):', clientSecret.substring(0, 20));
+
+      // 2. Stripe PaymentSheet başlat
+      console.log('[Stripe] Initializing PaymentSheet...');
+      const initResponse = await initPaymentSheet({
+        merchantDisplayName: 'Umay Art Market',
+        paymentIntentClientSecret: clientSecret,
+        returnURL: 'umay://stripe-redirect',
+        allowsDelayedPaymentMethods: false,
+      });
+      
+      if (initResponse.error) {
+        console.error('[Stripe] initPaymentSheet error:', initResponse.error);
+        Alert.alert('Ödeme Hatası', `PaymentSheet başlatılamadı: ${initResponse.error.message}`);
+        setIsBuying(false);
+        return;
+      }
+
+      console.log('[Stripe] PaymentSheet initialized. Presenting...');
+
+      // 3. PaymentSheet göster
+      const paymentResponse = await presentPaymentSheet();
+
+      if (paymentResponse.error) {
+        if (paymentResponse.error.code === 'Canceled') {
+          console.log('[Stripe] Payment canceled by user.');
+        } else {
+          console.error('[Stripe] presentPaymentSheet error:', paymentResponse.error);
+          Alert.alert('Ödeme Hatası', paymentResponse.error.message);
+        }
+      } else {
+        console.log('[Stripe] Payment successful!');
+        
+        try {
+          // Update Firestore directly for immediate feedback and persistence
+          await updateDoc(doc(db, 'products', productData.id), {
+            isSold: true,
+            status: 'sold'
+          });
+          console.log('[Firestore] Product status updated to sold.');
+        } catch (dbError) {
+          console.error('[Firestore] Error updating product status:', dbError);
+          // Still show success since payment was successful
+        }
+
+        Alert.alert('Başarılı 🎉', 'Satın alma işlemi başarıyla gerçekleşti!');
+        setProductData(prev => ({...prev, isSold: true}));
+      }
+    } catch (e: any) {
+      console.error('[Stripe] Unexpected error in handleBuy:', e?.message || e);
+      console.error('[Stripe] Error details:', JSON.stringify(e));
+      Alert.alert('Hata', `Bir sorun oluştu: ${e?.message || 'Bilinmeyen hata'}`);
+    } finally {
+      setIsBuying(false);
     }
   };
 
@@ -467,20 +574,32 @@ const ProductDetailScreen = () => {
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() =>
-                    isFavoriteItem
-                      ? removeFavorite(productData.id)
-                      : addFavorite(productData as FavoriteItem)
-                  }
-                  style={styles.favoriteButtonNew}
-                >
-                  <Ionicons
-                    name={isFavoriteItem ? 'heart' : 'heart-outline'}
-                    size={26}
-                    color={isFavoriteItem ? '#FF3040' : colors.text}
-                  />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  {/* Odada Gör — Sadece İkon */}
+                  <TouchableOpacity
+                    onPress={handleViewInRoom}
+                    style={styles.iconActionButton}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="easel-outline" size={22} color={colors.text} />
+                  </TouchableOpacity>
+
+                  {/* Favori Butonu */}
+                  <TouchableOpacity
+                    onPress={() =>
+                      isFavoriteItem
+                        ? removeFavorite(productData.id)
+                        : addFavorite(productData as FavoriteItem)
+                    }
+                    style={styles.favoriteButtonNew}
+                  >
+                    <Ionicons
+                      name={isFavoriteItem ? 'heart' : 'heart-outline'}
+                      size={26}
+                      color={isFavoriteItem ? '#FF3040' : colors.text}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
             )
           )}
@@ -490,9 +609,19 @@ const ProductDetailScreen = () => {
             {productData.year && `, ${productData.year}`}
           </Text>
 
-          <Text style={styles.mainPrice}>
-            {productData.price ? `₺${Number(productData.price).toLocaleString('tr-TR')}` : t('unknown')}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={[styles.mainPrice, { marginBottom: 0 }]}>
+              {productData.price ? `₺${Number(productData.price).toLocaleString('tr-TR')}` : t('unknown')}
+            </Text>
+            
+            {productData.isSold ? (
+              <View style={styles.soldBadge}>
+                <Text style={styles.soldBadgeText}>SATILDI</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Inline Satın Al butonu (scroll içi) kaldırıldı — alt bara taşındı */}
 
           <Text style={styles.description}>
             {productData.description || t('noDescription')}
@@ -563,25 +692,45 @@ const ProductDetailScreen = () => {
           styles.messageButtonContainer,
           { paddingBottom: insets.bottom > 0 ? insets.bottom : 12 }
         ]}>
+          {/* Mesaj Butonu — sahip olmayan kullanıcılara göster */}
           {!isOwner && (
             <TouchableOpacity
               style={styles.messageButton}
               onPress={handleSendMessage}
               activeOpacity={0.8}
             >
-              <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.background} />
+              <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.background} />
               <Text style={[styles.messageButtonText, { color: colors.background }]}>{t('sendMessage')}</Text>
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity
-            style={[styles.arButton, isOwner && { flex: 1 }]}
-            onPress={handleViewInRoom}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="easel-outline" size={22} color={colors.text} />
-            <Text style={[styles.arButtonText, { color: colors.text }]}>{t('viewInRoom')}</Text>
-          </TouchableOpacity>
+          {/* Satın Al Butonu — sahip olmayan kullanıcılara, satılmamış ürünlerde */}
+          {!isOwner && !productData.isSold && (
+            <TouchableOpacity
+              style={[styles.buyButtonBar, isBuying && { opacity: 0.7 }]}
+              onPress={handleBuy}
+              disabled={isBuying}
+              activeOpacity={0.8}
+            >
+              {isBuying ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.buyButtonText}>Satın Al</Text>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* Sahip ise sadece Odada Gör — tam genişlikte */}
+          {isOwner && (
+            <TouchableOpacity
+              style={[styles.arButton, { flex: 1 }]}
+              onPress={handleViewInRoom}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="easel-outline" size={22} color={colors.text} />
+              <Text style={[styles.arButtonText, { color: colors.text }]}>{t('viewInRoom')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -591,7 +740,7 @@ const ProductDetailScreen = () => {
         visible={isImageViewVisible}
         onRequestClose={() => setIsImageViewVisible(false)}
         backgroundColor={colors.background}
-        HeaderComponent={({ imageIndex }) => (
+        HeaderComponent={({ imageIndex }: { imageIndex: number }, _ref?: any) => (
           <View style={[styles.imageHeaderContainer, { paddingTop: insets.top }]}>
             <TouchableOpacity
               style={styles.imageCloseButton}
@@ -601,11 +750,11 @@ const ProductDetailScreen = () => {
             </TouchableOpacity>
           </View>
         )}
-        FooterComponent={({ imageIndex }) => (
+        FooterComponent={({ imageIndex }: { imageIndex: number }, _ref?: any) => (
           <View style={[styles.squareIndicatorContainerFullScreen, { paddingBottom: insets.bottom + 20 }]}>
             {imagesArray.map((_, idx) => (
               <View
-                key={idx}
+                key={`dot-fullscreen-${idx}`}
                 style={[
                   styles.squareDot,
                   {
@@ -862,5 +1011,40 @@ const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 0,
+  },
+  soldBadge: {
+    backgroundColor: '#FF3B30',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  soldBadgeText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  iconActionButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+  },
+  buyButtonBar: {
+    flex: 1,
+    backgroundColor: '#111',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buyButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.3,
   },
 });

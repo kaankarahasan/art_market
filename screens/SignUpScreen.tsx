@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { createUserWithEmailAndPassword } from '@react-native-firebase/auth';
 import { doc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth, db } from '../firebaseConfig';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '../contexts/LanguageContext';

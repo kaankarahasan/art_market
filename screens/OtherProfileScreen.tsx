@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation, NavigationProp, RouteProp } from '@react-navigation/native';
 import { doc, getDoc, collection, getDocs, query, where, deleteDoc, setDoc } from '@react-native-firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth, db } from '../firebaseConfig';
 import { useThemeContext } from '../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImageViewer from 'react-native-image-zoom-viewer';
@@ -71,11 +71,22 @@ const OtherProfileScreen = () => {
       const q = query(collection(db, 'products'), where('ownerId', '==', userId));
       const productsSnap = await getDocs(q);
 
-      setProducts(productsSnap.docs.map((doc: any) => ({
+      const fetchedProducts = productsSnap.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: (doc.data() as any).createdAt?.toDate ? (doc.data() as any).createdAt.toDate() : new Date()
-      })));
+      }));
+
+      fetchedProducts.sort((a: any, b: any) => {
+        if (a.isSold === b.isSold) {
+          const aTime = a.createdAt?.getTime ? a.createdAt.getTime() : 0;
+          const bTime = b.createdAt?.getTime ? b.createdAt.getTime() : 0;
+          return bTime - aTime;
+        }
+        return a.isSold ? 1 : -1;
+      });
+
+      setProducts(fetchedProducts);
     } catch (e) {
       console.error(e);
     } finally {
@@ -197,12 +208,26 @@ const OtherProfileScreen = () => {
               </View>
             )}
 
-            {isProductNew && (
+            {isProductNew && !item.isSold && (
               <View style={styles.newBadgeContainer}>
                 <View style={styles.newBadgeBackground}>
                   <Text style={styles.newBadgeText}>{t('newBadge')}</Text>
                 </View>
               </View>
+            )}
+
+            {item.isSold && (
+              <View style={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                width: 14,
+                height: 14,
+                borderRadius: 7,
+                backgroundColor: '#FF3B30',
+                borderWidth: 2,
+                borderColor: colors.card,
+              }} />
             )}
           </View>
 

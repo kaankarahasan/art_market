@@ -13,7 +13,7 @@ import {
   Easing,
   StatusBar,
 } from 'react-native';
-import { auth } from '../firebase';
+import { auth } from '../firebaseConfig';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';

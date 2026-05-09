@@ -1,6 +1,6 @@
 import { doc, deleteDoc } from '@react-native-firebase/firestore';
 import { ref } from '@react-native-firebase/storage';
-import { db, storage } from '../firebase';
+import { db, storage } from '../firebaseConfig';
 
 export const deleteProduct = async (
   productId: string,

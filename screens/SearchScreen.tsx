@@ -21,7 +21,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { query, collection, where, limit, getDocs } from '@react-native-firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth } from '../firebaseConfig';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';

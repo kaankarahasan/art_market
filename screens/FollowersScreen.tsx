@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { onSnapshot, collection, doc, getDoc } from '@react-native-firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth } from '../firebaseConfig';
 import { RootStackParamList } from '../routes/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useThemeContext } from '../contexts/ThemeContext';

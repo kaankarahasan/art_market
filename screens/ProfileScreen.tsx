@@ -22,7 +22,7 @@ import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import Feather from 'react-native-vector-icons/Feather';
 import { signOut } from '@react-native-firebase/auth';
 import { doc, getDoc, onSnapshot, query, collection, where, getDocs } from '@react-native-firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth, db } from '../firebaseConfig';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../routes/types';
 import { ThemeContext } from '../contexts/ThemeContext';
@@ -130,7 +130,18 @@ const ProfileScreen = () => {
       const q = query(collection(db, 'products'), where('ownerId', '==', profileId));
       const productsSnap = await getDocs(q);
 
-      setProducts(productsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() })));
+      const fetchedProducts = productsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+      
+      fetchedProducts.sort((a: any, b: any) => {
+        if (a.isSold === b.isSold) {
+          const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+          const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+          return bTime - aTime;
+        }
+        return a.isSold ? 1 : -1;
+      });
+
+      setProducts(fetchedProducts);
     } catch (e) {
       console.error('Kullanıcı verisi alınamadı:', e);
     } finally {
@@ -223,12 +234,26 @@ const ProfileScreen = () => {
               </View>
             )}
 
-            {isProductNew && (
+            {isProductNew && !item.isSold && (
               <View style={styles.newBadgeContainer}>
                 <View style={styles.newBadgeBackground}>
                   <Text style={styles.newBadgeText}>{t('newBadge')}</Text>
                 </View>
               </View>
+            )}
+
+            {item.isSold && (
+              <View style={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                width: 14,
+                height: 14,
+                borderRadius: 7,
+                backgroundColor: '#FF3B30',
+                borderWidth: 2,
+                borderColor: colors.card,
+              }} />
             )}
           </View>
           <View style={styles.infoContainer}>

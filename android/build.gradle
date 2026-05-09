@@ -37,9 +37,7 @@ subprojects {
     plugins.withId("com.android.library") {
         android {
             compileSdk rootProject.ext.compileSdkVersion
+            ndkVersion rootProject.ext.ndkVersion
         }
     }
 }
-
-
-

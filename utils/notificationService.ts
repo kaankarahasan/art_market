@@ -9,9 +9,9 @@
  *  4. FCM v1 API'ye POST isteği atılır → alıcının cihazına bildirim düşer.
  */
 
-import messaging from '@react-native-firebase/messaging';
+import { getMessaging, requestPermission, getToken, AuthorizationStatus } from '@react-native-firebase/messaging';
+import { db } from '../firebaseConfig';
 import { doc, setDoc, getDoc } from '@react-native-firebase/firestore';
-import { db } from '../firebase';
 import forge from 'node-forge';
 
 const PROJECT_ID = 'app-market-test-35f90';
@@ -135,10 +135,10 @@ export async function saveFCMToken(userId: string): Promise<void> {
       );
       enabled = granted === PermissionsAndroid.RESULTS.GRANTED;
     } else {
-      const authStatus = await messaging().requestPermission();
+      const authStatus = await requestPermission(getMessaging());
       enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        authStatus === AuthorizationStatus.AUTHORIZED ||
+        authStatus === AuthorizationStatus.PROVISIONAL;
     }
 
     if (!enabled) {
@@ -150,15 +150,14 @@ export async function saveFCMToken(userId: string): Promise<void> {
       return;
     }
 
-    const token = await messaging().getToken();
+    const token = await getToken(getMessaging());
     if (!token) {
       console.log('[FCM] Token alınamadı.');
       Alert.alert('Hata', 'Bildirim tokenı alınamadı. Lütfen cihazınızda Google Play Hizmetlerinin çalıştığından emin olun.');
       return;
     }
 
-    await setDoc(
-      doc(db, 'users', userId),
+    await setDoc(doc(db, 'users', userId),
       { fcmToken: token, fcmTokenUpdatedAt: new Date().toISOString() },
       { merge: true }
     );
@@ -182,7 +181,7 @@ export async function sendPushNotification(params: {
   try {
     // Alıcının FCM token'ını Firestore'dan al
     const userSnap = await getDoc(doc(db, 'users', recipientUserId));
-    if (!userSnap.exists()) {
+    if (!userSnap.exists) {
       console.log('[FCM] Alıcı bulunamadı, bildirim atlandı.');
       return;
     }

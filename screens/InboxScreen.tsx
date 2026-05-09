@@ -11,9 +11,8 @@ import {
   Alert,
 } from 'react-native';
 import { query, collection, where, orderBy, onSnapshot, getDoc, doc, deleteDoc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
-import { db, auth } from '../firebase';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { db, auth } from '../firebaseConfig';
+import { useNavigation, useFocusEffect, NavigationProp } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../routes/types';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,10 +21,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
-type ChatScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'InboxScreen'
->;
+type ChatScreenNavigationProp = NavigationProp<RootStackParamList>;
 
 type ChatItem = {
   id: string;
@@ -264,14 +260,22 @@ export default function InboxScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { justifyContent: 'space-between' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('messages')}</Text>
+        </View>
         <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate('NotificationScreen')}
+          style={{ padding: 8 }}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
+          <Ionicons name="notifications-outline" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('messages')}</Text>
       </View>
 
       <FlatList

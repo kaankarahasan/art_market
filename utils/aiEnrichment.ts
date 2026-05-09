@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getDocs, collection, doc, updateDoc } from '@react-native-firebase/firestore';
-import { db, getRemoteValue } from '../firebase';
+import { db, getRemoteValue } from '../firebaseConfig';
 
 /**
  * AI ENRICHMENT UTILITY (NATIVE)

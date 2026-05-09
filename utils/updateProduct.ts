@@ -1,5 +1,5 @@
 import { serverTimestamp, doc, updateDoc } from '@react-native-firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../firebaseConfig';
 
 type UpdateProductFields = {
   title?: string;
