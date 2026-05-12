@@ -9,7 +9,7 @@
  *  4. FCM v1 API'ye POST isteği atılır → alıcının cihazına bildirim düşer.
  */
 
-import { getMessaging, requestPermission, getToken, AuthorizationStatus } from '@react-native-firebase/messaging';
+import messaging from '@react-native-firebase/messaging';
 import { db } from '../firebaseConfig';
 import { doc, setDoc, getDoc } from '@react-native-firebase/firestore';
 import forge from 'node-forge';
@@ -135,10 +135,10 @@ export async function saveFCMToken(userId: string): Promise<void> {
       );
       enabled = granted === PermissionsAndroid.RESULTS.GRANTED;
     } else {
-      const authStatus = await requestPermission(getMessaging());
+      const authStatus = await messaging().requestPermission();
       enabled =
-        authStatus === AuthorizationStatus.AUTHORIZED ||
-        authStatus === AuthorizationStatus.PROVISIONAL;
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
     }
 
     if (!enabled) {
@@ -150,7 +150,7 @@ export async function saveFCMToken(userId: string): Promise<void> {
       return;
     }
 
-    const token = await getToken(getMessaging());
+    const token = await messaging().getToken();
     if (!token) {
       console.log('[FCM] Token alınamadı.');
       Alert.alert('Hata', 'Bildirim tokenı alınamadı. Lütfen cihazınızda Google Play Hizmetlerinin çalıştığından emin olun.');

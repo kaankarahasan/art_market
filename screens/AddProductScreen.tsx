@@ -11,6 +11,7 @@ import {
   Modal,
   FlatList,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -22,28 +23,27 @@ import uuid from 'react-native-uuid';
 import RNFS from 'react-native-fs';
 import { analyzeArtworkImage } from '../utils/aiEnrichment';
 import { ThemeContext } from '../contexts/ThemeContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const AddProductScreen = () => {
-  const { isDarkTheme } = useContext(ThemeContext);
-  const styles = getStyles(isDarkTheme);
-  const insets = useSafeAreaInsets();
+  const { colors, isDarkTheme } = useContext(ThemeContext);
   const { t } = useLanguage();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [images, setImages] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
   const [price, setPrice] = useState('');
+  const [year, setYear] = useState('');
   const [category, setCategory] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
   const [height, setHeight] = useState('');
   const [width, setWidth] = useState('');
-  const [year, setYear] = useState('');
-
-  const navigation = useNavigation();
+  const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const categories = [
     { label: t('cat_yagli_boya'), value: 'yagli_boya' },
@@ -59,8 +59,13 @@ const AddProductScreen = () => {
     { label: t('cat_diger'), value: 'diger' },
   ];
 
+  const getCategoryLabel = (value: string) => {
+    const cat = categories.find((c) => c.value === value);
+    return cat ? cat.label : t('selectCategory');
+  };
+
   const takePhoto = async () => {
-    if (images.length >= 3) {
+    if (images.length >= 5) {
       Alert.alert(t('warning'), t('maxPhotos'));
       return;
     }
@@ -75,7 +80,7 @@ const AddProductScreen = () => {
       });
 
       if (image.path) {
-        setImages((prev) => [...prev, image.path].slice(0, 3));
+        setImages((prev) => [...prev, image.path].slice(0, 5));
       }
     } catch (error: any) {
       if (error.message !== 'User cancelled image selection') {
@@ -87,9 +92,7 @@ const AddProductScreen = () => {
 
   const cropImage = async (uri: string, index: number) => {
     try {
-      // Sorunlu uri temizliği (bazı durumlarda file:// gerekebilir veya gerekmez)
       const cleanUri = uri.startsWith('file://') ? uri : `file://${uri}`;
-      
       const image = await ImagePicker.openCropper({
         path: cleanUri,
         width: 1200,
@@ -98,9 +101,9 @@ const AddProductScreen = () => {
         cropping: true,
         mediaType: 'photo',
         cropperToolbarTitle: t('cropImage') || 'Görseli Kırp',
-        cropperActiveWidgetColor: '#FF3040',
-        cropperToolbarColor: isDarkTheme ? '#121212' : '#F4F4F4',
-        cropperToolbarWidgetColor: isDarkTheme ? '#FFFFFF' : '#333333',
+        cropperActiveWidgetColor: colors.primary,
+        cropperToolbarColor: colors.background,
+        cropperToolbarWidgetColor: colors.text,
         hideBottomControls: false,
       });
 
@@ -120,7 +123,7 @@ const AddProductScreen = () => {
   };
 
   const pickImages = async () => {
-    if (images.length >= 3) {
+    if (images.length >= 5) {
       Alert.alert(t('warning'), t('maxPhotos'));
       return;
     }
@@ -128,15 +131,14 @@ const AddProductScreen = () => {
     try {
       const pickedImages = await ImagePicker.openPicker({
         multiple: true,
-        maxFiles: 3 - images.length,
+        maxFiles: 5 - images.length,
         mediaType: 'photo',
-        cropping: false, // Çoklu seçimde cropping kapalıdır, sonra tek tek yapılacak
+        cropping: false,
       });
 
       if (pickedImages && Array.isArray(pickedImages)) {
         const uris = pickedImages.map((img) => img.path);
-        setImages((prev) => [...prev, ...uris].slice(0, 3));
-        
+        setImages((prev) => [...prev, ...uris].slice(0, 5));
       }
     } catch (error: any) {
       if (error.message !== 'User cancelled image selection') {
@@ -150,8 +152,6 @@ const AddProductScreen = () => {
     const imageId = uuid.v4();
     const imagePath = `product_images/${imageId}.jpg`;
     const imageRef = ref(storage, imagePath);
-
-    // Native putFile çok daha hızlıdır (blob'a gerek duymaz)
     await putFile(imageRef, uri);
     const downloadURL = await getDownloadURL(imageRef);
     return downloadURL;
@@ -180,10 +180,7 @@ const AddProductScreen = () => {
     try {
       setUploading(true);
       const userId = auth.currentUser?.uid;
-      if (!userId) {
-        Alert.alert('Hata', 'Kullanıcı oturumu bulunamadı.');
-        return;
-      }
+      if (!userId) return;
 
       const userSnap = await getDoc(doc(db, 'users', userId));
       const userData = userSnap.data();
@@ -199,12 +196,9 @@ const AddProductScreen = () => {
       let aiVisualTags: string[] = [];
       if (images.length > 0) {
         try {
-          console.log("📸 İlk görsel analiz için hazırlanıyor...");
           const base64Image = await RNFS.readFile(images[0], 'base64');
           aiVisualTags = await analyzeArtworkImage(base64Image, 'image/jpeg');
-        } catch (analyzeError) {
-          console.error('Görsel analizi sırasında hata (görmezden geliniyor):', analyzeError);
-        }
+        } catch (e) {}
       }
 
       const dimensions = {
@@ -231,14 +225,6 @@ const AddProductScreen = () => {
       });
 
       Alert.alert(t('success'), t('productAdded'));
-      setTitle('');
-      setDescription('');
-      setPrice('');
-      setCategory('');
-      setHeight('');
-      setWidth('');
-      setYear('');
-      setImages([]);
       navigation.goBack();
     } catch (error) {
       console.error('Ürün eklenirken hata:', error);
@@ -248,214 +234,292 @@ const AddProductScreen = () => {
     }
   };
 
-  const getCategoryLabel = (value: string) => {
-    const cat = categories.find((c) => c.value === value);
-    return cat ? cat.label : t('selectCategory');
-  };
-
   return (
-    <View style={[styles.mainContainer, { paddingTop: insets.top, backgroundColor: isDarkTheme ? '#121212' : '#F4F4F4' }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.mainContainer, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} />
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color={isDarkTheme ? '#fff' : '#333'} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBackButton}>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('addNewProduct')}</Text>
+        <Text style={[styles.largeTitle, { color: colors.text }]}>{t('addNewProduct')}</Text>
       </View>
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}>
 
-        <View style={styles.card}>
-          <Text style={styles.label}>{t('productName')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t('productName')}
-            placeholderTextColor="#6E6E6E"
-            value={title}
-            onChangeText={setTitle}
-          />
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 24, paddingBottom: 40 + insets.bottom }}
+      >
+        {/* IMAGE SECTION */}
+        <View style={styles.imageSection}>
+          <TouchableOpacity
+            style={[styles.mainImageCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={pickImages}
+            activeOpacity={0.8}
+          >
+            {images.length > 0 ? (
+              <Image source={{ uri: images[0] }} style={styles.mainPreviewImage} />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons name="image-outline" size={48} color={colors.secondaryText} />
+                <Text style={[styles.imagePlaceholderText, { color: colors.secondaryText }]}>{t('pickPhotos')}</Text>
+              </View>
+            )}
+            <View style={styles.imageOverlayContainer}>
+              <TouchableOpacity 
+                style={[styles.blurActionBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]} 
+                onPress={pickImages}
+              >
+                <Ionicons name="camera" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
 
-          <Text style={styles.label}>{t('year')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t('yearPlaceholder')}
-            placeholderTextColor="#6E6E6E"
-            keyboardType="numeric"
-            value={year}
-            onChangeText={setYear}
-            maxLength={4}
-          />
+          {images.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailList}>
+              {images.map((uri, index) => (
+                <View key={index} style={styles.thumbWrapper}>
+                  <Image source={{ uri }} style={styles.thumbImage} />
+                  
+                  {/* Action Buttons with Blur Effect */}
+                  <TouchableOpacity 
+                    onPress={() => cropImage(uri, index)} 
+                    style={[styles.thumbActionBtn, { right: 5, top: 5 }]}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="crop" size={12} color="#fff" />
+                  </TouchableOpacity>
 
-          <Text style={styles.label}>{t('description')}</Text>
-          <TextInput
-            style={[styles.input, { height: 100 }]}
-            placeholder={t('description')}
-            placeholderTextColor="#6E6E6E"
-            multiline
-            value={description}
-            onChangeText={setDescription}
-          />
+                  <TouchableOpacity 
+                    style={[styles.thumbActionBtn, { left: 5, top: 5, backgroundColor: 'rgba(255,59,48,0.4)' }]} 
+                    onPress={() => setImages(prev => prev.filter((_, i) => i !== index))}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="trash-outline" size={12} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity style={styles.addMoreThumb} onPress={pickImages}>
+                 <Ionicons name="add" size={24} color={colors.secondaryText} />
+              </TouchableOpacity>
+            </ScrollView>
+          )}
 
-          <Text style={styles.label}>{t('price')}</Text>
-          <View style={styles.priceInputContainer}>
-            <Text style={styles.currencySymbol}>₺</Text>
+          <TouchableOpacity onPress={pickImages} style={styles.updateImageBtn}>
+             <Text style={[styles.updateImageBtnText, { color: colors.secondaryText }]}>{t('pickFromGallery')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* FORM SECTION */}
+        <View style={styles.formSection}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('productNameLabel')}</Text>
             <TextInput
-              style={styles.priceInput}
-              placeholder="0"
-              placeholderTextColor="#6E6E6E"
-              keyboardType="number-pad"
-              value={price}
-              onChangeText={handlePriceChange}
+              style={[styles.underlineInput, { borderBottomColor: focusedField === 'title' ? colors.primary : colors.border, color: colors.text }]}
+              placeholder={t('productName')}
+              placeholderTextColor={colors.secondaryText}
+              value={title}
+              onChangeText={setTitle}
+              onFocus={() => setFocusedField('title')}
+              onBlur={() => setFocusedField(null)}
             />
           </View>
 
-          <Text style={styles.label}>{t('category')}</Text>
-          <TouchableOpacity
-            style={styles.categorySelector}
-            onPress={() => setModalVisible(true)}
-          >
-            <Text style={styles.categorySelectorText}>
-              {category ? getCategoryLabel(category) : t('selectCategory')}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('yearLabel')}</Text>
+            <TextInput
+              style={[styles.underlineInput, { borderBottomColor: focusedField === 'year' ? colors.primary : colors.border, color: colors.text }]}
+              placeholder="2024"
+              placeholderTextColor={colors.secondaryText}
+              keyboardType="numeric"
+              value={year}
+              onChangeText={setYear}
+              maxLength={4}
+              onFocus={() => setFocusedField('year')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
 
-          <Text style={styles.label}>{t('size')}</Text>
-          <View style={styles.dimensionsContainer}>
-            <View style={styles.dimensionBox}>
-              <Text style={styles.dimensionLabel}>{t('height')}</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('descriptionLabel')}</Text>
+            <TextInput
+              style={[styles.underlineInput, { borderBottomColor: focusedField === 'desc' ? colors.primary : colors.border, color: colors.text }]}
+              placeholder={t('description')}
+              placeholderTextColor={colors.secondaryText}
+              multiline
+              value={description}
+              onChangeText={setDescription}
+              onFocus={() => setFocusedField('desc')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('priceLabel')}</Text>
+            <View style={[styles.underlinePriceContainer, { borderBottomColor: focusedField === 'price' ? colors.primary : colors.border }]}>
+              <Text style={[styles.currencySymbol, { color: colors.text }]}>₺</Text>
               <TextInput
-                style={styles.dimensionInput}
-                keyboardType="numeric"
-                value={height}
-                onChangeText={setHeight}
-              />
-            </View>
-            <View style={styles.dimensionBox}>
-              <Text style={styles.dimensionLabel}>{t('width')}</Text>
-              <TextInput
-                style={styles.dimensionInput}
-                keyboardType="numeric"
-                value={width}
-                onChangeText={setWidth}
+                style={[styles.priceInput, { color: colors.text }]}
+                placeholder="0"
+                placeholderTextColor={colors.secondaryText}
+                keyboardType="number-pad"
+                value={price}
+                onChangeText={handlePriceChange}
+                onFocus={() => setFocusedField('price')}
+                onBlur={() => setFocusedField(null)}
               />
             </View>
           </View>
-        </View>
 
-        <View style={styles.card}>
-          <Text style={styles.label}>{t('photos')}</Text>
-          <View style={styles.imageRow}>
-            {images.map((uri, index) => (
-              <TouchableOpacity key={index} onPress={() => cropImage(uri, index)} activeOpacity={0.7}>
-                <View style={styles.imageContainer}>
-                  <Image source={{ uri }} style={styles.imagePreview} />
-                  <View style={styles.cropIconBadge}>
-                    <Ionicons name="crop" size={16} color="#fff" />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('categoryLabel')}</Text>
+            <TouchableOpacity
+              style={[styles.underlineInput, { borderBottomColor: colors.border, justifyContent: 'center' }]}
+              onPress={() => setModalVisible(true)}
+            >
+              <Text style={{ color: category ? colors.text : colors.secondaryText, fontSize: 16 }}>
+                {category ? getCategoryLabel(category) : t('selectCategory')}
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.imageButtons}>
-            <TouchableOpacity style={styles.button} onPress={pickImages}>
-              <Text style={styles.buttonText}>{t('pickFromGallery')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={takePhoto}>
-              <Text style={styles.buttonText}>{t('takeFromCamera')}</Text>
-            </TouchableOpacity>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('size')}</Text>
+            <View style={styles.dimensionsRow}>
+              <View style={[styles.dimInputWrapper, { borderBottomColor: focusedField === 'height' ? colors.primary : colors.border }]}>
+                <Text style={styles.dimLabel}>{t('height')} (cm)</Text>
+                <TextInput
+                  style={[styles.dimInput, { color: colors.text }]}
+                  keyboardType="numeric"
+                  value={height}
+                  onChangeText={setHeight}
+                  onFocus={() => setFocusedField('height')}
+                  onBlur={() => setFocusedField(null)}
+                />
+              </View>
+              <View style={[styles.dimInputWrapper, { borderBottomColor: focusedField === 'width' ? colors.primary : colors.border }]}>
+                <Text style={styles.dimLabel}>{t('width')} (cm)</Text>
+                <TextInput
+                  style={[styles.dimInput, { color: colors.text }]}
+                  keyboardType="numeric"
+                  value={width}
+                  onChangeText={setWidth}
+                  onFocus={() => setFocusedField('width')}
+                  onBlur={() => setFocusedField(null)}
+                />
+              </View>
+            </View>
           </View>
         </View>
 
         <TouchableOpacity
-          style={[styles.button, { marginTop: 10, alignSelf: 'center', width: '90%' }]}
+          style={[styles.mainActionButton, { backgroundColor: uploading ? colors.border : colors.text }]}
           onPress={handleAddProduct}
           disabled={uploading}
         >
-          {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('save')}</Text>}
+          {uploading ? <ActivityIndicator color={colors.background} /> : <Text style={[styles.mainActionButtonText, { color: colors.background }]}>{t('save')}</Text>}
         </TouchableOpacity>
-
-        <Modal visible={modalVisible} animationType="slide" transparent>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>{t('selectCategory')}</Text>
-              <FlatList
-                data={categories}
-                keyExtractor={(item) => item.value}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.modalItem}
-                    onPress={() => {
-                      setCategory(item.value);
-                      setModalVisible(false);
-                    }}
-                  >
-                    <Text style={styles.modalItemText}>{item.label}</Text>
-                  </TouchableOpacity>
-                )}
-              />
-              <TouchableOpacity style={[styles.button, { marginTop: 10 }]} onPress={() => setModalVisible(false)}>
-                <Text style={styles.buttonText}>{t('close')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
       </ScrollView>
-    </View>
+
+      <Modal visible={modalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('selectCategory')}</Text>
+            <FlatList
+              data={categories}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    setCategory(item.value);
+                    setModalVisible(false);
+                  }}
+                >
+                  <Text style={{ color: colors.text, fontSize: 16 }}>{item.label}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity style={[styles.modalCloseBtn, { backgroundColor: colors.text }]} onPress={() => setModalVisible(false)}>
+              <Text style={{ color: colors.background, fontWeight: 'bold' }}>{t('close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
 
-const getStyles = (isDarkTheme: boolean) =>
-  StyleSheet.create({
-    mainContainer: { flex: 1 },
-    headerContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 15,
-      paddingVertical: 12,
-      backgroundColor: isDarkTheme ? '#121212' : '#F4F4F4',
-      borderBottomWidth: 1,
-      borderBottomColor: isDarkTheme ? '#333' : '#E0E0E0',
-    },
-    backButton: { paddingRight: 10, justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: isDarkTheme ? '#fff' : '#333' },
-    scrollContent: { padding: 20 },
-    // container: { flexGrow: 1, padding: 20, backgroundColor: isDarkTheme ? '#121212' : '#F4F4F4' }, // Replaced by mainContainer+scrollContent, kept if needed for other refs logic but commented out to avoid confusion or keep as legacy
-    // header: { fontSize: 22, fontWeight: 'bold', color: '#333333', marginBottom: 20, textAlign: 'center' }, // Replaced by headerTitle
-    card: { backgroundColor: isDarkTheme ? '#1E1E1E' : '#fff', borderRadius: 12, padding: 15, marginBottom: 15, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 },
-    label: { color: '#6E6E6E', marginBottom: 5, fontWeight: '600' },
-    input: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, padding: 10, backgroundColor: '#F4F4F4', color: '#333333', marginBottom: 15 },
-    priceInputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, backgroundColor: '#F4F4F4', marginBottom: 15, paddingHorizontal: 10 },
-    currencySymbol: { fontSize: 16, color: '#333333', fontWeight: 'bold', marginRight: 5 },
-    priceInput: { flex: 1, paddingVertical: 10, color: '#333333', fontSize: 16 },
-    categorySelector: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, backgroundColor: '#F4F4F4', padding: 12, marginBottom: 15 },
-    categorySelectorText: { color: '#333333' },
-    dimensionsContainer: { flexDirection: 'row', justifyContent: 'space-between' },
-    dimensionBox: { flex: 1, alignItems: 'center' },
-    dimensionLabel: { color: '#6E6E6E', fontSize: 12, marginBottom: 4 },
-    dimensionInput: { width: '80%', backgroundColor: '#F4F4F4', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, textAlign: 'center', color: '#333333', padding: 6 },
-    imageRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 10, flexWrap: 'wrap' },
-    imageContainer: { position: 'relative', marginHorizontal: 5 },
-    imagePreview: { width: 90, height: 90, borderRadius: 8 },
-    cropIconBadge: {
-      position: 'absolute',
-      bottom: -5,
-      right: -5,
-      backgroundColor: '#333',
-      borderRadius: 12,
-      width: 24,
-      height: 24,
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderWidth: 2,
-      borderColor: isDarkTheme ? '#1E1E1E' : '#fff',
-    },
-    imageButtons: { flexDirection: 'row', justifyContent: 'space-around' },
-    button: { backgroundColor: '#333333', padding: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-    buttonText: { color: '#fff', fontWeight: '600' },
-    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' },
-    modalContent: { backgroundColor: '#fff', borderRadius: 10, padding: 20, width: '80%', maxHeight: '70%' },
-    modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333333', textAlign: 'center', marginBottom: 10 },
-    modalItem: { padding: 12, borderBottomColor: '#eee', borderBottomWidth: 1 },
-    modalItemText: { color: '#333333' },
-  });
+const styles = StyleSheet.create({
+  mainContainer: { flex: 1 },
+  headerContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    paddingTop: 10,
+  },
+  headerBackButton: {
+    marginBottom: 12,
+    marginLeft: -5,
+  },
+  largeTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
+  imageSection: { alignItems: 'center', marginBottom: 32 },
+  mainImageCard: { width: '100%', height: 320, borderRadius: 24, borderWidth: 1, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', elevation: 3 },
+  mainPreviewImage: { width: '100%', height: '100%' },
+  imagePlaceholder: { alignItems: 'center' },
+  imagePlaceholderText: { marginTop: 10, fontSize: 16, fontWeight: '600' },
+  imageOverlayContainer: {
+    position: 'absolute',
+    bottom: 15,
+    right: 15,
+    flexDirection: 'row',
+  },
+  blurActionBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  thumbnailList: { marginTop: 20, width: '100%' },
+  thumbWrapper: { marginRight: 15, position: 'relative' },
+  thumbImage: { width: 80, height: 80, borderRadius: 16 },
+  thumbActionBtn: {
+    position: 'absolute',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  addMoreThumb: { width: 80, height: 80, borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#ccc', justifyContent: 'center', alignItems: 'center' },
+  updateImageBtn: { marginTop: 12, padding: 8 },
+  updateImageBtnText: { fontSize: 13, fontWeight: '600', opacity: 0.7, letterSpacing: 0.5 },
+  formSection: { marginBottom: 32 },
+  inputGroup: { marginBottom: 24 },
+  label: { fontSize: 13, fontWeight: 'bold', color: '#6E6E6E', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
+  underlineInput: { borderBottomWidth: 1.5, paddingVertical: 10, fontSize: 16 },
+  underlinePriceContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1.5, paddingVertical: 4 },
+  currencySymbol: { fontSize: 20, fontWeight: 'bold', marginRight: 8 },
+  priceInput: { flex: 1, fontSize: 20, fontWeight: '600' },
+  dimensionsRow: { flexDirection: 'row', gap: 20 },
+  dimInputWrapper: { flex: 1, borderBottomWidth: 1.5, paddingVertical: 8 },
+  dimLabel: { fontSize: 11, color: '#999', marginBottom: 4 },
+  dimInput: { fontSize: 16, fontWeight: '500' },
+  mainActionButton: { height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+  mainActionButtonText: { fontSize: 17, fontWeight: 'bold' },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
+  modalContent: { borderRadius: 32, padding: 24, width: '90%', maxHeight: '80%' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  modalItem: { paddingVertical: 18, borderBottomWidth: 1 },
+  modalCloseBtn: { paddingVertical: 16, borderRadius: 16, marginTop: 20 },
+});
 
 export default AddProductScreen;

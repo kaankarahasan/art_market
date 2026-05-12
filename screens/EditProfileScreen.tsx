@@ -8,6 +8,9 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Animated,
+  StatusBar,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,14 +20,14 @@ import { ref, putFile, getDownloadURL, deleteObject } from '@react-native-fireba
 import { auth, db, storage } from '../firebaseConfig';
 import ImagePicker from 'react-native-image-crop-picker';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { ThemeContext } from '../contexts/ThemeContext';
+import { useThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const EditProfileScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { isDarkTheme } = useContext(ThemeContext);
-  const styles = getStyles(isDarkTheme);
+  const { colors, isDarkTheme } = useThemeContext();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
 
@@ -34,6 +37,9 @@ const EditProfileScreen = () => {
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -155,9 +161,30 @@ const EditProfileScreen = () => {
     }
   };
 
+  useEffect(() => {
+    if (feedback) {
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+      const timer = setTimeout(() => {
+        if (feedback.type === 'success') hideFeedback();
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
+
+  const hideFeedback = () => {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+      const isSuccess = feedback?.type === 'success';
+      setFeedback(null);
+      if (isSuccess) {
+        navigation.goBack();
+      }
+    });
+  };
+
   const handleSave = async () => {
     if (!userId) return;
     try {
+      setUploading(true);
       let photoURL = image;
       if (image && !image.startsWith('https://')) {
         const uploadedURL = await uploadImage(image);
@@ -170,11 +197,12 @@ const EditProfileScreen = () => {
         photoURL: photoURL || '',
       });
 
-      Alert.alert(t('success'), t('profileUpdated'));
-      navigation.goBack();
+      setFeedback({ type: 'success', message: t('profileUpdated') });
     } catch (error: any) {
       console.error("Profile update error:", error);
-      Alert.alert(t('error'), error.message || 'Failed to update profile.');
+      setFeedback({ type: 'error', message: error.message || 'Profil güncellenirken hata oluştu.' });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -187,103 +215,156 @@ const EditProfileScreen = () => {
   }
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 20 }]}>
-      <Text style={styles.title}>{t('editProfileTitle')}</Text>
-
-      <TouchableOpacity onPress={image ? cropExistingImage : pickImage}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>{t('addPhoto')}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-
-      <View style={styles.photoButtons}>
-        <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-          <Text style={styles.photoButtonText}>{t('takeFromCamera')}</Text>
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} />
+      
+      {/* HEADER */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBackButton}>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.photoButton, { backgroundColor: '#ccc' }]}
-          onPress={removeImage}
-        >
-          <Text style={[styles.photoButtonText, { color: '#333' }]}>{t('removePhoto')}</Text>
-        </TouchableOpacity>
+        <Text style={[styles.largeTitle, { color: colors.text }]}>{t('editProfile')}</Text>
       </View>
 
-      {uploading && (
-        <ActivityIndicator
-          size="small"
-          color={isDarkTheme ? '#90caf9' : '#1976d2'}
-          style={{ marginBottom: 10 }}
-        />
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        style={styles.container} 
+        contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}
+      >
+        <View style={styles.avatarSection}>
+          <TouchableOpacity onPress={image ? cropExistingImage : pickImage} activeOpacity={0.8}>
+            {image ? (
+              <Image source={{ uri: image }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatarPlaceholder, { backgroundColor: colors.card }]}>
+                <Ionicons name="person-outline" size={40} color={colors.secondaryText} />
+              </View>
+            )}
+            <View style={[styles.cameraBadge, { backgroundColor: colors.primary }]}>
+              <Ionicons name="camera" size={16} color="#fff" />
+            </View>
+          </TouchableOpacity>
+          
+          <View style={styles.photoButtons}>
+            <TouchableOpacity style={[styles.photoButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={pickImage}>
+              <Text style={[styles.photoButtonText, { color: colors.text }]}>{t('addPhoto')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.photoButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={takePhoto}>
+              <Text style={[styles.photoButtonText, { color: colors.text }]}>{t('takeFromCamera')}</Text>
+            </TouchableOpacity>
+            {image && (
+              <TouchableOpacity style={[styles.photoButton, { backgroundColor: colors.card, borderColor: '#FF3B30' }]} onPress={removeImage}>
+                <Text style={[styles.photoButtonText, { color: '#FF3B30' }]}>{t('removePhoto')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.formSection}>
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.secondaryText }]}>{t('usernameLabel')}</Text>
+            <TextInput
+              style={[
+                styles.underlineInput, 
+                { borderBottomColor: focusedField === 'username' ? colors.primary : colors.border, color: colors.text }
+              ]}
+              placeholder={t('usernamePlaceholderEdit')}
+              placeholderTextColor={colors.secondaryText}
+              value={username}
+              onChangeText={setUsername}
+              onFocus={() => setFocusedField('username')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.secondaryText }]}>{t('bioLabel')}</Text>
+            <TextInput
+              style={[
+                styles.underlineInput, 
+                { borderBottomColor: focusedField === 'bio' ? colors.primary : colors.border, color: colors.text, minHeight: 40 }
+              ]}
+              placeholder={t('bioPlaceholder')}
+              placeholderTextColor={colors.secondaryText}
+              value={bio}
+              onChangeText={setBio}
+              multiline
+              onFocus={() => setFocusedField('bio')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
+        </View>
+
+        <TouchableOpacity 
+          style={[styles.mainActionButton, { backgroundColor: uploading ? colors.border : colors.text }]} 
+          onPress={handleSave}
+          disabled={uploading}
+        >
+          {uploading ? (
+            <ActivityIndicator color={colors.background} />
+          ) : (
+            <Text style={[styles.mainActionButtonText, { color: colors.background }]}>{t('saveButton')}</Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* FEEDBACK OVERLAY */}
+      {feedback && (
+        <Animated.View style={[styles.feedbackOverlay, { opacity: fadeAnim, backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+          <View style={[styles.feedbackContent, { backgroundColor: colors.card }]}>
+            <Ionicons 
+              name={feedback.type === 'success' ? 'checkmark-circle' : (feedback.type === 'warning' ? 'warning' : 'alert-circle')} 
+              size={54} 
+              color={feedback.type === 'success' ? '#4CD964' : (feedback.type === 'warning' ? '#FF9500' : '#FF3B30')} 
+            />
+            <Text style={[styles.feedbackMessage, { color: colors.text }]}>{feedback.message}</Text>
+            <TouchableOpacity style={[styles.closeFeedback, { backgroundColor: colors.text }]} onPress={hideFeedback}>
+              <Text style={{ color: colors.background, fontWeight: 'bold' }}>{t('close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       )}
-
-      <Text style={styles.label}>{t('usernameLabel')}</Text>
-      <TextInput
-        style={styles.input}
-        placeholder={t('usernamePlaceholderEdit')}
-        placeholderTextColor={isDarkTheme ? '#aaa' : '#666'}
-        value={username}
-        onChangeText={setUsername}
-      />
-
-      <Text style={styles.label}>{t('bioLabel')}</Text>
-      <TextInput
-        style={[styles.input, { height: 100 }]}
-        placeholder={t('bioPlaceholder')}
-        placeholderTextColor={isDarkTheme ? '#aaa' : '#666'}
-        value={bio}
-        onChangeText={setBio}
-        multiline
-      />
-
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>{t('saveButton')}</Text>
-      </TouchableOpacity>
     </View>
   );
 };
 
-const getStyles = (isDarkTheme: boolean) =>
-  StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: isDarkTheme ? '#121212' : '#fff' },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    title: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 20,
-      alignSelf: 'center',
-      color: isDarkTheme ? '#fff' : '#000',
-    },
-    label: { fontSize: 16, fontWeight: '500', marginTop: 10, marginBottom: 5, color: isDarkTheme ? '#ccc' : '#222' },
-    input: {
-      borderWidth: 1,
-      borderColor: isDarkTheme ? '#444' : '#ccc',
-      borderRadius: 10,
-      padding: 10,
-      fontSize: 16,
-      backgroundColor: isDarkTheme ? '#1e1e1e' : '#f9f9f9',
-      color: isDarkTheme ? '#fff' : '#000',
-    },
-    avatar: { width: 100, height: 100, borderRadius: 50, alignSelf: 'center', marginBottom: 10 },
-    avatarPlaceholder: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      backgroundColor: isDarkTheme ? '#333' : '#ddd',
-      justifyContent: 'center',
-      alignItems: 'center',
-      alignSelf: 'center',
-      marginBottom: 10,
-    },
-    avatarText: { color: isDarkTheme ? '#bbb' : '#666', fontSize: 14 },
-    photoButtons: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 20 },
-    photoButton: { backgroundColor: '#1976d2', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 6 },
-    photoButtonText: { color: '#fff', fontSize: 14 },
-    saveButton: { marginTop: 30, backgroundColor: '#4caf50', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
-    saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  });
+const styles = StyleSheet.create({
+  mainContainer: { flex: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  headerContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    paddingTop: 10,
+  },
+  headerBackButton: {
+    marginBottom: 12,
+    marginLeft: -5,
+  },
+  largeTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
+  container: { flex: 1, paddingHorizontal: 24 },
+  
+  avatarSection: { alignItems: 'center', marginBottom: 32, marginTop: 10 },
+  avatar: { width: 120, height: 120, borderRadius: 60 },
+  avatarPlaceholder: { width: 120, height: 120, borderRadius: 60, justifyContent: 'center', alignItems: 'center' },
+  cameraBadge: { position: 'absolute', bottom: 5, right: 5, width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  
+  photoButtons: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 20 },
+  photoButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
+  photoButtonText: { fontSize: 13, fontWeight: '600' },
+  formSection: { marginBottom: 32 },
+  inputGroup: { marginBottom: 24 },
+  label: { fontSize: 13, fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
+  underlineInput: { borderBottomWidth: 1.5, paddingVertical: 10, fontSize: 16, lineHeight: 22 },
+  mainActionButton: { height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 20, elevation: 4 },
+  mainActionButtonText: { fontSize: 17, fontWeight: 'bold', letterSpacing: 0.5 },
+  feedbackOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: 30 },
+  feedbackContent: { width: '100%', padding: 30, borderRadius: 32, alignItems: 'center', elevation: 20 },
+  feedbackMessage: { fontSize: 18, fontWeight: '600', textAlign: 'center', marginTop: 20, marginBottom: 30, lineHeight: 26 },
+  closeFeedback: { paddingHorizontal: 40, paddingVertical: 15, borderRadius: 16 },
+});
 
 export default EditProfileScreen;

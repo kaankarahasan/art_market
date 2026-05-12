@@ -1,3 +1,5 @@
+import { NavigatorScreenParams } from '@react-navigation/native';
+
 // Ürün tipi
 export type Product = {
   id: string;
@@ -28,12 +30,21 @@ export type Product = {
   has3DModel?: boolean;         // 3D model var mı?
 };
 
+// Main Tab Param Listesi
+export type MainTabParamList = {
+  HomeTab: undefined;
+  FavoritesTab: undefined;
+  SearchTab: undefined;
+  InboxTab: undefined;
+  ProfileTab: undefined;
+};
+
 // Root Stack Param Listesi
 export type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
   PasswordReset: undefined;
-  Main: undefined;
+  Main: NavigatorScreenParams<MainTabParamList> | undefined;
   Profile: { userId?: string };
   Followers: { userId: string };
   Following: { userId: string };
@@ -60,4 +71,6 @@ export type RootStackParamList = {
     dimensions?: { height?: number | null; width?: number | null; };
   };
   NotificationScreen: undefined;
+  Offer: { product: Product };
+  Checkout: { product: Product };
 };

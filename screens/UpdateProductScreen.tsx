@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -10,8 +10,13 @@ import {
   ActivityIndicator,
   ScrollView,
   Modal,
+  Animated,
+  StatusBar,
+  Dimensions,
   FlatList,
 } from 'react-native';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { launchImageLibrary } from 'react-native-image-picker';
 import ImagePicker from 'react-native-image-crop-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -24,7 +29,7 @@ import uuid from 'react-native-uuid';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { Product } from '../routes/types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type UpdateProductRouteProp = RouteProp<RootStackParamList, 'UpdateProduct'>;
 
@@ -33,7 +38,7 @@ const UpdateProductScreen = () => {
   const route = useRoute<UpdateProductRouteProp>();
   const { product } = route.params;
 
-  const { colors } = useThemeContext();
+  const { colors, isDarkTheme } = useThemeContext();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
 
@@ -49,6 +54,10 @@ const UpdateProductScreen = () => {
   const [category, setCategory] = useState(product.category || '');
   const [modalVisible, setModalVisible] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>(product.imageUrls || []);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
   const categories = [
     { label: t('cat_yagli_boya'), value: 'yagli_boya' },
@@ -82,60 +91,12 @@ const UpdateProductScreen = () => {
       if (pickedImages && Array.isArray(pickedImages)) {
         const uris = pickedImages.map((img) => img.path);
         setImageUrls((prev) => [...prev, ...uris]);
-        
       }
     } catch (err: any) {
       if (err.message !== 'User cancelled image selection') {
         console.warn(err);
         Alert.alert(t('error'), t('imagePickError'));
       }
-    }
-  };
-
-  const cropImage = async (uri: string, index: number) => {
-    try {
-      const cleanUri = uri.startsWith('http') ? uri : (uri.startsWith('file://') ? uri : `file://${uri}`);
-      
-      const image = await ImagePicker.openCropper({
-        path: cleanUri,
-        width: 1200,
-        height: 1200,
-        freeStyleCropEnabled: true,
-        cropping: true,
-        mediaType: 'photo',
-        cropperToolbarTitle: t('cropImage') || 'Görseli Kırp',
-        cropperActiveWidgetColor: '#FF3040',
-        cropperToolbarColor: '#121212',
-        cropperToolbarWidgetColor: '#FFFFFF',
-        hideBottomControls: false,
-      });
-
-      if (image.path) {
-        setImageUrls((prev) => {
-          const newUrls = [...prev];
-          newUrls[index] = image.path;
-          return newUrls;
-        });
-      }
-    } catch (error: any) {
-      if (error.message !== 'User cancelled image selection') {
-        console.error(error);
-        Alert.alert(t('error'), 'Görsel kırpılırken bir sorun oluştu.');
-      }
-    }
-  };
-
-  const uploadImageAsync = async (uri: string): Promise<string> => {
-    try {
-      const imageId = uuid.v4();
-      const storageRef = ref(storage, `product_images/${imageId}.jpg`);
-      await putFile(storageRef, uri);
-      const downloadURL = await getDownloadURL(storageRef);
-      return downloadURL;
-    } catch (error) {
-      console.error('Resim yükleme hatası:', error);
-      Alert.alert(t('error'), t('imageUploadError'));
-      return '';
     }
   };
 
@@ -149,23 +110,89 @@ const UpdateProductScreen = () => {
     setPrice(formatted);
   };
 
+  const removeImage = (index: number) => {
+    if (imageUrls.length <= 1) {
+      Alert.alert(t('warning'), t('atLeastOnePhoto'));
+      return;
+    }
+    setImageUrls((prev) => {
+      const newUrls = prev.filter((_, i) => i !== index);
+      if (selectedIndex >= newUrls.length) {
+        setSelectedIndex(Math.max(0, newUrls.length - 1));
+      }
+      return newUrls;
+    });
+  };
+
+  const cropImage = async (uri: string, index: number) => {
+    try {
+      const cropped = await ImagePicker.openCropper({
+        path: uri,
+        width: 1000,
+        height: 1000,
+        cropping: true,
+        mediaType: 'photo',
+      });
+      if (cropped.path) {
+        setImageUrls((prev) => {
+          const newUrls = [...prev];
+          newUrls[index] = cropped.path;
+          return newUrls;
+        });
+      }
+    } catch (err: any) {
+      if (err.message !== 'User cancelled image selection') {
+        console.warn(err);
+      }
+    }
+  };
+
+  const changeSingleImage = async (index: number) => {
+    try {
+      const pickedImage = await ImagePicker.openPicker({
+        mediaType: 'photo',
+        cropping: false,
+      });
+
+      if (pickedImage && pickedImage.path) {
+        setImageUrls((prev) => {
+          const newUrls = [...prev];
+          newUrls[index] = pickedImage.path;
+          return newUrls;
+        });
+      }
+    } catch (err: any) {
+      if (err.message !== 'User cancelled image selection') {
+        console.warn(err);
+      }
+    }
+  };
+
+  const uploadImageAsync = async (uri: string): Promise<string> => {
+    if (uri.startsWith('http')) return uri;
+    const imageId = uuid.v4();
+    const imagePath = `product_images/${imageId}.jpg`;
+    const imageRef = ref(storage, imagePath);
+    await putFile(imageRef, uri);
+    return await getDownloadURL(imageRef);
+  };
+
   const handleUpdate = async () => {
-    if (!title.trim() || !description.trim()) {
-      Alert.alert(t('warning'), t('titleAndDescRequired'));
+    if (!title.trim() || !description.trim() || !price.trim() || !category.trim()) {
+      Alert.alert(t('warning'), t('fillRequired'));
+      return;
+    }
+    if (imageUrls.length === 0) {
+      Alert.alert(t('warning'), t('atLeastOnePhoto'));
       return;
     }
 
-    setUploading(true);
-
     try {
-      const uploadedUrls: string[] = [];
-      for (const img of imageUrls) {
-        if (!img.startsWith('http')) {
-          const url = await uploadImageAsync(img);
-          if (url) uploadedUrls.push(url);
-        } else {
-          uploadedUrls.push(img);
-        }
+      setUploading(true);
+      const finalUrls: string[] = [];
+      for (const uri of imageUrls) {
+        const url = await uploadImageAsync(uri);
+        finalUrls.push(url);
       }
 
       await updateProduct(product.id, {
@@ -173,116 +200,201 @@ const UpdateProductScreen = () => {
         description,
         price: parseFloat(price.replace(/\./g, '')),
         category,
-        imageUrls: uploadedUrls,
-        mainImageUrl: uploadedUrls[0] || '',
+        imageUrls: finalUrls,
+        mainImageUrl: finalUrls[0],
       });
 
-      Alert.alert(t('success'), t('productUpdated'));
-      navigation.goBack();
+      setFeedback({ type: 'success', message: t('productUpdated') });
     } catch (error: any) {
-      console.error('Update product error:', error);
-      Alert.alert(t('error'), t('productUpdateError'));
+      console.error('Update error:', error);
+      setFeedback({ type: 'error', message: error.message || t('productUpdateError') });
     } finally {
       setUploading(false);
     }
   };
 
-  const removeImage = (index: number) => {
-    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+  useEffect(() => {
+    if (feedback) {
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+      const timer = setTimeout(() => {
+        if (feedback.type === 'success') hideFeedback();
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
+
+  const hideFeedback = () => {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+      const isSuccess = feedback?.type === 'success';
+      setFeedback(null);
+      if (isSuccess) navigation.goBack();
+    });
+  };
+
+  const renderDraggableItem = ({ item, drag, isActive }: RenderItemParams<string>) => {
+    const index = imageUrls.indexOf(item);
+    const isSelected = selectedIndex === index;
+    return (
+      <ScaleDecorator>
+        <TouchableOpacity
+          onLongPress={drag}
+          disabled={isActive}
+          style={[
+            styles.thumbWrapper,
+            { 
+              opacity: isActive ? 0.6 : 1, 
+              borderColor: isSelected ? colors.primary : 'transparent', 
+              borderWidth: 2 
+            }
+          ]}
+          onPress={() => setSelectedIndex(index)}
+        >
+          <Image source={{ uri: item }} style={styles.thumbImage} />
+          {isSelected && (
+            <View style={styles.selectedOverlay}>
+              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+            </View>
+          )}
+        </TouchableOpacity>
+      </ScaleDecorator>
+    );
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}>
-      <Text style={[styles.label, { color: colors.text }]}>{t('productNameLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-        value={title}
-        onChangeText={setTitle}
-        placeholder={t('productName')}
-        placeholderTextColor={colors.text + '99'}
-      />
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} />
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
+        {/* HEADER */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBackButton}>
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.largeTitle, { color: colors.text }]}>{t('editProduct')}</Text>
+        </View>
 
-      <Text style={[styles.label, { color: colors.text }]}>{t('descriptionLabel')}</Text>
-      <TextInput
-        style={[
-          styles.input,
-          { height: 80, borderColor: colors.border, color: colors.text },
-        ]}
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        placeholder={t('description')}
-        placeholderTextColor={colors.text + '99'}
-      />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingBottom: 40 + insets.bottom }}>
+          {/* IMAGE SECTION */}
+          <View style={styles.imageSection}>
+             <View style={[styles.mainImageCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+               {imageUrls.length > 0 ? (
+                 <>
+                   <Image source={{ uri: imageUrls[selectedIndex] || imageUrls[0] }} style={styles.mainPreviewImage} />
+                   <View style={styles.imageOverlayContainer}>
+                     <TouchableOpacity 
+                       style={[styles.blurActionBtn, { backgroundColor: 'rgba(0,0,0,0.5)' }]} 
+                       onPress={() => changeSingleImage(selectedIndex)}
+                     >
+                       <Ionicons name="camera" size={18} color="#fff" />
+                       <Text style={styles.blurBtnLabel}>{t('changePhoto') || 'Değiştir'}</Text>
+                     </TouchableOpacity>
 
-      <Text style={[styles.label, { color: colors.text }]}>{t('priceLabel')}</Text>
-      <View style={[styles.priceInputContainer, { borderColor: colors.border }]}>
-        <Text style={[styles.currencySymbol, { color: colors.text }]}>₺</Text>
-        <TextInput
-          style={[styles.priceInput, { color: colors.text }]}
-          value={price}
-          onChangeText={handlePriceChange}
-          keyboardType="number-pad"
-          placeholder="0"
-          placeholderTextColor={colors.text + '99'}
-        />
-      </View>
+                     <TouchableOpacity 
+                       style={[styles.blurActionBtn, { backgroundColor: 'rgba(0,0,0,0.5)', marginHorizontal: 8 }]} 
+                       onPress={() => cropImage(imageUrls[selectedIndex], selectedIndex)}
+                     >
+                       <Ionicons name="crop" size={18} color="#fff" />
+                       <Text style={styles.blurBtnLabel}>{t('crop') || 'Kırp'}</Text>
+                     </TouchableOpacity>
 
-      <Text style={[styles.label, { color: colors.text }]}>{t('categoryLabel')}</Text>
-      <TouchableOpacity
-        style={[styles.input, { borderColor: colors.border, justifyContent: 'center' }]}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={{ color: colors.text }}>
-          {category ? getCategoryLabel(category) : t('selectCategory')}
-        </Text>
-      </TouchableOpacity>
+                     <TouchableOpacity 
+                       style={[styles.blurActionBtn, { backgroundColor: 'rgba(255,59,48,0.6)' }]} 
+                       onPress={() => removeImage(selectedIndex)}
+                     >
+                       <Ionicons name="trash-outline" size={18} color="#fff" />
+                       <Text style={styles.blurBtnLabel}>{t('remove') || 'Kaldır'}</Text>
+                     </TouchableOpacity>
+                   </View>
+                 </>
+               ) : (
+                 <TouchableOpacity onPress={pickImage} style={styles.imagePlaceholder}>
+                   <Ionicons name="image-outline" size={48} color={colors.secondaryText} />
+                   <Text style={{ color: colors.secondaryText, marginTop: 8 }}>Görsel Seç</Text>
+                 </TouchableOpacity>
+               )}
+             </View>
 
-      <TouchableOpacity
-        style={[styles.imagePicker, { backgroundColor: colors.card }]}
-        onPress={pickImage}
-      >
-        <Text style={[styles.imagePickerText, { color: colors.primary }]}>
-          {t('addImage')}
-        </Text>
-      </TouchableOpacity>
+             <View style={styles.thumbnailArea}>
+               <Text style={[styles.galleryTitle, { color: colors.secondaryText }]}>{t('galleryHint')}</Text>
+               <GestureHandlerRootView style={{ height: 100 }}>
+                 <DraggableFlatList
+                    data={imageUrls}
+                    onDragEnd={({ data }) => setImageUrls(data)}
+                    keyExtractor={(item) => item}
+                    renderItem={renderDraggableItem}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                 />
+               </GestureHandlerRootView>
+             </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 15 }}>
-        {imageUrls.map((img, index) => (
-          <View key={index} style={{ marginRight: 10, position: 'relative' }}>
-            <TouchableOpacity onPress={() => cropImage(img, index)} activeOpacity={0.7}>
-              <View style={{ position: 'relative' }}>
-                <Image source={{ uri: img }} style={styles.previewImage} />
-                <View style={[styles.cropIconBadge, { borderColor: colors.background }]}>
-                  <Ionicons name="crop" size={14} color="#fff" />
-                </View>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => removeImage(index)}
-              style={styles.removeImageButton}
-            >
-              <Text style={styles.removeImageText}>X</Text>
-            </TouchableOpacity>
+             <TouchableOpacity onPress={pickImage} style={styles.updateImageBtn}>
+               <Ionicons name="add-circle" size={20} color={colors.primary} />
+               <Text style={[styles.blurBtnLabel, { color: colors.primary, marginLeft: 6 }]}>{t('addPhoto')}</Text>
+             </TouchableOpacity>
           </View>
-        ))}
-      </ScrollView>
 
-      <TouchableOpacity
-        style={[
-          styles.updateButton,
-          { backgroundColor: uploading ? colors.border : colors.primary },
-        ]}
-        onPress={handleUpdate}
-        disabled={uploading}
-      >
-        {uploading ? (
-          <ActivityIndicator color={colors.background} />
-        ) : (
-          <Text style={styles.updateButtonText}>{t('update2')}</Text>
-        )}
-      </TouchableOpacity>
+          {/* FORM SECTION */}
+          <View style={styles.formSection}>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.secondaryText }]}>{t('productNameLabel')}</Text>
+              <TextInput
+                style={[styles.underlineInput, { borderBottomColor: focusedField === 'title' ? colors.primary : colors.border, color: colors.text }]}
+                value={title}
+                onChangeText={setTitle}
+                onFocus={() => setFocusedField('title')}
+                onBlur={() => setFocusedField(null)}
+              />
+            </View>
 
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.secondaryText }]}>{t('descriptionLabel')}</Text>
+              <TextInput
+                style={[styles.underlineInput, { borderBottomColor: focusedField === 'desc' ? colors.primary : colors.border, color: colors.text }]}
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                onFocus={() => setFocusedField('desc')}
+                onBlur={() => setFocusedField(null)}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.secondaryText }]}>{t('priceLabel')}</Text>
+              <View style={[styles.underlinePriceContainer, { borderBottomColor: focusedField === 'price' ? colors.primary : colors.border }]}>
+                <Text style={[styles.currencySymbol, { color: colors.text }]}>₺</Text>
+                <TextInput
+                  style={[styles.priceInput, { color: colors.text }]}
+                  keyboardType="number-pad"
+                  value={price}
+                  onChangeText={handlePriceChange}
+                  onFocus={() => setFocusedField('price')}
+                  onBlur={() => setFocusedField(null)}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.secondaryText }]}>{t('categoryLabel')}</Text>
+              <TouchableOpacity
+                style={[styles.underlineInput, { borderBottomColor: colors.border }]}
+                onPress={() => setModalVisible(true)}
+              >
+                <Text style={{ color: colors.text, fontSize: 16 }}>{getCategoryLabel(category)}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.mainActionButton, { backgroundColor: uploading ? colors.border : colors.text }]}
+            onPress={handleUpdate}
+            disabled={uploading}
+          >
+            {uploading ? <ActivityIndicator color={colors.background} /> : <Text style={[styles.mainActionButtonText, { color: colors.background }]}>{t('save')}</Text>}
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+
+      {/* CATEGORY MODAL */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
@@ -298,98 +410,103 @@ const UpdateProductScreen = () => {
                     setModalVisible(false);
                   }}
                 >
-                  <Text style={{ color: colors.text }}>{item.label}</Text>
+                  <Text style={{ color: colors.text, fontSize: 16 }}>{item.label}</Text>
                 </TouchableOpacity>
               )}
             />
-            <TouchableOpacity style={[styles.closeButton, { backgroundColor: colors.primary }]} onPress={() => setModalVisible(false)}>
+            <TouchableOpacity style={[styles.modalCloseBtn, { backgroundColor: colors.text }]} onPress={() => setModalVisible(false)}>
               <Text style={{ color: colors.background, textAlign: 'center', fontWeight: 'bold' }}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </ScrollView>
+
+      {/* FEEDBACK OVERLAY */}
+      {feedback && (
+        <Animated.View style={[styles.feedbackOverlay, { opacity: fadeAnim, backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+          <View style={[styles.feedbackContent, { backgroundColor: colors.card }]}>
+            <Ionicons 
+              name={feedback.type === 'success' ? 'checkmark-circle' : (feedback.type === 'warning' ? 'warning' : 'alert-circle')} 
+              size={54} 
+              color={feedback.type === 'success' ? '#4CD964' : (feedback.type === 'warning' ? '#FF9500' : '#FF3B30')} 
+            />
+            <Text style={[styles.feedbackMessage, { color: colors.text }]}>{feedback.message}</Text>
+            <TouchableOpacity style={[styles.closeFeedback, { backgroundColor: colors.text }]} onPress={hideFeedback}>
+              <Text style={{ color: colors.background, fontWeight: 'bold' }}>{t('close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      )}
+    </View>
   );
 };
 
-export default UpdateProductScreen;
-
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 15,
+  mainContainer: { flex: 1 },
+  headerContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    paddingTop: 10,
   },
-  label: { fontWeight: 'bold', marginBottom: 5 },
-  priceInputContainer: {
+  headerBackButton: {
+    marginBottom: 12,
+    marginLeft: -5,
+  },
+  largeTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
+  imageSection: { alignItems: 'center', marginBottom: 32 },
+  mainImageCard: { width: '100%', height: 320, borderRadius: 24, borderWidth: 1, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', elevation: 3 },
+  mainPreviewImage: { width: '100%', height: '100%' },
+  imagePlaceholder: { alignItems: 'center' },
+  imageOverlayContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
+    justifyContent: 'center',
+    paddingBottom: 15,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingTop: 10,
+  },
+  blurActionBtn: {
+    flexDirection: 'row',
+    height: 38,
+    borderRadius: 19,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 6,
-    marginBottom: 15,
-    paddingHorizontal: 10,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  currencySymbol: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 5,
-  },
-  priceInput: {
-    flex: 1,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  imagePicker: {
-    padding: 12,
-    alignItems: 'center',
-    borderRadius: 5,
-    marginBottom: 15,
-  },
-  imagePickerText: { fontWeight: '600' },
-  previewImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 8,
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: '#ff5252',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeImageText: { color: '#fff', fontWeight: 'bold' },
-  cropIconBadge: {
-    position: 'absolute',
-    bottom: -4,
-    right: -4,
-    backgroundColor: '#333',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-  },
-  updateButton: {
-    paddingVertical: 15,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  updateButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalContent: { borderRadius: 10, padding: 20, width: '80%', maxHeight: '70%' },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
-  modalItem: { padding: 12, borderBottomWidth: 1 },
-  closeButton: { padding: 12, borderRadius: 10, marginTop: 10 },
+  blurBtnLabel: { color: '#fff', fontSize: 12, fontWeight: '600', marginLeft: 6 },
+  thumbnailArea: { marginTop: 24, width: '100%' },
+  galleryTitle: { fontSize: 12, fontWeight: '600', marginBottom: 12, paddingHorizontal: 4 },
+  thumbWrapper: { width: 90, height: 90, borderRadius: 16, marginRight: 12, overflow: 'hidden', position: 'relative' },
+  thumbImage: { width: '100%', height: '100%' },
+  selectedOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  updateImageBtn: { marginTop: 12, flexDirection: 'row', alignItems: 'center', padding: 10 },
+  formSection: { marginBottom: 32 },
+  inputGroup: { marginBottom: 24 },
+  label: { fontSize: 13, fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
+  underlineInput: { borderBottomWidth: 1.5, paddingVertical: 10, fontSize: 16 },
+  underlinePriceContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1.5, paddingVertical: 4 },
+  currencySymbol: { fontSize: 20, fontWeight: 'bold', marginRight: 8 },
+  priceInput: { flex: 1, fontSize: 20, fontWeight: '600' },
+  mainActionButton: { height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+  mainActionButtonText: { fontSize: 17, fontWeight: 'bold' },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
+  modalContent: { borderRadius: 32, padding: 24, width: '90%', maxHeight: '80%' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  modalItem: { paddingVertical: 18, borderBottomWidth: 1 },
+  modalCloseBtn: { paddingVertical: 16, borderRadius: 16, marginTop: 20 },
+  feedbackOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: 30 },
+  feedbackContent: { width: '100%', padding: 30, borderRadius: 32, alignItems: 'center', elevation: 20 },
+  feedbackMessage: { fontSize: 18, fontWeight: '600', textAlign: 'center', marginTop: 20, marginBottom: 30 },
+  closeFeedback: { paddingHorizontal: 40, paddingVertical: 15, borderRadius: 16 },
 });
+
+export default UpdateProductScreen;

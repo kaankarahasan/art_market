@@ -22,15 +22,12 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { RootStackParamList } from '../routes/types';
 
 const { width, height } = Dimensions.get('window');
 
-type RootStackParamList = {
-  Login: undefined;
-  Main: undefined;
-};
 
-type SignUpScreenProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
+type SignUpScreenProp = NativeStackNavigationProp<RootStackParamList, 'SignUp'>;
 
 const SignUpScreen = () => {
   const navigation = useNavigation<SignUpScreenProp>();

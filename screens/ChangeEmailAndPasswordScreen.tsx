@@ -7,25 +7,33 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
+  Animated,
+  StatusBar,
+  ScrollView,
 } from 'react-native';
 import ReactNativeFirebaseAuth from '@react-native-firebase/auth';
 import { auth } from '../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { ThemeContext } from '../contexts/ThemeContext';
+import { useThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const ChangeEmailAndPasswordScreen = () => {
   const user = auth.currentUser;
   const navigation = useNavigation();
 
-  const { isDarkTheme } = useContext(ThemeContext);
-  const styles = getStyles(isDarkTheme);
+  const { colors, isDarkTheme } = useThemeContext();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newEmail, setNewEmail] = useState(user?.email || '');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
   const reauthenticate = async (password: string) => {
     if (!user || !user.email) throw new Error('Kullanıcı bulunamadı');
@@ -33,14 +41,34 @@ const ChangeEmailAndPasswordScreen = () => {
     await user.reauthenticateWithCredential(credential);
   };
 
+  React.useEffect(() => {
+    if (feedback) {
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+      const timer = setTimeout(() => {
+        if (feedback.type === 'success') hideFeedback();
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
+
+  const hideFeedback = () => {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+      const isSuccess = feedback?.type === 'success';
+      setFeedback(null);
+      if (isSuccess) {
+        navigation.goBack();
+      }
+    });
+  };
+
   const handleUpdate = async () => {
     if (!user) {
-      Alert.alert(t('error'), t('loginRequired'));
+      setFeedback({ type: 'error', message: t('loginRequired') });
       return;
     }
 
     if (!currentPassword) {
-      Alert.alert(t('error'), t('currentPasswordPlaceholder')); // or a more specific message, but context implies we just need a string
+      setFeedback({ type: 'warning', message: t('currentPasswordPlaceholder') });
       return;
     }
 
@@ -55,72 +83,128 @@ const ChangeEmailAndPasswordScreen = () => {
 
       if (newPassword) {
         if (newPassword.length < 6) {
-          Alert.alert(t('error'), t('newPasswordPlaceholder'));
+          setFeedback({ type: 'warning', message: t('newPasswordPlaceholder') });
           setLoading(false);
           return;
         }
         await user.updatePassword(newPassword);
       }
 
-      Alert.alert(t('success'), t('updateSuccess'));
-      navigation.goBack();
+      setFeedback({ type: 'success', message: t('updateSuccess') });
     } catch (error: any) {
       console.error("Update credentials error:", error);
       let message = t('error');
-      if (error.code === 'auth/wrong-password') message = 'Mevcut şifre yanlış.'; // will add later if needed
+      if (error.code === 'auth/wrong-password') message = 'Mevcut şifre yanlış.';
       else if (error.code === 'auth/invalid-email') message = 'Geçersiz e-posta adresi.';
       else if (error.code === 'auth/email-already-in-use') message = 'Bu e-posta zaten kullanılıyor.';
-      Alert.alert(t('error'), message);
+      else if (error.code === 'auth/requires-recent-login') message = 'Güvenlik nedeniyle bu işlem için tekrar giriş yapmalısınız.';
+      setFeedback({ type: 'error', message });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{t('changeCredentialsTitle')}</Text>
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} />
+      
+      {/* HEADER */}
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ backgroundColor: colors.background }}>
+        <View style={[styles.header, { borderBottomColor: isDarkTheme ? '#333' : '#eee' }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('changeEmailPassword')}</Text>
+        </View>
+      </SafeAreaView>
 
-      <Text style={styles.label}>{t('currentPassword')}</Text>
-      <TextInput
-        secureTextEntry
-        style={styles.input}
-        placeholder={t('currentPasswordPlaceholder')}
-        placeholderTextColor={isDarkTheme ? '#999' : '#666'}
-        value={currentPassword}
-        onChangeText={setCurrentPassword}
-      />
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        style={styles.container} 
+        contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}
+      >
+        <View style={styles.formSection}>
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.secondaryText }]}>{t('currentPassword')}</Text>
+            <TextInput
+              secureTextEntry
+              style={[
+                styles.underlineInput, 
+                { borderBottomColor: focusedField === 'current' ? colors.primary : colors.border, color: colors.text }
+              ]}
+              placeholder={t('currentPasswordPlaceholder')}
+              placeholderTextColor={colors.secondaryText}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              onFocus={() => setFocusedField('current')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
 
-      <Text style={styles.label}>{t('newEmail')}</Text>
-      <TextInput
-        keyboardType="email-address"
-        autoCapitalize="none"
-        style={styles.input}
-        placeholder={t('newEmailPlaceholder')}
-        placeholderTextColor={isDarkTheme ? '#999' : '#666'}
-        value={newEmail}
-        onChangeText={setNewEmail}
-      />
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.secondaryText }]}>{t('newEmail')}</Text>
+            <TextInput
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={[
+                styles.underlineInput, 
+                { borderBottomColor: focusedField === 'email' ? colors.primary : colors.border, color: colors.text }
+              ]}
+              placeholder={t('newEmailPlaceholder')}
+              placeholderTextColor={colors.secondaryText}
+              value={newEmail}
+              onChangeText={setNewEmail}
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
 
-      <Text style={styles.label}>{t('newPassword')}</Text>
-      <TextInput
-        secureTextEntry
-        style={styles.input}
-        placeholder={t('newPasswordPlaceholder')}
-        placeholderTextColor={isDarkTheme ? '#999' : '#666'}
-        value={newPassword}
-        onChangeText={setNewPassword}
-      />
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.secondaryText }]}>{t('newPassword')}</Text>
+            <TextInput
+              secureTextEntry
+              style={[
+                styles.underlineInput, 
+                { borderBottomColor: focusedField === 'new' ? colors.primary : colors.border, color: colors.text }
+              ]}
+              placeholder={t('newPasswordPlaceholder')}
+              placeholderTextColor={colors.secondaryText}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              onFocus={() => setFocusedField('new')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
+        </View>
 
-      {loading ? (
-        <ActivityIndicator
-          size="large"
-          color={isDarkTheme ? '#90caf9' : '#1976d2'}
-          style={{ marginTop: 20 }}
-        />
-      ) : (
-        <TouchableOpacity style={styles.button} onPress={handleUpdate}>
-          <Text style={styles.buttonText}>{t('update')}</Text>
+        <TouchableOpacity 
+          style={[styles.mainActionButton, { backgroundColor: loading ? colors.border : colors.text }]} 
+          onPress={handleUpdate}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.background} />
+          ) : (
+            <Text style={[styles.mainActionButtonText, { color: colors.background }]}>{t('update')}</Text>
+          )}
         </TouchableOpacity>
+      </ScrollView>
+
+      {/* FEEDBACK OVERLAY */}
+      {feedback && (
+        <Animated.View style={[styles.feedbackOverlay, { opacity: fadeAnim, backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+          <View style={[styles.feedbackContent, { backgroundColor: colors.card }]}>
+            <Ionicons 
+              name={feedback.type === 'success' ? 'checkmark-circle' : (feedback.type === 'warning' ? 'warning' : 'alert-circle')} 
+              size={54} 
+              color={feedback.type === 'success' ? '#4CD964' : (feedback.type === 'warning' ? '#FF9500' : '#FF3B30')} 
+            />
+            <Text style={[styles.feedbackMessage, { color: colors.text }]}>{feedback.message}</Text>
+            <TouchableOpacity style={[styles.closeFeedback, { backgroundColor: colors.text }]} onPress={hideFeedback}>
+              <Text style={{ color: colors.background, fontWeight: 'bold' }}>{t('close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -128,45 +212,61 @@ const ChangeEmailAndPasswordScreen = () => {
 
 export default ChangeEmailAndPasswordScreen;
 
-const getStyles = (isDarkTheme: boolean) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      padding: 20,
-      backgroundColor: isDarkTheme ? '#121212' : '#fff',
-    },
-    title: {
-      fontSize: 22,
-      fontWeight: 'bold',
-      marginBottom: 24,
-      alignSelf: 'center',
-      color: isDarkTheme ? '#fff' : '#000',
-    },
-    label: {
-      fontSize: 16,
-      marginBottom: 6,
-      marginTop: 12,
-      color: isDarkTheme ? '#ccc' : '#222',
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: isDarkTheme ? '#444' : '#ccc',
-      backgroundColor: isDarkTheme ? '#1e1e1e' : '#fff',
-      color: isDarkTheme ? '#fff' : '#000',
-      borderRadius: 8,
-      padding: 12,
-      fontSize: 16,
-    },
-    button: {
-      backgroundColor: isDarkTheme ? '#90caf9' : '#1976d2',
-      paddingVertical: 14,
-      borderRadius: 10,
-      marginTop: 30,
-      alignItems: 'center',
-    },
-    buttonText: {
-      color: isDarkTheme ? '#000' : '#fff',
-      fontSize: 18,
-      fontWeight: 'bold',
-    },
-  });
+const styles = StyleSheet.create({
+  mainContainer: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  headerTitle: { fontSize: 20, fontWeight: 'bold' },
+  backButton: { paddingRight: 10 },
+  container: { flex: 1, padding: 24 },
+  
+  formSection: { marginBottom: 32, marginTop: 10 },
+  inputGroup: { marginBottom: 24 },
+  label: { fontSize: 13, fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
+  underlineInput: {
+    borderBottomWidth: 1.5,
+    paddingVertical: 10,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+
+  mainActionButton: {
+    height: 60,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 4,
+  },
+  mainActionButtonText: { fontSize: 17, fontWeight: 'bold', letterSpacing: 0.5 },
+
+  feedbackOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    padding: 30,
+  },
+  feedbackContent: {
+    width: '100%',
+    padding: 30,
+    borderRadius: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.3,
+    shadowRadius: 40,
+    elevation: 20,
+  },
+  feedbackMessage: { fontSize: 18, fontWeight: '600', textAlign: 'center', marginTop: 20, marginBottom: 30, lineHeight: 26 },
+  closeFeedback: { paddingHorizontal: 40, paddingVertical: 15, borderRadius: 16 },
+});

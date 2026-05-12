@@ -11,7 +11,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import { getMessaging, onMessage, onNotificationOpenedApp, getInitialNotification } from '@react-native-firebase/messaging';
+import messaging from '@react-native-firebase/messaging';
 
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
@@ -38,6 +38,8 @@ import PasswordResetScreen from './screens/PasswordResetScreen';
 import SearchScreen from './screens/SearchScreen';
 import ViewInRoomScreen from './screens/ViewInRoomScreen';
 import NotificationScreen from './screens/NotificationScreen';
+import OfferScreen from './screens/OfferScreen';
+import CheckoutScreen from './screens/CheckoutScreen';
 
 import { RootStackParamList } from './routes/types';
 import { FavoriteUsersProvider } from './contexts/FavoritesContext';
@@ -94,7 +96,7 @@ function AppContent() {
   React.useEffect(() => {
     // ─── Foreground mesajları (uygulama açıkken gelen bildirimler) ───────────
     // Foreground'da FCM otomatik bildirim göstermez; biz handle ederiz
-    const unsubscribeForeground = onMessage(getMessaging(), async (remoteMessage) => {
+    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
       console.log('[FCM] Foreground mesaj:', remoteMessage.notification?.title);
       // Foreground'da bildirim göstermek için react-native'in Notification API'si yok,
       // FCM'nin onMessage'ı sadece data alır. Kullanıcı uygulamadaysa zaten görür.
@@ -102,7 +104,7 @@ function AppContent() {
     });
 
     // ─── Arka planda bildirime tıklanınca (uygulama arka planda açık) ────────
-    const unsubscribeBackground = onNotificationOpenedApp(getMessaging(), (remoteMessage) => {
+    const unsubscribeBackground = messaging().onNotificationOpenedApp((remoteMessage) => {
       console.log('[FCM] Arka planda bildirime tıklandı:', remoteMessage.data);
       if (remoteMessage.data) {
         navigateToChat(remoteMessage.data);
@@ -110,7 +112,7 @@ function AppContent() {
     });
 
     // ─── Uygulama kapalıyken bildirime tıklanınca (quit state) ───────────────
-    getInitialNotification(getMessaging())
+    messaging().getInitialNotification()
       .then((remoteMessage) => {
         if (remoteMessage?.data) {
           console.log('[FCM] Kapalıyken bildirime tıklandı:', remoteMessage.data);
@@ -152,21 +154,23 @@ function AppContent() {
             <Stack.Screen name="Sold" component={SoldScreen} options={{ title: 'Sold Products' }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'User Profile' }} />
-            <Stack.Screen name="OtherProfile" component={OtherProfileScreen} options={{ title: 'Other Profile' }} />
+            <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="OtherProfile" component={OtherProfileScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="UpdateProduct" component={UpdateProductScreen} options={{ title: 'Update Product' }} />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-            <Stack.Screen name="ChangeEmailAndPassword" component={ChangeEmailAndPasswordScreen} />
-            <Stack.Screen name="About" component={AboutScreen} />
-            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-            <Stack.Screen name="TermsOfService" component={TermsOfUseScreen} />
+            <Stack.Screen name="UpdateProduct" component={UpdateProductScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ChangeEmailAndPassword" component={ChangeEmailAndPasswordScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="About" component={AboutScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="TermsOfService" component={TermsOfUseScreen} options={{ headerShown: false }} />
             <Stack.Screen name="PrivacyFollowerCommentSettings" component={PrivacyFollowerCommentSettingsScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Search" component={SearchScreen} options={{ headerShown: false }} />
             <Stack.Screen name="GeminiChat" component={GeminiChatScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ViewInRoom" component={ViewInRoomScreen} options={{ headerShown: false, presentation: 'fullScreenModal', orientation: 'landscape' }} />
             <Stack.Screen name="NotificationScreen" component={NotificationScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Offer" component={OfferScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </NavigationContainer>
       </StripeProvider>

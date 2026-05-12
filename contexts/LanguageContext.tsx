@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type Language = 'tr' | 'en';
@@ -60,6 +60,7 @@ const translations = {
     notifications: 'Bildirimler',
     pushNotifications: 'Push Bildirimleri',
     productNotifications: 'Ürün Bildirimleri',
+    noNotifications: 'Henüz bildirim yok.',
     about: 'Hakkında',
     aboutUs: 'Hakkımızda',
     privacyPolicy: 'Gizlilik Politikası',
@@ -85,6 +86,7 @@ const translations = {
     follow: 'Takip Et',
     message: 'Mesaj',
     noProducts: 'Henüz ürün eklememiş.',
+    noArtworksYet: 'Henüz eser bulunmuyor.',
 
     // Product
     productName: 'Ürün Adı',
@@ -97,14 +99,17 @@ const translations = {
     height: 'Yükseklik',
     width: 'Genişlik',
     yearPlaceholder: 'Yapım yılı (örn: 2024)',
-    photos: 'Fotoğraflar (max 3)',
+    yearLabel: 'Yapım Yılı',
+    photos: 'Fotoğraflar (max 5)',
+    pickPhotos: 'Fotoğraf Seç',
+    changePhoto: 'Fotoğrafı Değiştir',
     pickFromGallery: 'Galeriden Seç',
     takeFromCamera: 'Kameradan Çek',
     save: 'Kaydet',
     addNewProduct: 'Yeni Eser Ekle',
     productAdded: 'Ürün başarıyla eklendi.',
     productAddError: 'Ürün eklenirken bir sorun oluştu.',
-    maxPhotos: 'En fazla 3 fotoğraf ekleyebilirsiniz.',
+    maxPhotos: 'En fazla 5 fotoğraf ekleyebilirsiniz.',
     validYear: 'Lütfen geçerli bir yıl girin.',
     fillRequired: 'Lütfen tüm zorunlu alanları doldurun.',
     titleAndDescRequired: 'Başlık ve açıklama zorunludur.',
@@ -116,6 +121,11 @@ const translations = {
     doYouWantToCrop: 'Görseli kırpmak ister misiniz?',
     yes: 'Evet',
     no: 'Hayır',
+    atLeastOnePhoto: 'En az bir fotoğraf seçmelisiniz.',
+    editProduct: 'Eseri Düzenle',
+    crop: 'Kırp',
+    remove: 'Kaldır',
+    galleryHint: 'Görselleri sürükleyerek sıralayabilirsiniz',
 
     // Product Detail
     sendMessage: 'Mesaj Gönder',
@@ -127,6 +137,7 @@ const translations = {
     otherProducts: 'Diğer Ürünleri',
     noOtherProducts: 'Bu satıcının başka bir ürünü bulunmamaktadır.',
     seller: 'Satıcı',
+    buyer: 'Alıcı',
 
     // Edit Profile
     editProfileTitle: 'Profil Düzenle',
@@ -136,6 +147,7 @@ const translations = {
     bioLabel: 'Bio',
     usernamePlaceholderEdit: 'Kullanıcı adınızı girin',
     bioPlaceholder: 'Kendinizden bahsedin',
+    securitySettings: 'Güvenlik Ayarları',
     saveButton: 'Kaydet',
     profileUpdated: 'Profil güncellendi!',
 
@@ -277,6 +289,30 @@ const translations = {
 
     // ViewInRoom
     viewInRoomError: 'Görüntülenecek bir görsel bulunamadı.',
+
+    // Offer System
+    makeOffer: 'Teklif Ver',
+    offers: 'Teklifler',
+    offerAmount: 'Teklif Tutarı',
+    offerNote: 'Teklif Notu',
+    offerNotePlaceholder: 'Not yazın...',
+    sendOffer: 'Teklif Gönder',
+    cancelOffer: 'Teklifi Geri Çek',
+    acceptOffer: 'Kabul Et',
+    rejectOffer: 'Reddet',
+    offerAccepted: 'Teklif Kabul Edildi',
+    offerRejected: 'Teklif Reddedildi',
+    offerCancelled: 'Teklif İptal Edildi',
+    offerPending: 'Bekliyor',
+    myOffers: 'Tekliflerim',
+    receivedOffers: 'Gelen Teklifler',
+    priceWithDiscount: '%{discount} İndirimli: ₺{price}',
+    loadingNotifications: 'Bildirimler yükleniyor...',
+    loadingOffers: 'Teklifler yükleniyor...',
+    offerSentSuccess: 'Teklifiniz başarıyla gönderildi.',
+    offerStatusUpdated: 'Teklif durumu güncellendi.',
+    alreadyOffered: 'Bu ürün için zaten aktif bir teklifiniz bulunuyor.',
+    offerAddError: 'Teklif gönderilirken bir hata oluştu.',
   },
 
   en: {
@@ -334,6 +370,7 @@ const translations = {
     notifications: 'Notifications',
     pushNotifications: 'Push Notifications',
     productNotifications: 'Product Notifications',
+    noNotifications: 'No notifications yet.',
     about: 'About',
     aboutUs: 'About Us',
     privacyPolicy: 'Privacy Policy',
@@ -359,6 +396,7 @@ const translations = {
     follow: 'Follow',
     message: 'Message',
     noProducts: 'No products added yet.',
+    noArtworksYet: 'No artworks yet.',
 
     // Product
     productName: 'Product Name',
@@ -371,14 +409,17 @@ const translations = {
     height: 'Height',
     width: 'Width',
     yearPlaceholder: 'Year (e.g., 2024)',
-    photos: 'Photos (max 3)',
+    yearLabel: 'Production Year',
+    photos: 'Photos (max 5)',
+    pickPhotos: 'Pick Photos',
+    changePhoto: 'Change Photo',
     pickFromGallery: 'Pick from Gallery',
     takeFromCamera: 'Take from Camera',
     save: 'Save',
     addNewProduct: 'Add New Artwork',
     productAdded: 'Product added successfully.',
     productAddError: 'An error occurred while adding the product.',
-    maxPhotos: 'You can add a maximum of 3 photos.',
+    maxPhotos: 'You can add a maximum of 5 photos.',
     validYear: 'Please enter a valid year.',
     fillRequired: 'Please fill in all required fields.',
     titleAndDescRequired: 'Title and description are required.',
@@ -390,6 +431,11 @@ const translations = {
     doYouWantToCrop: 'Do you want to crop this image?',
     yes: 'Yes',
     no: 'No',
+    atLeastOnePhoto: 'You must select at least one photo.',
+    editProduct: 'Edit Artwork',
+    crop: 'Crop',
+    remove: 'Remove',
+    galleryHint: 'Drag images to reorder',
 
     // Product Detail
     sendMessage: 'Send Message',
@@ -401,6 +447,7 @@ const translations = {
     otherProducts: "Other Products",
     noOtherProducts: 'This seller has no other products.',
     seller: 'Seller',
+    buyer: 'Buyer',
 
     // Edit Profile
     editProfileTitle: 'Edit Profile',
@@ -410,6 +457,7 @@ const translations = {
     bioLabel: 'Bio',
     usernamePlaceholderEdit: 'Enter your username',
     bioPlaceholder: 'Tell us about yourself',
+    securitySettings: 'Security Settings',
     saveButton: 'Save',
     profileUpdated: 'Profile updated!',
 
@@ -551,6 +599,30 @@ const translations = {
 
     // ViewInRoom
     viewInRoomError: 'No image found to display.',
+
+    // Offer System
+    makeOffer: 'Make Offer',
+    offers: 'Offers',
+    offerAmount: 'Offer Amount',
+    offerNote: 'Offer Note',
+    offerNotePlaceholder: 'Write a note...',
+    sendOffer: 'Send Offer',
+    cancelOffer: 'Cancel Offer',
+    acceptOffer: 'Accept',
+    rejectOffer: 'Reject',
+    offerAccepted: 'Offer Accepted',
+    offerRejected: 'Offer Rejected',
+    offerCancelled: 'Offer Cancelled',
+    offerPending: 'Pending',
+    myOffers: 'My Offers',
+    receivedOffers: 'Received Offers',
+    priceWithDiscount: '%{discount} Discount: ₺{price}',
+    loadingNotifications: 'Loading notifications...',
+    loadingOffers: 'Loading offers...',
+    offerSentSuccess: 'Your offer has been sent successfully.',
+    offerStatusUpdated: 'Offer status updated.',
+    alreadyOffered: 'You already have an active offer for this product.',
+    offerAddError: 'An error occurred while sending the offer.',
   },
 } as const;
 
@@ -588,9 +660,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     await AsyncStorage.setItem(LANG_STORAGE_KEY, lang);
   };
 
-  const t = (key: TranslationKeys): string => {
+  const t = useCallback((key: TranslationKeys): string => {
     return translations[language][key] ?? translations.tr[key] ?? key;
-  };
+  }, [language]);
 
   return (
     <LanguageContext.Provider value={{ language, t, changeLanguage }}>

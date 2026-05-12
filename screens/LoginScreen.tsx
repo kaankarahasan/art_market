@@ -25,20 +25,12 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../routes/types';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
-type RootStackParamList = {
-  Login: undefined;
-  Main: undefined;
-  SignUp: undefined;
-  PasswordReset: undefined;
-  ProductDetail: {
-    product: { id: string; title: string; image: string; seller?: string; description?: string };
-  };
-};
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 

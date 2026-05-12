@@ -25,6 +25,7 @@ import { db, auth } from '../firebaseConfig';
 import { useFavoriteItems, FavoriteItem } from '../contexts/FavoritesContext';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import GlobalMasonryList from '../components/GlobalMasonryList';
 
 const screenWidth = Dimensions.get('window').width;
 const boxSize = (screenWidth - 48) / 2;
@@ -79,8 +80,6 @@ const SearchScreen = () => {
   const [filterModalVisible, setFilterModalVisible] = useState<boolean>(false);
   const [sortModalVisible, setSortModalVisible] = useState<boolean>(false);
   const [selectedSort, setSelectedSort] = useState<string | null>(null);
-  const [filteredLeftColumn, setFilteredLeftColumn] = useState<Product[]>([]);
-  const [filteredRightColumn, setFilteredRightColumn] = useState<Product[]>([]);
   const [imageAspectRatios, setImageAspectRatios] = useState<{ [key: string]: number }>({});
   const [isFocused, setIsFocused] = useState<boolean>(false);
 
@@ -179,15 +178,13 @@ const SearchScreen = () => {
     try {
       setLoading(true);
 
-      // Project ID kontrolü (Script ile aynı mı?)
-      console.log(`🔗 [DEBUG] Firebase Project ID: ${db.app.options.projectId}`);
-
-      // Modular Native Firestore Fetches - Cache'i atlayıp doğrudan sunucudan çekelim
-      // @ts-ignore
-      const productSnap = await collection(db, 'products')
-        .where('isSold', '==', false)
-        .limit(1000)
-        .get(); // Not: Native SDK varsayılan olarak taze veriyi çekmeye çalışır
+      // Modular Firestore API ile doğru kullanım
+      const productQ = query(
+        collection(db, 'products'),
+        where('isSold', '==', false),
+        limit(500)
+      );
+      const productSnap = await getDocs(productQ);
 
       const productList: Product[] = productSnap.docs.map((doc: any) => {
         const dataFromFirestore = doc.data();
@@ -200,24 +197,11 @@ const SearchScreen = () => {
       });
 
       setProducts(productList);
-
-      // --- KRİTİK DEBUG LOGLARI ---
-      const taggedProducts = productList.filter((p: Product) => p.aiVisualTags && p.aiVisualTags.length > 0);
-      console.log(`📦 Toplam Yüklenen: ${productList.length} ürün.`);
-      console.log(`✨ Etiketli Ürün Sayısı: ${taggedProducts.length}`);
-
-      if (taggedProducts.length > 0) {
-        console.log(`🎯 İlk Etiketli Ürün (${taggedProducts[0].title}):`, taggedProducts[0].aiVisualTags);
-      } else {
-        console.warn('⚠️ DİKKAT: Hiçbir üründe aiVisualTags bulunamadı!');
-      }
-      // ----------------------------
-
       setFinalFilteredProducts(productList);
       setTextFilteredProducts(productList);
 
       // Kullanıcı verileri
-      const usersSnap = await getDocs(query(collection(db, 'users'), limit(500)));
+      const usersSnap = await getDocs(query(collection(db, 'users'), limit(300)));
       const userList: UserSearchResult[] = usersSnap.docs.map((doc: any) => {
         const data = doc.data();
         return { id: doc.id, username: data.username, fullName: data.fullName, photoURL: data.photoURL };
@@ -304,14 +288,9 @@ const SearchScreen = () => {
         const priceMatch = product.price?.toString().includes(queryLower) ?? false;
         const yearMatch = product.year?.toString().includes(queryLower) ?? false;
 
-        // AI Tag matching - handles both array of tags and single string containing tags
         const aiTagsMatch = product.aiVisualTags ? (
           Array.isArray(product.aiVisualTags)
-            ? product.aiVisualTags.some(tag => {
-              const match = tag?.toLowerCase().includes(queryLower);
-              if (match) console.log(`🎯 Match found in tag: "${tag}" for product: ${product.title}`);
-              return match;
-            })
+            ? product.aiVisualTags.some(tag => tag?.toLowerCase().includes(queryLower))
             : String(product.aiVisualTags).toLowerCase().includes(queryLower)
         ) : false;
 
@@ -334,11 +313,7 @@ const SearchScreen = () => {
           categories.find(c => c.value === product.category)?.name.toLowerCase().includes(queryLower) || false;
         const aiTagsMatch = product.aiVisualTags ? (
           Array.isArray(product.aiVisualTags)
-            ? product.aiVisualTags.some(tag => {
-              const match = tag?.toLowerCase().includes(queryLower);
-              if (match) console.log(`🎯 Match found in tag: "${tag}" for product: ${product.title}`);
-              return match;
-            })
+            ? product.aiVisualTags.some(tag => tag?.toLowerCase().includes(queryLower))
             : String(product.aiVisualTags).toLowerCase().includes(queryLower)
         ) : false;
 
@@ -375,8 +350,6 @@ const SearchScreen = () => {
 
     setTextFilteredProducts(currentProductResults);
     setTextFilteredUsers(currentUserResults);
-    console.log(`🔍 Search Results: Found ${currentProductResults.length} products for query "${queryLower}"`);
-
   }, [debouncedSearchQuery, products, allUsers, loading, searchScope]);
 
   useEffect(() => {
@@ -426,44 +399,8 @@ const SearchScreen = () => {
     setFilteringLoader(false);
 
   }, [
-    textFilteredProducts, minPrice, maxPrice, filterWidth, filterHeight, loading, isSearching, hasActiveFilters, products, selectedSort
+        textFilteredProducts, minPrice, maxPrice, filterWidth, filterHeight, loading, isSearching, hasActiveFilters, products, selectedSort
   ]);
-
-
-  const distributeColumns = useCallback((items: Product[]) => {
-    if (!Array.isArray(items)) return { leftColumn: [], rightColumn: [] };
-
-    const leftColumn: Product[] = [];
-    const rightColumn: Product[] = [];
-    let leftHeight = 0;
-    let rightHeight = 0;
-
-    items.forEach(product => {
-      // Asimetrik düzen için stabil rastgele başlangıç yüksekliği
-      const stableRandomHeight = (parseInt(product.id.substring(0, 8), 16) % 150) + 200;
-      const aspectRatio = imageAspectRatios[product.id];
-      const imageWidth = columnWidth - 20;
-      let imageHeight = aspectRatio ? imageWidth * aspectRatio : stableRandomHeight;
-
-      const infoHeightEstimate = 110;
-      const cardHeight = imageHeight + infoHeightEstimate;
-
-      if (leftHeight <= rightHeight) {
-        leftColumn.push(product);
-        leftHeight += cardHeight;
-      } else {
-        rightColumn.push(product);
-        rightHeight += cardHeight;
-      }
-    });
-    return { leftColumn, rightColumn };
-  }, [imageAspectRatios, columnWidth]);
-
-  useEffect(() => {
-    const { leftColumn, rightColumn } = distributeColumns(finalFilteredProducts);
-    setFilteredLeftColumn(leftColumn);
-    setFilteredRightColumn(rightColumn);
-  }, [finalFilteredProducts, distributeColumns]);
 
   const handleImageLoad = (productId: string, event: NativeSyntheticEvent<{ source: { width: number; height: number } }>) => {
     const { width, height } = event.nativeEvent.source;
@@ -570,6 +507,15 @@ const SearchScreen = () => {
     });
   };
 
+  const renderProfileCard = (user: UserSearchResult) => {
+    return (
+      <TouchableOpacity key={user.id} style={styles.profileCard} onPress={() => navigation.navigate('OtherProfile', { userId: user.id })} activeOpacity={0.7}>
+        <Image source={user.photoURL ? { uri: user.photoURL } : require('../assets/default-profile.png')} style={styles.profileCardImage} resizeMode="cover" />
+        <Text style={styles.profileCardUsername} numberOfLines={2}> {user.fullName || user.username || t('unknown')} </Text>
+      </TouchableOpacity>
+    );
+  };
+
   const renderCategoryCard = (cat: { name: string, value: string, height: number, imageSource: any }) => (
     <TouchableOpacity
       key={cat.name}
@@ -605,94 +551,22 @@ const SearchScreen = () => {
     isFav ? removeFavorite(item.id) : addFavorite(favItem);
   };
 
-  const renderProductCard = (item: Product, cardStyle?: object) => {
-    const isFavorite = favoriteItems.some(fav => fav.id === item.id);
-    const firstImage = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrls;
-    const owner = userMap[item.ownerId || ''];
-    const displayName = owner?.fullName || owner?.username || item.username || 'Bilinmeyen';
 
-    const isProductNew = (() => {
-      if (!item.createdAt) return false;
-      const date = item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt);
-      return (new Date().getTime() - date.getTime()) < 48 * 60 * 60 * 1000;
-    })();
-
-    // Asimetrik düzen için stabil rastgele başlangıç yüksekliği
-    const stableRandomHeight = (parseInt(item.id.substring(0, 8), 16) % 150) + 200;
-    const targetWidth = (cardStyle && (cardStyle as any).width) ? (cardStyle as any).width : columnWidth;
-    const aspectRatio = imageAspectRatios[item.id];
-    const imageHeight = aspectRatio ? targetWidth * aspectRatio : stableRandomHeight;
-
-    const handlePress = () => {
-      const serializableProduct = {
-        ...item,
-        createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : (typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString()),
-      };
-      navigation.navigate('ProductDetail', { product: serializableProduct });
-    };
-
-    return (
-      <View key={item.id} style={[styles.card, cardStyle ?? {}]}>
-        <TouchableOpacity
-          onPress={handlePress}
-          activeOpacity={0.8}
-        >
-          <View style={styles.imageContainer}>
-            {firstImage ? (
-              <Image
-                source={{ uri: firstImage || undefined }}
-                style={[styles.image, { height: imageHeight, backgroundColor: colors.card }]}
-                onLoad={(e) => handleImageLoad(item.id, e)}
-              />
-            ) : (
-              <View style={[styles.image, styles.noImage, { height: 200 }]}>
-                <Text style={styles.noImageText}>Resim yok</Text>
-              </View>
-            )}
-
-            {isProductNew && (
-              <View style={styles.newBadgeContainer}>
-                <View style={styles.newBadgeBackground}>
-                  <Text style={styles.newBadgeText}>{t('newBadge')}</Text>
-                </View>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.infoContainer}>
-            <View style={styles.userRow}>
-              <Text style={styles.username} numberOfLines={1}>
-                {displayName}
-              </Text>
-              <TouchableOpacity
-                onPress={() => handleFavoriteToggle(item)}
-                style={styles.favoriteButton}
-              >
-                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={isFavorite ? '#FF3040' : colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.title} numberOfLines={2}>
-              {item.title}{item.year ? `, ${item.year}` : ''}
-            </Text>
-
-            <Text style={styles.price}>
-              ₺{item.price ? Number(item.price).toLocaleString('tr-TR') : '0'}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  const renderProfileCard = (user: UserSearchResult) => {
-    return (
-      <TouchableOpacity key={user.id} style={styles.profileCard} onPress={() => navigation.navigate('OtherProfile', { userId: user.id })} activeOpacity={0.7}>
-        <Image source={user.photoURL ? { uri: user.photoURL } : require('../assets/default-profile.png')} style={styles.profileCardImage} resizeMode="cover" />
-        <Text style={styles.profileCardUsername} numberOfLines={2}> {user.fullName || user.username || t('unknown')} </Text>
-      </TouchableOpacity>
-    );
-  };
+  const renderSearchHeader = () => (
+    <View>
+      {textFilteredUsers.length > 0 && searchScope !== 'Artwork' && (
+        <View style={{ marginBottom: 20, marginTop: 10 }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12, marginLeft: 5 }}>{t('artists')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 5 }}>
+            {textFilteredUsers.map(user => renderProfileCard(user))}
+          </ScrollView>
+        </View>
+      )}
+      {finalFilteredProducts.length > 0 && (
+        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 15, marginLeft: 5 }}>{t('artworksSection')}</Text>
+      )}
+    </View>
+  );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -736,6 +610,38 @@ const SearchScreen = () => {
 
       {loading ? (
         <View style={styles.loadingContainer}><ActivityIndicator size="large" color={colors.text} /></View>
+      ) : isSearching || hasActiveFilters() || (isFocused && searchQuery.length === 0) ? (
+        <View style={{ flex: 1 }}>
+          {!isSearching && !hasActiveFilters() && isFocused ? (
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <View style={{ padding: 16 }}>
+                <Text style={[styles.filterSectionTitle, { marginBottom: 10 }]}>{t('recentSearches')}</Text>
+                {recentSearches.map((term, index) => (
+                  <TouchableOpacity key={index} onPress={() => { setSearchQuery(term); setDebouncedSearchQuery(term); }} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12 }}>
+                    <Ionicons name="time-outline" size={20} color={colors.secondaryText} style={{ marginRight: 10 }} />
+                    <Text style={{ color: colors.text, fontSize: 16, flex: 1 }}>{term}</Text>
+                    <TouchableOpacity onPress={() => handleRemoveRecentSearch(term)}>
+                      <Ionicons name="close" size={18} color={colors.secondaryText} />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          ) : (
+            <GlobalMasonryList
+              data={finalFilteredProducts as any}
+              loading={isSearching || filteringLoader}
+              ListHeaderComponent={renderSearchHeader}
+              ListEmptyComponent={
+                !(isSearching || filteringLoader) && finalFilteredProducts.length === 0 && textFilteredUsers.length === 0 ? (
+                  <View style={styles.center}><Text style={styles.noResultsText}>{t('noResults')}</Text></View>
+                ) : null
+              }
+              contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+              loadingMore={filteringLoader}
+            />
+          )}
+        </View>
       ) : (
         <ScrollView
           ref={scrollViewRef}
@@ -743,65 +649,19 @@ const SearchScreen = () => {
           style={styles.scrollView}
           contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
           keyboardShouldPersistTaps="handled"
-          onScrollBeginDrag={Keyboard.dismiss}
         >
-          {isSearching || hasActiveFilters() || (isFocused && searchQuery.length === 0) ? (
-            <View style={styles.resultsContainer}>
-              {!isSearching && !hasActiveFilters() && isFocused ? (
-                <View style={{ padding: 16 }}>
-                  <Text style={[styles.filterSectionTitle, { marginBottom: 10 }]}>{t('recentSearches')}</Text>
-                  {recentSearches.map((term, index) => (
-                    <TouchableOpacity key={index} onPress={() => { setSearchQuery(term); setDebouncedSearchQuery(term); }} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12 }}>
-                      <Ionicons name="time-outline" size={20} color={colors.secondaryText} style={{ marginRight: 10 }} />
-                      <Text style={{ color: colors.text, fontSize: 16, flex: 1 }}>{term}</Text>
-                      <TouchableOpacity onPress={() => handleRemoveRecentSearch(term)}>
-                        <Ionicons name="close" size={18} color={colors.secondaryText} />
-                      </TouchableOpacity>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              ) : (
-                filteringLoader ?
-                  <ActivityIndicator size="small" color={colors.text} style={{ marginVertical: 20 }} /> :
-                  (textFilteredUsers.length === 0 && finalFilteredProducts.length === 0 ?
-                    <Text style={styles.noResultsText}>{t('noResults')}</Text> :
-                    <View style={{ padding: 10 }}>
-                      {textFilteredUsers.length > 0 && searchScope !== 'Artwork' && (
-                        <View style={{ marginBottom: 20 }}>
-                          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 10, marginLeft: 5 }}>{t('artists')}</Text>
-                          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            {textFilteredUsers.map(user => renderProfileCard(user))}
-                          </ScrollView>
-                        </View>
-                      )}
-                      {finalFilteredProducts.length > 0 && (
-                        <View style={{ flexDirection: 'row', paddingHorizontal: 10 }}>
-                          <View style={{ flex: 1, paddingHorizontal: 5 }}>
-                            {filteredLeftColumn.map(item => renderProductCard(item))}
-                          </View>
-                          <View style={{ flex: 1, paddingHorizontal: 5 }}>
-                            {filteredRightColumn.map(item => renderProductCard(item))}
-                          </View>
-                        </View>
-                      )}
-                    </View>
-                  )
-              )}
-            </View>
-          ) : (
-            <View style={{ padding: 10 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 15, marginLeft: 5 }}>{t('discover')}</Text>
+          <View style={{ padding: 10 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 15, marginLeft: 5 }}>{t('discover')}</Text>
 
-              <View style={{ flexDirection: 'row' }}>
-                <View style={{ flex: 1, paddingRight: 5 }}>
-                  {leftCategories.map(renderCategoryCard)}
-                </View>
-                <View style={{ flex: 1, paddingLeft: 5 }}>
-                  {rightCategories.map(renderCategoryCard)}
-                </View>
+            <View style={{ flexDirection: 'row' }}>
+              <View style={{ flex: 1, paddingRight: 5 }}>
+                {leftCategories.map(renderCategoryCard)}
+              </View>
+              <View style={{ flex: 1, paddingLeft: 5 }}>
+                {rightCategories.map(renderCategoryCard)}
               </View>
             </View>
-          )}
+          </View>
         </ScrollView>
       )}
 
@@ -997,4 +857,5 @@ const createStyles = (colors: any) => StyleSheet.create({
   smallBoxSelected: { backgroundColor: colors.text, borderColor: colors.text },
   smallBoxText: { color: colors.text, fontSize: 14 },
   smallBoxTextSelected: { color: colors.background, fontWeight: '700' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
 });

@@ -1,58 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ScrollView,
   Switch,
   Modal,
+  Alert,
 } from 'react-native';
-import { auth } from '../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { useThemeContext } from '../contexts/ThemeContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { useLanguage, Language } from '../contexts/LanguageContext';
+import { auth } from '../firebaseConfig';
+import { signOut } from '@react-native-firebase/auth';
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDarkTheme, toggleTheme, colors } = useThemeContext();
+  const { language, changeLanguage, t } = useLanguage();
   const insets = useSafeAreaInsets();
-  const { t, language, changeLanguage } = useLanguage();
 
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [langModalVisible, setLangModalVisible] = useState(false);
-  const [pendingLang, setPendingLang] = useState<Language | null>(null);
+  const [pendingLang, setPendingLang] = useState<'tr' | 'en' | null>(null);
   const [signOutModalVisible, setSignOutModalVisible] = useState(false);
 
   const onToggleTheme = () => {
     toggleTheme();
   };
 
+  const toggleNotifications = () => {
+    setNotificationsEnabled(!notificationsEnabled);
+  };
+
   const handleSignOut = () => {
     setSignOutModalVisible(true);
   };
 
-  const confirmSignOut = () => {
-    setSignOutModalVisible(false);
-    auth.signOut()
-      .then(() => navigation.replace('Login'))
-      .catch(error => Alert.alert(t('error'), error.message));
+  const confirmSignOut = async () => {
+    try {
+      setSignOutModalVisible(false);
+      await auth.signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+      Alert.alert('Error', 'Sign out failed.');
+    }
   };
 
-  const requestLanguageChange = (lang: Language) => {
+  const requestLanguageChange = (lang: 'tr' | 'en') => {
     if (lang === language) return;
     setPendingLang(lang);
     setLangModalVisible(true);
   };
 
-  const confirmLanguageChange = async () => {
+  const confirmLanguageChange = () => {
     if (pendingLang) {
-      await changeLanguage(pendingLang);
+      changeLanguage(pendingLang);
     }
     setLangModalVisible(false);
     setPendingLang(null);
@@ -67,104 +76,101 @@ const SettingsScreen = () => {
   const pendingLangLabel = pendingLang === 'tr' ? t('languageTr') : t('languageEn');
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('settings')}</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 40 + insets.bottom }]}>
-
-        {/* Hesap */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('account')}</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
-            <Text style={[styles.item, { color: colors.text }]}>{t('editProfile')}</Text>
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
+        {/* HEADER */}
+        <View style={[styles.header, { borderBottomColor: isDarkTheme ? '#333' : '#eee' }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('ChangeEmailAndPassword')}>
-            <Text style={[styles.item, { color: colors.text }]}>{t('changeEmailPassword')}</Text>
-          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('settings')}</Text>
         </View>
 
-        {/* Görünüm */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('appearance')}</Text>
-          <View style={styles.rowItem}>
-            <Text style={[styles.item, { color: colors.text, flex: 1 }]}>
-              {t('theme')}: {isDarkTheme ? t('themeDark') : t('themeLight')}
-            </Text>
-            <Switch
-              value={isDarkTheme}
-              onValueChange={onToggleTheme}
-              trackColor={{ false: '#ccc', true: '#1976d2' }}
-              thumbColor="#fff"
-            />
-          </View>
-        </View>
+        <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 40 + insets.bottom }]}>
 
-        {/* Dil */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('language')}</Text>
-          <View style={styles.langRow}>
-            <TouchableOpacity
-              style={[
-                styles.langButton,
-                language === 'tr' && styles.langButtonActive,
-                { borderColor: language === 'tr' ? colors.text : (colors.border || '#ddd') },
-              ]}
-              onPress={() => requestLanguageChange('tr')}
-            >
-              <Text style={[styles.langButtonText, { color: language === 'tr' ? colors.background : colors.text }]}>
-                🇹🇷  {t('languageTr')}
-              </Text>
+          {/* Hesap */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('account')}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
+              <Text style={[styles.item, { color: colors.text }]}>{t('editProfile')}</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.langButton,
-                language === 'en' && styles.langButtonActive,
-                { borderColor: language === 'en' ? colors.text : (colors.border || '#ddd') },
-              ]}
-              onPress={() => requestLanguageChange('en')}
-            >
-              <Text style={[styles.langButtonText, { color: language === 'en' ? colors.background : colors.text }]}>
-                🇬🇧  {t('languageEn')}
-              </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('ChangeEmailAndPassword')}>
+              <Text style={[styles.item, { color: colors.text }]}>{t('changeEmailPassword')}</Text>
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Bildirimler */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('notifications')}</Text>
-          <Text style={[styles.item, { color: colors.text }]}>{t('pushNotifications')}</Text>
-          <Text style={[styles.item, { color: colors.text }]}>{t('productNotifications')}</Text>
-        </View>
+          {/* Görünüm */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('appearance')}</Text>
+            <View style={styles.rowItem}>
+              <Text style={[styles.item, { color: colors.text, flex: 1 }]}>
+                {t('theme')}: {isDarkTheme ? t('themeDark') : t('themeLight')}
+              </Text>
+              <Switch
+                value={isDarkTheme}
+                onValueChange={onToggleTheme}
+                trackColor={{ false: '#ccc', true: '#1976d2' }}
+                thumbColor="#fff"
+              />
+            </View>
+          </View>
 
-        {/* Hakkında */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('about')}</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('About')}>
-            <Text style={[styles.item, { color: colors.text }]}>{t('aboutUs')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('PrivacyPolicy')}>
-            <Text style={[styles.item, { color: colors.text }]}>{t('privacyPolicy')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('TermsOfService')}>
-            <Text style={[styles.item, { color: colors.text }]}>{t('termsOfUse')}</Text>
-          </TouchableOpacity>
-        </View>
+          {/* Dil */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('language')}</Text>
+            <View style={styles.langRow}>
+              <TouchableOpacity
+                style={[
+                  styles.langButton,
+                  language === 'tr' && styles.langButtonActive,
+                  { borderColor: language === 'tr' ? colors.text : (colors.border || '#ddd') },
+                ]}
+                onPress={() => requestLanguageChange('tr')}
+              >
+                <Text style={[styles.langButtonText, { color: language === 'tr' ? colors.background : colors.text }]}>
+                  🇹🇷  {t('languageTr')}
+                </Text>
+              </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.signOutButton, { backgroundColor: '#ff5252' }]}
-          onPress={handleSignOut}
-        >
-          <Text style={styles.signOutButtonText}>{t('signOut')}</Text>
-        </TouchableOpacity>
-      </ScrollView>
+              <TouchableOpacity
+                style={[
+                  styles.langButton,
+                  language === 'en' && styles.langButtonActive,
+                  { borderColor: language === 'en' ? colors.text : (colors.border || '#ddd') },
+                ]}
+                onPress={() => requestLanguageChange('en')}
+              >
+                <Text style={[styles.langButtonText, { color: language === 'en' ? colors.background : colors.text }]}>
+                  🇬🇧  {t('languageEn')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Bildirimler */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('notifications')}</Text>
+            <View style={styles.rowItem}>
+              <Text style={[styles.item, { color: colors.text, flex: 1, paddingLeft: 10 }]}>
+                {notificationsEnabled ? 'Bildirimler Açık' : 'Bildirimler Kapalı'}
+              </Text>
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={toggleNotifications}
+                trackColor={{ false: colors.border, true: '#4CD964' }}
+                thumbColor="#fff"
+              />
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.signOutButton, { backgroundColor: '#ff5252' }]}
+            onPress={handleSignOut}
+          >
+            <Text style={styles.signOutButtonText}>{t('signOut')}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
 
       {/* Language Change Confirmation Modal */}
       <Modal
@@ -251,12 +257,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  backButton: {
-    paddingRight: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   headerTitle: { fontSize: 20, fontWeight: 'bold' },
+  backButton: { paddingRight: 10 },
   scrollContainer: { padding: 20, paddingBottom: 40 },
   section: { marginBottom: 25 },
   sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
