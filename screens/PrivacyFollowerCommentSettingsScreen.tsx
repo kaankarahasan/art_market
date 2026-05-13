@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, StatusBar } from 'react-native';
 import { getDoc, doc, updateDoc } from '@react-native-firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useThemeContext } from '../contexts/ThemeContext';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 
 type FollowerPermission = 'everyone' | 'approved' | 'none';
 type CommentPermission = 'everyone' | 'following' | 'none';
@@ -16,8 +20,11 @@ const PrivacyFollowerCommentSettingsScreen = () => {
   const [followerSetting, setFollowerSetting] = useState<FollowerPermission>('everyone');
   const [commentSetting, setCommentSetting] = useState<CommentPermission>('everyone');
   const { t } = useLanguage();
+  const { colors, isDarkTheme } = useThemeContext();
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
 
-  const getLabels = () => ({
+  const labels = {
     follower: {
       everyone: t('everyone'),
       approved: t('approvedOnly'),
@@ -28,9 +35,7 @@ const PrivacyFollowerCommentSettingsScreen = () => {
       following: t('followingOnly'),
       none: t('none'),
     },
-  });
-
-  const labels = getLabels();
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -76,69 +81,119 @@ const PrivacyFollowerCommentSettingsScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>{t('followerSettings')}</Text>
-      {options.follower.map((option) => (
-        <TouchableOpacity
-          key={option}
-          style={[styles.option, followerSetting === option && styles.selectedOption]}
-          onPress={() => setFollowerSetting(option)}
-        >
-          <Text>{labels.follower[option]}</Text>
-        </TouchableOpacity>
-      ))}
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} />
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
+        {/* HEADER */}
+        <View style={[styles.header, { borderBottomColor: isDarkTheme ? '#333' : '#eee' }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Gizlilik Ayarları</Text>
+        </View>
 
-      <Text style={styles.header}>{t('commentSettings')}</Text>
-      {options.comment.map((option) => (
-        <TouchableOpacity
-          key={option}
-          style={[styles.option, commentSetting === option && styles.selectedOption]}
-          onPress={() => setCommentSetting(option)}
-        >
-          <Text>{labels.comment[option]}</Text>
-        </TouchableOpacity>
-      ))}
+        <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 40 }}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('followerSettings')}</Text>
+          <View style={styles.optionsContainer}>
+            {options.follower.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.optionCard, 
+                  { backgroundColor: colors.card, borderColor: followerSetting === option ? colors.text : colors.border }
+                ]}
+                onPress={() => setFollowerSetting(option)}
+              >
+                <Text style={[styles.optionText, { color: colors.text }]}>{labels.follower[option]}</Text>
+                {followerSetting === option && <Ionicons name="checkmark-circle" size={20} color={colors.text} />}
+              </TouchableOpacity>
+            ))}
+          </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={saveSettings}>
-        <Text style={styles.saveText}>{t('saveButton')}</Text>
-      </TouchableOpacity>
+          <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 32 }]}>{t('commentSettings')}</Text>
+          <View style={styles.optionsContainer}>
+            {options.comment.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.optionCard, 
+                  { backgroundColor: colors.card, borderColor: commentSetting === option ? colors.text : colors.border }
+                ]}
+                onPress={() => setCommentSetting(option)}
+              >
+                <Text style={[styles.optionText, { color: colors.text }]}>{labels.comment[option]}</Text>
+                {commentSetting === option && <Ionicons name="checkmark-circle" size={20} color={colors.text} />}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.text }]} onPress={saveSettings}>
+            <Text style={[styles.saveText, { color: colors.background }]}>{t('saveButton')}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
 
-export default PrivacyFollowerCommentSettingsScreen;
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
+  mainContainer: { flex: 1 },
   header: {
-    fontSize: 18,
-    marginVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
   },
-  option: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginVertical: 5,
-    borderRadius: 8,
-  },
-  selectedOption: {
-    backgroundColor: '#d0e8ff',
-    borderColor: '#007bff',
-  },
-  saveButton: {
-    marginTop: 30,
-    backgroundColor: '#007bff',
-    padding: 14,
-    borderRadius: 8,
+  backButton: {
+    paddingRight: 10,
+    justifyContent: 'center',
     alignItems: 'center',
   },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: 16,
+    opacity: 0.6,
+  },
+  optionsContainer: {
+    gap: 12,
+  },
+  optionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+  },
+  optionText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  saveButton: {
+    marginTop: 48,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
   saveText: {
-    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
+
+export default PrivacyFollowerCommentSettingsScreen;
+

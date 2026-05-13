@@ -370,15 +370,13 @@ const NotificationScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <SafeAreaView edges={['top', 'left', 'right']} style={{ backgroundColor: colors.background }}>
-        <View style={[styles.header, { borderBottomColor: isDarkTheme ? '#333' : '#eee' }]}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('notifications')}</Text>
-        </View>
-      </SafeAreaView>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: isDarkTheme ? '#333' : '#eee' }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('notifications')}</Text>
+      </View>
 
       <View style={styles.tabBar}>
         <TouchableOpacity 
@@ -448,7 +446,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingVertical: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
   },
   headerTitle: { fontSize: 20, fontWeight: 'bold' },

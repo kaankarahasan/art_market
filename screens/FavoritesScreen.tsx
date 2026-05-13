@@ -9,7 +9,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../routes/types';
 import { useThemeContext } from '../contexts/ThemeContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import ProductCard, { ProductCardItem, getStableHeight } from '../components/ProductCard';
 import GlobalMasonryList from '../components/GlobalMasonryList';
@@ -68,21 +68,26 @@ const FavoritesScreen = () => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 10 }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('favorites')}</Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ backgroundColor: colors.background }}>
+        <View style={[styles.header, { borderBottomColor: isDarkTheme ? '#333' : '#eee' }]}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('favorites')}</Text>
+        </View>
+      </SafeAreaView>
 
       <GlobalMasonryList
         data={favoriteList}
         ListEmptyComponent={
-          <Text style={[styles.emptyText, { color: colors.text }]}>{t('noFavorites')}</Text>
+          <View style={styles.emptyContainer}>
+            <Ionicons name="heart-outline" size={64} color={colors.secondaryText} style={{ opacity: 0.5 }} />
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>{t('noFavorites')}</Text>
+          </View>
         }
         contentContainerStyle={{
-          paddingBottom: 80 + insets.bottom,
+          paddingBottom: 100 + insets.bottom, // Tab bar padding
         }}
       />
     </View>
@@ -94,12 +99,31 @@ export default FavoritesScreen;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 15, paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  backButton: { paddingRight: 10 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold' },
-  emptyText: { textAlign: 'center', marginTop: 120, fontSize: 16, fontWeight: '500' },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  backButton: {
+    paddingRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 120,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
 });

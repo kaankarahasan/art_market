@@ -64,6 +64,7 @@ const GlobalMasonryList: React.FC<GlobalMasonryListProps> = ({
         title: item.title || t('noTitle'),
         username: item.username || t('unknown'),
         imageUrl: Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrl || undefined,
+        imageUrls: item.imageUrls || (item.imageUrl ? [item.imageUrl] : []),
         price: item.price || 0,
         year: item.year || '',
         createdAt: item.createdAt,
@@ -161,10 +162,9 @@ const GlobalMasonryList: React.FC<GlobalMasonryListProps> = ({
 
 const styles = StyleSheet.create({
   footerLoader: {
-    width: '100%',
     paddingVertical: 20,
     alignItems: 'center',
   },
 });
 
-export default React.memo(GlobalMasonryList);
+export default GlobalMasonryList;

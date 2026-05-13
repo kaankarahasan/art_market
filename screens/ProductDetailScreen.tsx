@@ -32,7 +32,7 @@ import {
 import { doc, getDoc, collection, query, where, limit, getDocs } from '@react-native-firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import ImageViewing from 'react-native-image-viewing';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -185,9 +185,10 @@ const ProductDetailScreen = () => {
   };
 
   const renderImages = () => {
-    const images: string[] = Array.isArray(productData.imageUrls)
+    // Favoriler veya diğer kaynaklardan gelen verilerde dizi veya tekil URL kontrolü yap
+    const images: string[] = Array.isArray(productData?.imageUrls) && productData.imageUrls.length > 0
       ? productData.imageUrls.filter((url) => url && url.trim() !== '')
-      : productData.imageUrls ? [productData.imageUrls] : [];
+      : (productData?.imageUrls ? [productData.imageUrls] : ((productData as any)?.imageUrl ? [(productData as any).imageUrl] : []));
 
     if (images.length === 0) {
       return (
@@ -228,39 +229,32 @@ const ProductDetailScreen = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
       
-      {/* HEADER OVERLAY */}
-      <Animated.View 
-        style={[
-          styles.topBar, 
-          { 
-            paddingTop: insets.top,
-            backgroundColor: colors.background,
-            opacity: headerOpacity,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border
-          }
-        ]} 
-      />
-
-      <View style={[styles.headerActions, { top: insets.top + 12 }]}>
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
-          style={styles.circleButton}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="chevron-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        
-        {!isOwner && (
+      {/* SOLID HEADER */}
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ backgroundColor: colors.background }}>
+        <View style={[styles.header, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
           <TouchableOpacity 
-            onPress={handleToggleFollow} 
-            style={styles.circleButton}
-            activeOpacity={0.8}
+            onPress={() => navigation.goBack()} 
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name={isFollowing ? "notifications" : "notifications-outline"} size={22} color={isFollowing ? colors.primary : "#fff"} />
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
           </TouchableOpacity>
-        )}
-      </View>
+          <View style={{ flex: 1 }} />
+          {!isOwner && (
+            <TouchableOpacity 
+              onPress={handleToggleFollow} 
+              style={styles.rightAction}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons 
+                name={isFollowing ? "notifications" : "notifications-outline"} 
+                size={24} 
+                color={isFollowing ? colors.primary : colors.text} 
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+      </SafeAreaView>
 
       <Animated.ScrollView 
         showsVerticalScrollIndicator={false} 
@@ -415,32 +409,22 @@ const ProductDetailScreen = () => {
 
 const createStyles = (colors: any, isDarkTheme: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 100,
-    zIndex: 10,
-  },
-  headerActions: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    zIndex: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
   },
-  circleButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    flex: 1,
+  },
+  backButton: {
+    paddingRight: 10,
+  },
+  rightAction: {
+    paddingLeft: 10,
   },
   mainImageContainer: { height: height * 0.55, width },
   mainImage: { width, height: height * 0.55 },

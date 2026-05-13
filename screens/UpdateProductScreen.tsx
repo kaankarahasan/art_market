@@ -265,11 +265,11 @@ const UpdateProductScreen = () => {
       <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} />
       <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
         {/* HEADER */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBackButton}>
+        <View style={[styles.header, { borderBottomColor: isDarkTheme ? '#333' : '#eee' }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={28} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.largeTitle, { color: colors.text }]}>{t('editProduct')}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('editProduct')}</Text>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingBottom: 40 + insets.bottom }}>
@@ -443,19 +443,21 @@ const UpdateProductScreen = () => {
 
 const styles = StyleSheet.create({
   mainContainer: { flex: 1 },
-  headerContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 20,
-    paddingTop: 10,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  headerBackButton: {
-    marginBottom: 12,
-    marginLeft: -5,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
   },
-  largeTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -1,
+  backButton: {
+    paddingRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageSection: { alignItems: 'center', marginBottom: 32 },
   mainImageCard: { width: '100%', height: 320, borderRadius: 24, borderWidth: 1, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', elevation: 3 },

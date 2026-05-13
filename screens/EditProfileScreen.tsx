@@ -219,12 +219,14 @@ const EditProfileScreen = () => {
       <StatusBar barStyle={isDarkTheme ? 'light-content' : 'dark-content'} />
       
       {/* HEADER */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBackButton}>
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.largeTitle, { color: colors.text }]}>{t('editProfile')}</Text>
-      </View>
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ backgroundColor: colors.background }}>
+        <View style={[styles.header, { borderBottomColor: isDarkTheme ? '#333' : '#eee' }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('editProfile')}</Text>
+        </View>
+      </SafeAreaView>
 
       <ScrollView 
         showsVerticalScrollIndicator={false}
@@ -331,19 +333,21 @@ const EditProfileScreen = () => {
 const styles = StyleSheet.create({
   mainContainer: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  headerContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 20,
-    paddingTop: 10,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  headerBackButton: {
-    marginBottom: 12,
-    marginLeft: -5,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
   },
-  largeTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -1,
+  backButton: {
+    paddingRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   container: { flex: 1, paddingHorizontal: 24 },
   
